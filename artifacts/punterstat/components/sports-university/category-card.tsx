@@ -1,13 +1,14 @@
+import type { ComponentType } from "react";
 import Link from "next/link";
 import {
   Trophy, BookOpen, Zap, Target, BarChart2, Shield,
-  Activity, Globe, Layers, type LucideIcon,
+  Activity, Globe, Layers,
 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { CourseCategory } from "@/types";
 
-const ICON_MAP: Record<string, LucideIcon> = {
+const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
   trophy: Trophy,
   book: BookOpen,
   zap: Zap,

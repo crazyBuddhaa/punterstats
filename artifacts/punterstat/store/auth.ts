@@ -23,7 +23,11 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
-      isLoading: true,
+      // Start false — rehydration sets user synchronously, so there is no
+      // window where user is null and isLoading is true during hydration.
+      // Callers that need to wait for a server-side session check should call
+      // setLoading(true) explicitly and then setUser() to clear it.
+      isLoading: false,
       isAuthenticated: false,
 
       setUser: (user) =>
@@ -50,7 +54,15 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "punterstat-auth",
+      // Only persist user — derived state is recomputed on rehydration
       partialize: (state) => ({ user: state.user }),
+      // After rehydration, sync isAuthenticated from the restored user value
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.isAuthenticated = state.user !== null;
+          state.isLoading = false;
+        }
+      },
     }
   )
 );

@@ -102,6 +102,30 @@ Known Issues / Open Items:
 
 ---
 
+### [Post-Stage 2 — Logo & Brand Colour Update]
+Date: 2026-07-02
+Agent: @replit-agent
+
+Added:
+- Platform logo (public/logo.png) — provided by user, 225×180 JPEG
+
+Changed:
+- Navbar and Footer: replaced BookOpen icon with actual logo image (next/image)
+- Brand accent colour replaced globally from teal (#0d9488) to logo blue (#3D2DFF) across all 11 affected files: globals.css, tailwind.config.ts, button, badge, alert, toast, page-shell, footer, hero, features-grid, cta-section
+- tailwind.config.ts: renamed brand token from `brand.teal` → `brand.blue`
+- globals.css: updated --accent HSL value (174 90% 31% → 245 100% 59%), selection highlight, focus ring, and text-gradient to use #3D2DFF / #6B5FFF
+
+Fixed / Issues Resolved:
+- N/A
+
+Removed:
+- lucide-react BookOpen import from Navbar and Footer (replaced by logo image)
+
+Known Issues / Open Items:
+- None
+
+---
+
 ### [Stage 3 — Database & Auth Infrastructure]
 Date: 
 Agent: @

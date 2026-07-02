@@ -21,8 +21,8 @@ import { signOut } from "@/lib/auth/actions";
 const navLinks = [
   { href: "/sports-university", label: "Sports University" },
   { href: "/betting-academy", label: "Betting Academy" },
-  { href: "/simulation", label: "Simulation" },
-  { href: "/match-analysis", label: "Match Analysis" },
+  { href: "/simulation-engine", label: "Simulation" },
+  { href: "/match-breakdown", label: "Match Analysis" },
   { href: "/blog", label: "Blog" },
   { href: "/pricing", label: "Pricing" },
 ];

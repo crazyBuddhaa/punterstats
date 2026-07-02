@@ -60,12 +60,14 @@ Changed:
 - N/A (initial setup)
 
 Fixed / Issues Resolved:
-- N/A (initial setup)
+- Vercel build failure: `pnpm-lock.yaml` mismatch resolved by adding `installCommand: "pnpm install --no-frozen-lockfile"` to vercel.json
+- Vercel build failure: `Cannot find module 'autoprefixer'` — in pnpm workspaces, Next.js PostCSS loader resolves plugins from root node_modules; moved autoprefixer, postcss, and tailwindcss from devDependencies to dependencies so pnpm hoists them correctly
 
 Removed:
 - N/A (initial setup)
 
 Known Issues / Open Items:
+- next@15.1.3 has a known security vulnerability (CVE-2025-66478); upgrade planned before Stage 12 polish
 - Supabase client not yet connected (Stage 3)
 - Auth provider not yet implemented (Stage 3)
 - All pages beyond homepage are placeholder routes (built in subsequent stages)

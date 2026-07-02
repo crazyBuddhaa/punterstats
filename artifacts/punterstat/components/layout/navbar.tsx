@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
-import { Menu, X, BookOpen } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -22,13 +23,14 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-white/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
         {/* Logo */}
-        <Link
-          href="/"
-          className="flex items-center gap-2 font-bold text-[#0f172a]"
-        >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0d9488]">
-            <BookOpen className="h-4 w-4 text-white" />
-          </div>
+        <Link href="/" className="flex items-center gap-2 font-bold text-[#0f172a]">
+          <Image
+            src="/logo.png"
+            alt="PunterStat"
+            width={32}
+            height={32}
+            className="rounded-lg"
+          />
           <span className="text-lg tracking-tight">PunterStat</span>
         </Link>
 

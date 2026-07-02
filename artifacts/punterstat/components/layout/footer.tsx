@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
+import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 
 const footerLinks = {
@@ -29,13 +29,14 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <Link
-              href="/"
-              className="flex items-center gap-2 font-bold text-white"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0d9488]">
-                <BookOpen className="h-4 w-4 text-white" />
-              </div>
+            <Link href="/" className="flex items-center gap-2 font-bold text-white">
+              <Image
+                src="/logo.png"
+                alt="PunterStat"
+                width={32}
+                height={32}
+                className="rounded-lg"
+              />
               <span className="text-lg tracking-tight">PunterStat</span>
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/50">

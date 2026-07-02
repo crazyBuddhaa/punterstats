@@ -77,6 +77,12 @@ export async function recordBet(
   profitLoss: number,
   balanceAfter: number
 ): Promise<ApiResponse<SimulationHistory>> {
+  // Server-side input guard (protects against non-UI callers)
+  if (!Number.isFinite(odds) || odds < 1.01) return { success: false, error: "Invalid odds." };
+  if (!Number.isFinite(stake) || stake <= 0) return { success: false, error: "Invalid stake." };
+  if (!Number.isFinite(profitLoss) || !Number.isFinite(balanceAfter)) return { success: false, error: "Invalid outcome values." };
+  if (outcome !== "win" && outcome !== "loss") return { success: false, error: "Invalid outcome." };
+
   const supabase = await createClient();
   const {
     data: { user },

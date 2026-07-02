@@ -89,7 +89,6 @@ function runSimulation(
     };
   });
 
-  void mean;
   return { runs: allRuns, median, mean, ruinRate, profitRate, p10, p90, balanceHistory };
 }
 

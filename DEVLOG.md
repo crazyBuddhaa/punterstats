@@ -408,6 +408,45 @@ Known Issues / Open Items:
 
 ---
 
+### [Stage 8 — Protected Dashboard]
+Date: 2026-07-02
+Agent: @replit-agent
+
+Added:
+- lib/dashboard/queries.ts — all dashboard read queries: getDashboardStats (5 parallel counts), getInProgressLessons, getCompletedLessons, getBookmarks, getSimulationSessions (with aggregated H2H bet history), getCourseProgress (nested join grouped by course), getNotifications, getSubscription, getSavedMatchAnalyses
+- lib/dashboard/actions.ts — server actions: updateProfile (display_name + bio, validation), markNotificationRead (user-scoped), markAllNotificationsRead; all revalidate relevant dashboard paths
+- components/dashboard/sidebar.tsx — client DashboardSidebar with usePathname active state, unread notification badge, two groups (Learning / Account)
+- components/dashboard/stat-card.tsx — reusable stat card with icon, value, label, optional suffix and note
+- components/dashboard/empty-state.tsx — reusable bordered empty state with icon, CTA link
+- components/dashboard/profile-form.tsx — client form component for display_name + bio update; calls updateProfile server action; shows success/error feedback
+- components/dashboard/notifications-client.tsx — client notifications list with optimistic mark-as-read (local state + server action), mark-all-read button, unread dot, time-ago formatter
+- app/dashboard/layout.tsx — protected layout (requireAuth guard); sticky top bar with avatar, role pill, sign-out; desktop sidebar + mobile horizontal nav strip
+- app/dashboard/page.tsx — overview: time-of-day greeting, 4 stat cards, unread notification banner, in-progress lessons panel, recent simulations panel, quick-access link grid
+- app/dashboard/continue-learning/page.tsx — in-progress lessons (with progress bars + continue CTA) and completed lessons (with review links)
+- app/dashboard/bookmarks/page.tsx — bookmarked lessons grouped by course
+- app/dashboard/simulation-history/page.tsx — bet simulator and probability simulator sessions; summary stats (total bets, total P&L, avg ROI)
+- app/dashboard/progress/page.tsx — overall completion stats, SVG progress rings per course, completion bar, keep-going CTA
+- app/dashboard/match-analyses/page.tsx — saved match analyses grid with mini probability bars for home/draw/away
+- app/dashboard/profile/page.tsx — avatar initials, role badge, ProfileForm
+- app/dashboard/subscription/page.tsx — current plan card, included features list, locked features for free users, upgrade CTA, billing contact note
+- app/dashboard/notifications/page.tsx — server wrapper loading notifications into NotificationsClient
+
+Changed:
+- N/A (dashboard is a new top-level route group, does not touch existing (main) layout)
+
+Fixed / Issues Resolved:
+- match_analyses data now surfaced in /dashboard/match-analyses
+
+Removed:
+- N/A
+
+Known Issues / Open Items:
+- Avatar image upload not yet implemented (shows initials placeholder)
+- Self-serve billing portal not yet built (contact email fallback)
+- Lesson URLs in continue-learning/bookmarks assume sports-university route structure; betting-academy lessons need separate URL resolution (Stage 9 / future)
+
+---
+
 ### [Stage 11 — Homepage]
 Date: 
 Agent: @

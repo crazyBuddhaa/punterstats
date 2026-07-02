@@ -24,7 +24,7 @@
     --muted: 214 32% 91%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 174 90% 31%;
+    --accent: 245 100% 59%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -56,7 +56,7 @@
     --muted: 215 25% 27%;
     --muted-foreground: 215 16% 56%;
 
-    --accent: 174 90% 31%;
+    --accent: 245 100% 59%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 63% 31%;
@@ -86,13 +86,13 @@
 
   /* Selection */
   ::selection {
-    background-color: #0d9488;
+    background-color: #3D2DFF;
     color: #fff;
   }
 
   /* Focus ring */
   :focus-visible {
-    outline: 2px solid #0d9488;
+    outline: 2px solid #3D2DFF;
     outline-offset: 2px;
   }
 
@@ -127,7 +127,7 @@
   /* Gradient text utility */
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+    background-image: linear-gradient(135deg, #3D2DFF 0%, #6B5FFF 100%);
   }
 
   /* Card glow on hover */

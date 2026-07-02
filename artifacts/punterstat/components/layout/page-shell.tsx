@@ -37,7 +37,7 @@ export function PageHeader({
     >
       <div className="container mx-auto max-w-4xl">
         {badge && (
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#0d9488]/20 bg-[#0d9488]/10 px-3 py-1 text-sm font-medium text-[#0d9488]">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#3D2DFF]/20 bg-[#3D2DFF]/10 px-3 py-1 text-sm font-medium text-[#3D2DFF]">
             {badge}
           </div>
         )}

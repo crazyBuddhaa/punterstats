@@ -55,7 +55,7 @@ const config: Config = {
         brand: {
           dark: "#0f172a",
           medium: "#1e293b",
-          teal: "#0d9488",
+          blue: "#3D2DFF",
           light: "#f8fafc",
         },
       },

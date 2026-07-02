@@ -63,7 +63,7 @@ export function FeaturesGrid({ className }: FeaturesGridProps) {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         {/* Header */}
         <div className="mb-16 text-center">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-[#0d9488]">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-[#3D2DFF]">
             What We Teach
           </p>
           <h2 className="text-3xl font-bold tracking-tight text-[#0f172a] sm:text-4xl">
@@ -83,7 +83,7 @@ export function FeaturesGrid({ className }: FeaturesGridProps) {
               className={cn(
                 "group rounded-xl border p-6 transition-shadow hover:shadow-md",
                 feature.accent
-                  ? "border-[#0d9488]/30 bg-[#0d9488]/5"
+                  ? "border-[#3D2DFF]/30 bg-[#3D2DFF]/5"
                   : "border-[#0f172a]/8 bg-white"
               )}
             >
@@ -91,8 +91,8 @@ export function FeaturesGrid({ className }: FeaturesGridProps) {
                 className={cn(
                   "mb-4 flex h-10 w-10 items-center justify-center rounded-lg",
                   feature.accent
-                    ? "bg-[#0d9488] text-white"
-                    : "bg-[#0f172a]/6 text-[#0d9488]"
+                    ? "bg-[#3D2DFF] text-white"
+                    : "bg-[#0f172a]/6 text-[#3D2DFF]"
                 )}
               >
                 <feature.icon className="h-5 w-5" />

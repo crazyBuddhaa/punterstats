@@ -43,7 +43,7 @@ export function Footer() {
               Sports intelligence and education platform. We teach sports
               systems, probability, and analytical thinking.
             </p>
-            <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-[#0d9488]">
+            <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-[#3D2DFF]">
               Knowledge Before Decision
             </p>
           </div>

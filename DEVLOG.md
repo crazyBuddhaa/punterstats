@@ -75,23 +75,30 @@ Known Issues / Open Items:
 ---
 
 ### [Stage 2 — Core Layout & Design System]
-Date: 
-Agent: @
+Date: 2026-07-02
+Agent: @replit-agent
 
 Added:
-- 
+- shadcn/ui primitives: Tabs, Dialog, Select, Textarea, Avatar, Skeleton, Progress, Switch, Accordion, Tooltip, DropdownMenu, ScrollArea, Popover, Alert, Toast, Toaster
+- hooks/use-toast.ts — global toast state manager (listener-based, no context dependency)
+- app/providers.tsx — client providers wrapper (TooltipProvider, Toaster)
+- Section components: Hero, StatsBar, FeaturesGrid, CtaSection (components/sections/)
+- Hero section: dark brand background, teal glow, grid texture, animated badge, dual CTAs, feature pills
+- FeaturesGrid: 6-card responsive grid covering all four platform modules
+- StatsBar: 4-stat counter bar (12+ modules, 50+ lessons, 4 disciplines, 100% education)
+- CtaSection: dark CTA block with glow and legal disclaimer
 
 Changed:
-- 
-
-Fixed / Issues Resolved:
-- 
+- app/layout.tsx — wired Navbar, Footer, and Providers into root layout
+- app/page.tsx — replaced placeholder with full Hero → StatsBar → FeaturesGrid → CtaSection composition
+- app/globals.css — added smooth scroll, selection highlight (#0d9488), slim custom scrollbar, focus ring, text-gradient, card-hover, glass utilities; updated Inter font import to variable-weight range
 
 Removed:
-- 
+- N/A
 
 Known Issues / Open Items:
-- 
+- Auth pages (/login, /register) are live nav links but pages do not exist yet (Stage 3)
+- All module pages (/sports-university, /betting-academy, etc.) are stub routes (Stages 4–7)
 
 ---
 

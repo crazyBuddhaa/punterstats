@@ -19,6 +19,8 @@ export interface UserProfile {
 
 // --- Courses ---
 
+export type EduSection = "sports_university" | "betting_academy";
+
 export interface CourseCategory {
   id: string;
   name: string;
@@ -26,6 +28,7 @@ export interface CourseCategory {
   description: string | null;
   iconName: string | null;
   sortOrder: number;
+  section: EduSection;
 }
 
 export interface Course {

@@ -11,7 +11,7 @@ function mapCategory(row: Record<string, unknown>): CourseCategory {
     description: row.description as string | null,
     iconName: row.icon_name as string | null,
     sortOrder: row.sort_order as number,
-    section: ((row.section as string) ?? "sports_university") as CourseCategory["section"],
+    section: "betting_academy",
   };
 }
 
@@ -70,38 +70,39 @@ function mapBookmark(row: Record<string, unknown>): Bookmark {
 
 // ── Queries ────────────────────────────────────────────────
 
-export async function getCategories(): Promise<CourseCategory[]> {
+export async function getTopics(): Promise<CourseCategory[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("course_categories")
     .select("*")
-    .eq("section", "sports_university")
+    .eq("section", "betting_academy")
     .order("sort_order");
   return (data ?? []).map(mapCategory);
 }
 
-export async function getCategoryBySlug(slug: string): Promise<CourseCategory | null> {
+export async function getTopicBySlug(slug: string): Promise<CourseCategory | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("course_categories")
     .select("*")
     .eq("slug", slug)
+    .eq("section", "betting_academy")
     .single();
   return data ? mapCategory(data) : null;
 }
 
-export async function getCoursesByCategory(categoryId: string): Promise<Course[]> {
+export async function getModulesByTopic(topicId: string): Promise<Course[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("courses")
     .select("*")
-    .eq("category_id", categoryId)
+    .eq("category_id", topicId)
     .eq("is_published", true)
     .order("sort_order");
   return (data ?? []).map(mapCourse);
 }
 
-export async function getCourseBySlug(slug: string): Promise<Course | null> {
+export async function getModuleBySlug(slug: string): Promise<Course | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("courses")
@@ -112,23 +113,23 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
   return data ? mapCourse(data) : null;
 }
 
-export async function getLessonsByCourse(courseId: string): Promise<Lesson[]> {
+export async function getLessonsByModule(moduleId: string): Promise<Lesson[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("lessons")
     .select("*")
-    .eq("course_id", courseId)
+    .eq("course_id", moduleId)
     .eq("is_published", true)
     .order("sort_order");
   return (data ?? []).map(mapLesson);
 }
 
-export async function getLessonBySlug(courseId: string, slug: string): Promise<Lesson | null> {
+export async function getLessonBySlug(moduleId: string, slug: string): Promise<Lesson | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("lessons")
     .select("*")
-    .eq("course_id", courseId)
+    .eq("course_id", moduleId)
     .eq("slug", slug)
     .eq("is_published", true)
     .single();
@@ -144,17 +145,6 @@ export async function getUserProgress(userId: string, lessonIds: string[]): Prom
     .eq("user_id", userId)
     .in("lesson_id", lessonIds);
   return (data ?? []).map(mapProgress);
-}
-
-export async function getUserBookmarks(userId: string, lessonIds: string[]): Promise<Bookmark[]> {
-  if (!lessonIds.length) return [];
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("bookmarks")
-    .select("*")
-    .eq("user_id", userId)
-    .in("lesson_id", lessonIds);
-  return (data ?? []).map(mapBookmark);
 }
 
 export async function getLessonProgress(userId: string, lessonId: string): Promise<LessonProgress | null> {
@@ -179,22 +169,22 @@ export async function isLessonBookmarked(userId: string, lessonId: string): Prom
   return !!data;
 }
 
-export async function getCourseCount(categoryId: string): Promise<number> {
+export async function getModuleCount(topicId: string): Promise<number> {
   const supabase = await createClient();
   const { count } = await supabase
     .from("courses")
     .select("id", { count: "exact", head: true })
-    .eq("category_id", categoryId)
+    .eq("category_id", topicId)
     .eq("is_published", true);
   return count ?? 0;
 }
 
-export async function getLessonCount(courseId: string): Promise<number> {
+export async function getLessonCount(moduleId: string): Promise<number> {
   const supabase = await createClient();
   const { count } = await supabase
     .from("lessons")
     .select("id", { count: "exact", head: true })
-    .eq("course_id", courseId)
+    .eq("course_id", moduleId)
     .eq("is_published", true);
   return count ?? 0;
 }

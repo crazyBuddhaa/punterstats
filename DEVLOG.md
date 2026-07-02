@@ -211,24 +211,37 @@ Known Issues / Open Items:
 
 ---
 
-### [Stage 5 — Betting Literacy Academy Module]
-Date: 
-Agent: @
+### [Stage 5 — Betting Academy Module]
+Date: 2026-07-02
+Agent: @replit-agent
 
 Added:
-- 
+- supabase/migrations/003_betting_academy.sql — adds section TEXT column to course_categories (DEFAULT 'sports_university', CHECK constraint); seeds 4 BA topics, 8 modules, 8 lessons with real odds/probability/bankroll content
+- types/index.ts — EduSection type + section field on CourseCategory
+- lib/betting-academy/queries.ts — getTopics/getTopicBySlug filter by section='betting_academy'; full query set for modules, lessons, progress, bookmarks
+- lib/betting-academy/actions.ts — markLessonComplete and toggleBookmark revalidating /betting-academy/ paths
+- app/(main)/betting-academy/page.tsx — landing page with emerald-accented hero + topic grid
+- app/(main)/betting-academy/[topic]/page.tsx — topic listing with ModuleCard grid
+- app/(main)/betting-academy/[topic]/[module]/page.tsx — module overview with lesson list and progress bar
+- app/(main)/betting-academy/[topic]/[module]/[lesson]/page.tsx — lesson viewer with ContentRenderer, VideoPlayer, bookmark/complete actions, prev/next nav
+- components/betting-academy/topic-card.tsx — if-branch TopicIcon (avoids dynamic JSX type error), emerald accent
+- components/betting-academy/module-card.tsx — module card with level badge, lesson count, progress strip
+- components/betting-academy/lesson-list.tsx — lesson list linking to /betting-academy/ with emerald active state
+- components/betting-academy/complete-button.tsx — calls BA markLessonComplete; emerald styling
+- components/betting-academy/bookmark-button.tsx — calls BA toggleBookmark; emerald styling
 
 Changed:
-- 
+- lib/sports-university/queries.ts — mapCategory includes section field; getCategories() filters by section='sports_university'
 
 Fixed / Issues Resolved:
-- 
+- N/A
 
 Removed:
-- 
+- N/A
 
 Known Issues / Open Items:
-- 
+- Run 003_betting_academy.sql after 001 and 002 migrations in Supabase SQL editor
+- VideoPlayer is shared from sports-university (path-agnostic component)
 
 ---
 

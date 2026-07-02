@@ -127,23 +127,52 @@ Known Issues / Open Items:
 ---
 
 ### [Stage 3 — Database & Auth Infrastructure]
-Date: 
-Agent: @
+Date: 2026-07-02
+Agent: @replit-agent
 
 Added:
-- 
+- @supabase/supabase-js ^2.49.4 and @supabase/ssr ^0.6.1 to package.json
+- lib/supabase/client.ts — createBrowserClient factory for client components
+- lib/supabase/server.ts — createServerClient factory for Server Components and Route Handlers (async cookies())
+- lib/supabase/admin.ts — service-role admin client for secure server-only operations
+- middleware.ts — session refresh on every request; redirects unauthenticated users away from /dashboard and /admin; redirects authenticated users away from auth pages
+- supabase/migrations/001_initial_schema.sql — full schema: profiles, course_categories, courses, lessons, lesson_progress, bookmarks, simulation_sessions, simulation_history, sports_matches, match_analysis, blog_posts, subscriptions, notifications, admin_roles, feature_flags, audit_logs, certifications_hidden, certification_progress_hidden (19 tables)
+- Database trigger: handle_new_user() — auto-creates profiles and subscriptions rows on Supabase Auth signup
+- Database trigger: update_updated_at() — shared trigger applied to all mutable tables
+- Row Level Security policies on all 19 tables: private tables locked to auth.uid(), public tables open for published content reads
+- Feature flags seed: certification_engine (disabled), match_analysis_live (disabled), premium_subscriptions (disabled), blog (enabled)
+- lib/auth/actions.ts — Server Actions: signIn, signUp, signOut, resetPassword, updatePassword (Zod-validated)
+- lib/auth/helpers.ts — Server-side helpers: getUser, getUserProfile, requireAuth (redirects to /login), requireAdmin (redirects to /dashboard)
+- app/auth/callback/route.ts — PKCE code exchange handler; supports ?next= redirect for password reset flow
+- app/(auth)/layout.tsx — centered auth layout (no Navbar/Footer), logo link, educational disclaimer
+- app/(auth)/login/page.tsx — login page
+- app/(auth)/register/page.tsx — register page; shows email-confirmation message when ?message=check-email
+- app/(auth)/forgot-password/page.tsx — password reset request page
+- app/(auth)/update-password/page.tsx — new password entry page (used after reset email link)
+- components/auth/login-form.tsx — useActionState form; inline error display; links to /register and /forgot-password
+- components/auth/register-form.tsx — useActionState form; email-sent confirmation state; ToS/Privacy links
+- components/auth/forgot-password-form.tsx — useActionState form; success state with inbox message
+- components/auth/update-password-form.tsx — useActionState form for setting new password
+- app/(main)/layout.tsx — route group layout that wraps public/main pages with Navbar and Footer
 
 Changed:
-- 
+- app/layout.tsx — root layout now only provides html/body/Providers; Navbar and Footer removed from root (moved to (main) layout)
+- app/page.tsx — moved to app/(main)/page.tsx; URL remains / (route group is transparent)
+- app/providers.tsx — added AuthSync component: syncs Supabase session into Zustand auth store on mount and on every auth state change (SIGNED_IN, TOKEN_REFRESHED, SIGNED_OUT)
+- components/layout/navbar.tsx — now reads from useAuthStore; authenticated users see Dashboard link and user avatar DropdownMenu with profile/sign-out options; unauthenticated users see Sign in / Get started; loading state shows skeleton avatar
 
 Fixed / Issues Resolved:
-- 
+- Auth pages (login, register, forgot-password) previously had no backing page — now fully implemented
+- Root layout no longer wraps auth pages in Navbar/Footer; auth pages get their own clean centered layout via the (auth) route group
 
 Removed:
-- 
+- Navbar and Footer from app/layout.tsx (moved to app/(main)/layout.tsx)
 
 Known Issues / Open Items:
-- 
+- Supabase project must be created and env vars set (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY) before auth is functional
+- Run supabase/migrations/001_initial_schema.sql against your Supabase project via the SQL Editor or Supabase CLI
+- /dashboard route returns 404 until Stage 8 (Protected Dashboard Pages)
+- Email confirmation flow requires Supabase email provider to be configured in the Supabase dashboard
 
 ---
 

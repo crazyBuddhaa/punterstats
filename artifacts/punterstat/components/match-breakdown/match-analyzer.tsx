@@ -484,11 +484,13 @@ export function MatchAnalyzer({ isAuthenticated }: MatchAnalyzerProps) {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            { key: "homeWins", label: `${homeTeam.name || "Home"} Wins` },
-            { key: "draws", label: "Draws" },
-            { key: "awayWins", label: `${awayTeam.name || "Away"} Wins` },
-          ].map(({ key, label }) => (
+          {(
+            [
+              { key: "homeWins", label: `${homeTeam.name || "Home"} Wins` },
+              { key: "draws", label: "Draws" },
+              { key: "awayWins", label: `${awayTeam.name || "Away"} Wins` },
+            ] as Array<{ key: "homeWins" | "draws" | "awayWins"; label: string }>
+          ).map(({ key, label }) => (
             <div key={key}>
               <Label>{label}</Label>
               <input
@@ -496,7 +498,7 @@ export function MatchAnalyzer({ isAuthenticated }: MatchAnalyzerProps) {
                 min="0"
                 max="100"
                 step="1"
-                value={(h2h as Record<string, number | string>)[key] as number}
+                value={h2h[key]}
                 onChange={(e) =>
                   setH2H((p) => ({
                     ...p,

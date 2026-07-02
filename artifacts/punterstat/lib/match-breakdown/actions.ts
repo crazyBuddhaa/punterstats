@@ -13,6 +13,10 @@ export async function saveAnalysis(
 ): Promise<ApiResponse<SavedAnalysis>> {
   if (!homeTeamName.trim() || !awayTeamName.trim())
     return { success: false, error: "Team names are required." };
+  if (homeTeamName.trim().length > 100 || awayTeamName.trim().length > 100)
+    return { success: false, error: "Team name too long (max 100 characters)." };
+  if (!analysisInput || !analysisResult)
+    return { success: false, error: "Invalid analysis payload." };
 
   const supabase = await createClient();
   const {

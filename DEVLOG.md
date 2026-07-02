@@ -377,6 +377,37 @@ Known Issues / Open Items:
 
 ---
 
+### [Stage 7 — Match Breakdown Engine]
+Date: 2026-07-02
+Agent: @replit-agent
+
+Added:
+- lib/match-breakdown/types.ts — TypeScript types: MatchResult, InjuryImpact, LeagueImportance, TeamForm, HeadToHead, InjuryFactor, MatchAnalysisInput, ProbabilityFactor, MatchAnalysisResult, SavedAnalysis
+- lib/match-breakdown/analyzer.ts — pure client-side probability engine; six weighted factors (home advantage, recent form, H2H record, goal scoring/xG, injury availability, match stakes); Dixon-Coles-inspired xG estimate; normalised 3-way output (homeWin/draw/awayWin)
+- lib/match-breakdown/actions.ts — server actions: saveAnalysis (auth-gated, inserts to match_analyses), getSavedAnalyses (returns last 20 for user); input validation guards
+- supabase/migrations/004_match_breakdown.sql — match_analyses table (JSONB payload for input + result); RLS policies (select/insert/delete own rows); indexes on user_id and created_at
+- components/match-breakdown/form-badges.tsx — FormBadge (W/D/L coloured pill), FormRow (labelled result strip)
+- components/match-breakdown/factor-card.tsx — per-factor card with two-sided edge bar, confidence pill, and educational explanation text
+- components/match-breakdown/probability-display.tsx — outcome probability bars with implied odds; xG stat cards; combined xG note; key signals list; educational disclaimer
+- components/match-breakdown/match-analyzer.tsx — 6-step multi-form client component: context → home form → away form → H2H → availability → results; W/D/L result picker buttons; WeightedFormScore; runs analyzeMatch() on step 5; save-to-Supabase action for auth users; reset flow
+- app/(main)/match-breakdown/page.tsx — landing page: hero, disclaimer bar, six-factor grid with icons + explanations, three-step how-it-works, "What you'll learn" grid
+- app/(main)/match-breakdown/analyzer/page.tsx — server wrapper; reads auth user; shows sign-in nudge for guests; renders MatchAnalyzer with isAuthenticated prop
+
+Changed:
+- N/A
+
+Fixed / Issues Resolved:
+- None
+
+Removed:
+- N/A
+
+Known Issues / Open Items:
+- Saved analyses not yet surfaced in dashboard (Stage 8); match_analyses table is written but not read back until protected dashboard is implemented
+- getSavedAnalyses action exists but no UI page yet for listing saved analyses
+
+---
+
 ### [Stage 11 — Homepage]
 Date: 
 Agent: @

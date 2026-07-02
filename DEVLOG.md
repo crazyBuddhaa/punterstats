@@ -350,6 +350,33 @@ Known Issues / Open Items:
 
 ---
 
+
+### [Stage 6 — Simulation Engine Module]
+Date: 2026-07-02
+Agent: @replit-agent
+
+Added:
+- lib/simulation/actions.ts — server actions: createSession (lazy-creates simulation_sessions row), updateSessionBalance, recordBet (inserts to simulation_history + updates session balance), getSessionHistory; all guarded by auth.getUser(); revalidates /dashboard/simulation-history
+- components/simulation/bet-simulator.tsx — client-side Bet Simulator; virtual NGN10,000 balance; decimal odds + stake input with quick-stake buttons; outcome by implied probability (Math.random() < 1/odds); tracks win/loss streaks, total staked, profit, ROI; per-bet history table (25 most recent); balance progress bar; Supabase persistence when authenticated (lazy session creation); educational overround note
+- components/simulation/probability-simulator.tsx — Monte Carlo Probability Simulator; 200 independent runs client-side; inputs: decimal odds, win %, bets (10-500), stake; computes EV and edge; AreaChart percentile band (p10-p90 + median) via Recharts; LineChart 20 sample paths; summary stats: median, profitable run rate, ruin rate, percentile range
+- app/(main)/simulation-engine/page.tsx — landing page: hero, disclaimer banner, two simulator feature cards, What you will learn grid (6 topics)
+- app/(main)/simulation-engine/bet-simulator/page.tsx — server wrapper; reads auth user for isAuthenticated prop
+- app/(main)/simulation-engine/probability-simulator/page.tsx — server wrapper for ProbabilitySimulator
+
+Changed:
+- N/A
+
+Fixed / Issues Resolved:
+- None
+
+Removed:
+- N/A
+
+Known Issues / Open Items:
+- Simulation history dashboard page (Stage 8) not yet built; session data is written to Supabase but not surfaced until protected dashboard is implemented
+
+---
+
 ### [Stage 11 — Homepage]
 Date: 
 Agent: @

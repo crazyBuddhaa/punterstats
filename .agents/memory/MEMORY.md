@@ -1,0 +1,1 @@
+- [pnpm workspace PostCSS hoisting](pnpm-workspace-postcss.md) — autoprefixer/postcss/tailwindcss must be in dependencies (not devDependencies) for Next.js in pnpm monorepo Vercel builds

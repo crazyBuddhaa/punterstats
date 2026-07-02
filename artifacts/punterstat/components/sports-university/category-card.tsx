@@ -1,4 +1,3 @@
-import type { ComponentType } from "react";
 import Link from "next/link";
 import {
   Trophy, BookOpen, Zap, Target, BarChart2, Shield,
@@ -8,23 +7,17 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { CourseCategory } from "@/types";
 
-type IconComponent = ComponentType<{ className?: string }>;
-
-const ICON_MAP: Record<string, IconComponent> = {
-  trophy: Trophy,
-  book: BookOpen,
-  zap: Zap,
-  target: Target,
-  chart: BarChart2,
-  shield: Shield,
-  activity: Activity,
-  globe: Globe,
-  layers: Layers,
-};
-
-function resolveIcon(name: string | null): IconComponent {
-  if (name !== null && name in ICON_MAP) return ICON_MAP[name]!;
-  return BookOpen;
+function CategoryIcon({ name }: { name: string | null }) {
+  const cls = "h-5 w-5";
+  if (name === "trophy")   return <Trophy   className={cls} />;
+  if (name === "zap")      return <Zap      className={cls} />;
+  if (name === "target")   return <Target   className={cls} />;
+  if (name === "chart")    return <BarChart2 className={cls} />;
+  if (name === "shield")   return <Shield   className={cls} />;
+  if (name === "activity") return <Activity className={cls} />;
+  if (name === "globe")    return <Globe    className={cls} />;
+  if (name === "layers")   return <Layers   className={cls} />;
+  return <BookOpen className={cls} />;
 }
 
 interface Props {
@@ -33,14 +26,12 @@ interface Props {
 }
 
 export function CategoryCard({ category, courseCount }: Props) {
-  const Icon = resolveIcon(category.iconName);
-
   return (
     <Link href={`/sports-university/${category.slug}`} className="group block">
       <Card className="h-full border-border/50 transition-all duration-200 hover:border-[#3D2DFF]/40 hover:shadow-md hover:-translate-y-0.5">
         <CardHeader className="pb-3">
           <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#3D2DFF]/10 text-[#3D2DFF] transition-colors group-hover:bg-[#3D2DFF]/15">
-            <Icon className="h-5 w-5" />
+            <CategoryIcon name={category.iconName} />
           </div>
           <h3 className="font-semibold text-[#0f172a] leading-snug group-hover:text-[#3D2DFF] transition-colors">
             {category.name}

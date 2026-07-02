@@ -177,23 +177,37 @@ Known Issues / Open Items:
 ---
 
 ### [Stage 4 — Sports University Module]
-Date: 
-Agent: @
+Date: 2026-07-02
+Agent: @replit-agent
 
 Added:
-- 
+- lib/sports-university/queries.ts — server-side Supabase queries for categories, courses, lessons, lesson progress, bookmarks; all results mapped from snake_case DB columns to camelCase TypeScript types
+- lib/sports-university/actions.ts — server actions: markLessonComplete (upsert to lesson_progress), toggleBookmark (insert/delete bookmarks)
+- app/(main)/sports-university/page.tsx — module landing page: dark hero + category grid with course counts; empty state when DB has no published categories
+- app/(main)/sports-university/[category]/page.tsx — category listing: breadcrumb, course count, CourseCard grid with empty state
+- app/(main)/sports-university/[category]/[course]/page.tsx — course overview: breadcrumb, lesson count, total duration, per-user progress bar, lesson list, Start/Continue CTA
+- app/(main)/sports-university/[category]/[course]/[lesson]/page.tsx — lesson viewer: breadcrumb, video player (if videoUrl set), ContentRenderer (simple markdown parser for headings/lists/paragraphs), bookmark + complete action bar, prev/next lesson navigation, sticky sidebar lesson list on desktop
+- components/sports-university/category-card.tsx — icon-mapped card linked to category page with course count badge
+- components/sports-university/course-card.tsx — card with thumbnail, level badge, lesson count, per-user progress bar strip
+- components/sports-university/lesson-list.tsx — ordered lesson list with completion icons (CheckCircle/PlayCircle/Circle), active highlight, duration display
+- components/sports-university/video-player.tsx — client component; parses YouTube and Vimeo URLs to embed URLs; shows play icon before iframe loads
+- components/sports-university/bookmark-button.tsx — client component; useTransition optimistic toggle; persists via toggleBookmark server action
+- components/sports-university/complete-button.tsx — client component; useTransition; calls markLessonComplete; switches to green "Lesson completed" state on success
+- supabase/migrations/002_seed_sports_university.sql — seed data: 4 categories, 8 courses, 7 sample lessons with full educational content across Football Fundamentals, Tactical Analysis, Competitions & Structure, Match Dynamics
 
 Changed:
-- 
+- N/A
 
 Fixed / Issues Resolved:
-- 
+- N/A
 
 Removed:
-- 
+- N/A
 
 Known Issues / Open Items:
-- 
+- Run 002_seed_sports_university.sql after 001_initial_schema.sql to populate the platform with initial content
+- Lesson content is stored as plain text with basic markdown conventions; Stage 9 admin panel will add a rich text editor
+- Video lesson support covers YouTube and Vimeo embed URLs; other providers require a URL mapping extension
 
 ---
 

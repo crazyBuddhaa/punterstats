@@ -8,7 +8,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { CourseCategory } from "@/types";
 
-const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
+type IconComponent = ComponentType<{ className?: string }>;
+
+const ICON_MAP: Record<string, IconComponent> = {
   trophy: Trophy,
   book: BookOpen,
   zap: Zap,
@@ -20,13 +22,18 @@ const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
   layers: Layers,
 };
 
+function resolveIcon(name: string | null): IconComponent {
+  if (name !== null && name in ICON_MAP) return ICON_MAP[name]!;
+  return BookOpen;
+}
+
 interface Props {
   category: CourseCategory;
   courseCount: number;
 }
 
 export function CategoryCard({ category, courseCount }: Props) {
-  const Icon = (category.iconName && ICON_MAP[category.iconName]) ?? BookOpen;
+  const Icon = resolveIcon(category.iconName);
 
   return (
     <Link href={`/sports-university/${category.slug}`} className="group block">

@@ -422,23 +422,29 @@ Known Issues / Open Items:
 ---
 
 ### [Stage 11 — Homepage Polish]
-Date: 
-Agent: @
+Date: 2026-07-03
+Agent: @replit-agent
 
 Added:
--
+- components/sections/how-it-works.tsx — 3-step numbered section (sign up, learn, apply); connector line on desktop; icon + badge per step
+- components/sections/testimonials.tsx — 4 static learner testimonials in 2-column card grid with avatar initials and role labels
+- components/sections/module-showcase.tsx — dark-background 4-module grid (Sports University, Betting Academy, Simulation Engine, Match Breakdown); accepts live ModuleStats props (course count, lesson count, topic count); each card links to its route with animated arrow; stat row per card
 
 Changed:
--
+- app/(main)/page.tsx — made async server component; fetches live counts from Supabase (published courses, lessons, BA topics) via Promise.all; passes stats to StatsBar and ModuleShowcase; composition: Hero → StatsBar → ModuleShowcase → HowItWorks → FeaturesGrid → Testimonials → CtaSection
+- components/sections/hero.tsx — added 4th feature pill (Match Breakdown / Search icon); secondary CTA changed from "Explore Courses" to "See what's included" linking to /pricing; button explicitly styled with bg-[#3D2DFF]
+- components/sections/stats-bar.tsx — refactored to accept optional courses and lessons props; falls back to static "12+" / "50+" when DB counts are zero or unavailable
+- components/sections/cta-section.tsx — secondary CTA default changed from "View Curriculum" → "View pricing" linking to /pricing instead of /sports-university
 
 Fixed / Issues Resolved:
--
+- N/A
 
 Removed:
--
+- N/A
 
 Known Issues / Open Items:
--
+- Testimonials are static placeholder content; a future stage can add a testimonials table and admin CRUD
+- Homepage DB fetch has a broad try/catch that silently falls back to static numbers if Supabase env vars are not set; this is intentional for cold-start / pre-config states
 
 ---
 

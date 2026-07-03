@@ -1,24 +1,21 @@
 import { cn } from "@/lib/utils";
 
-const stats = [
-  { value: "12+", label: "Course modules" },
-  { value: "50+", label: "Probability lessons" },
-  { value: "4", label: "Core disciplines" },
-  { value: "100%", label: "Education focused" },
-];
-
 interface StatsBarProps {
   className?: string;
+  courses?: number;
+  lessons?: number;
 }
 
-export function StatsBar({ className }: StatsBarProps) {
+export function StatsBar({ className, courses, lessons }: StatsBarProps) {
+  const stats = [
+    { value: courses ? `${courses}+` : "12+", label: "Published courses" },
+    { value: lessons ? `${lessons}+` : "50+", label: "In-depth lessons" },
+    { value: "4", label: "Core modules" },
+    { value: "100%", label: "Education focused" },
+  ];
+
   return (
-    <section
-      className={cn(
-        "border-y border-[#0f172a]/10 bg-white py-10 sm:py-12",
-        className
-      )}
-    >
+    <section className={cn("border-y border-[#0f172a]/10 bg-white py-10 sm:py-12", className)}>
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           {stats.map((stat) => (

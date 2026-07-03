@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, BarChart3, Brain } from "lucide-react";
+import { ArrowRight, BookOpen, BarChart3, Brain, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,7 @@ export function Hero({ className }: HeroProps) {
         }}
       />
 
-      {/* Teal glow */}
+      {/* Glow */}
       <div className="pointer-events-none absolute -top-40 left-1/2 h-[500px] w-[900px] -translate-x-1/2 rounded-full bg-[#3D2DFF] opacity-[0.07] blur-3xl" />
 
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
@@ -37,7 +37,7 @@ export function Hero({ className }: HeroProps) {
             className="gap-1.5 border-[#3D2DFF]/30 bg-[#3D2DFF]/10 px-4 py-1.5 text-sm font-medium text-[#3D2DFF]"
           >
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3D2DFF]" />
-            Sports Intelligence Platform
+            Sports Intelligence & Education
           </Badge>
         </div>
 
@@ -57,7 +57,7 @@ export function Hero({ className }: HeroProps) {
 
         {/* CTAs */}
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          <Button size="lg" asChild className="gap-2 px-8">
+          <Button size="lg" asChild className="gap-2 px-8 bg-[#3D2DFF] hover:bg-[#3D2DFF]/90">
             <Link href="/register">
               Start Learning Free
               <ArrowRight className="h-4 w-4" />
@@ -69,16 +69,17 @@ export function Hero({ className }: HeroProps) {
             asChild
             className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
           >
-            <Link href="/sports-university">Explore Courses</Link>
+            <Link href="/pricing">See what&apos;s included</Link>
           </Button>
         </div>
 
         {/* Feature pills */}
-        <div className="mt-16 flex flex-wrap items-center justify-center gap-3">
+        <div className="mt-14 flex flex-wrap items-center justify-center gap-3">
           {[
             { icon: BookOpen, label: "Sports University" },
-            { icon: Brain, label: "Betting Literacy Academy" },
-            { icon: BarChart3, label: "Probability Simulation" },
+            { icon: Brain, label: "Betting Academy" },
+            { icon: BarChart3, label: "Simulation Engine" },
+            { icon: Search, label: "Match Breakdown" },
           ].map(({ icon: Icon, label }) => (
             <div
               key={label}
@@ -92,7 +93,7 @@ export function Hero({ className }: HeroProps) {
 
         {/* Disclaimer */}
         <p className="mt-12 text-center text-xs text-white/25">
-          Educational platform only. No real-money transactions. No betting tips.
+          Educational platform only — no real-money transactions, no betting tips.
           Knowledge Before Decision.
         </p>
       </div>

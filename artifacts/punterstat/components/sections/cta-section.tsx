@@ -19,8 +19,8 @@ export function CtaSection({
   description = "Free to begin. No credit card required. No tips, no noise — just structured knowledge.",
   primaryLabel = "Create Free Account",
   primaryHref = "/register",
-  secondaryLabel = "View Curriculum",
-  secondaryHref = "/sports-university",
+  secondaryLabel = "View pricing",
+  secondaryHref = "/pricing",
 }: CtaSectionProps) {
   return (
     <section
@@ -29,7 +29,7 @@ export function CtaSection({
         className
       )}
     >
-      {/* Teal accent glow */}
+      {/* Glow */}
       <div className="pointer-events-none absolute bottom-0 left-1/2 h-[400px] w-[700px] -translate-x-1/2 translate-y-1/2 rounded-full bg-[#3D2DFF] opacity-[0.08] blur-3xl" />
 
       <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6">
@@ -43,7 +43,7 @@ export function CtaSection({
           {description}
         </p>
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          <Button size="lg" asChild className="gap-2 px-8">
+          <Button size="lg" asChild className="gap-2 px-8 bg-[#3D2DFF] hover:bg-[#3D2DFF]/90">
             <Link href={primaryHref}>
               {primaryLabel}
               <ArrowRight className="h-4 w-4" />

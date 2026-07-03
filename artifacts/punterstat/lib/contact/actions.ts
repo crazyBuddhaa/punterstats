@@ -19,6 +19,16 @@ export type ContactFormState = {
   fieldErrors?: Partial<Record<keyof z.infer<typeof contactSchema>, string>>;
 };
 
+/** Escape characters that are meaningful in HTML to prevent content injection in email bodies. */
+function escapeHtml(raw: string): string {
+  return raw
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 export async function submitContact(
   _prev: ContactFormState,
   formData: FormData
@@ -41,24 +51,30 @@ export async function submitContact(
   }
 
   const { name, email, subject, message } = parsed.data;
+
+  // Escape all user-supplied strings before embedding in HTML.
+  const safeName = escapeHtml(name);
+  const safeEmail = escapeHtml(email);
+  const safeSubject = escapeHtml(subject);
+  const safeMessage = escapeHtml(message);
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://punterstat.com";
 
-  // Send to support inbox
+  // Send to support inbox and user confirmation in parallel.
   const [inboxResult] = await Promise.all([
     sendEmail({
       to: "hello@punterstat.com",
-      subject: `[Contact] ${subject}`,
+      subject: `[Contact] ${safeSubject}`,
       html: `<!DOCTYPE html><html><body style="font-family:-apple-system,sans-serif;padding:32px;max-width:560px;">
 <h2 style="color:#0f172a;margin:0 0 16px">New contact form submission</h2>
 <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-  <tr><td style="padding:8px 0;color:#64748b;font-size:13px;width:80px;">Name</td><td style="padding:8px 0;font-size:13px;color:#0f172a;">${name}</td></tr>
-  <tr><td style="padding:8px 0;color:#64748b;font-size:13px;">Email</td><td style="padding:8px 0;font-size:13px;"><a href="mailto:${email}" style="color:#3D2DFF;">${email}</a></td></tr>
-  <tr><td style="padding:8px 0;color:#64748b;font-size:13px;">Subject</td><td style="padding:8px 0;font-size:13px;color:#0f172a;">${subject}</td></tr>
+  <tr><td style="padding:8px 0;color:#64748b;font-size:13px;width:80px;">Name</td><td style="padding:8px 0;font-size:13px;color:#0f172a;">${safeName}</td></tr>
+  <tr><td style="padding:8px 0;color:#64748b;font-size:13px;">Email</td><td style="padding:8px 0;font-size:13px;"><a href="mailto:${safeEmail}" style="color:#3D2DFF;">${safeEmail}</a></td></tr>
+  <tr><td style="padding:8px 0;color:#64748b;font-size:13px;">Subject</td><td style="padding:8px 0;font-size:13px;color:#0f172a;">${safeSubject}</td></tr>
 </table>
-<div style="background:#f8fafc;border-radius:10px;padding:16px;font-size:13px;color:#334155;line-height:1.7;white-space:pre-wrap;">${message}</div>
+<div style="background:#f8fafc;border-radius:10px;padding:16px;font-size:13px;color:#334155;line-height:1.7;white-space:pre-wrap;">${safeMessage}</div>
 </body></html>`,
     }),
-    // Send confirmation to user
     sendEmail({
       to: email,
       subject: "We received your message — PunterStat",
@@ -74,20 +90,20 @@ export async function submitContact(
           <p style="margin:4px 0 0;font-size:11px;color:#94a3b8;">Knowledge Before Decision</p>
         </td></tr>
         <tr><td style="padding:36px 40px;">
-          <h1 style="margin:0 0 12px;font-size:20px;font-weight:700;color:#0f172a;">Message received, ${name}.</h1>
+          <h1 style="margin:0 0 12px;font-size:20px;font-weight:700;color:#0f172a;">Message received, ${safeName}.</h1>
           <p style="margin:0 0 20px;font-size:14px;color:#475569;line-height:1.6;">
-            Thanks for reaching out. We'll review your message and get back to you within 24 hours.
+            Thanks for reaching out. We&apos;ll review your message and get back to you within 24 hours.
           </p>
           <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:24px;">
-            <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#0f172a;">Your message:</p>
-            <p style="margin:0;font-size:13px;color:#475569;line-height:1.6;">${subject}</p>
+            <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#0f172a;">Your subject:</p>
+            <p style="margin:0;font-size:13px;color:#475569;line-height:1.6;">${safeSubject}</p>
           </div>
           <p style="margin:0;font-size:13px;color:#94a3b8;">
             In the meantime, our <a href="${appUrl}/faq" style="color:#3D2DFF;">FAQ</a> may have an immediate answer.
           </p>
         </td></tr>
         <tr><td style="padding:16px 40px;border-top:1px solid #f1f5f9;">
-          <p style="margin:0;font-size:11px;color:#94a3b8;">© ${new Date().getFullYear()} PunterStat — Educational platform only.</p>
+          <p style="margin:0;font-size:11px;color:#94a3b8;">&#169; ${new Date().getFullYear()} PunterStat &mdash; Educational platform only.</p>
         </td></tr>
       </table>
     </td></tr>
@@ -98,8 +114,7 @@ export async function submitContact(
   ]);
 
   if (!inboxResult.success) {
-    // Log but don't fail on delivery error — form submission itself was valid
-    console.error("[Contact] Failed to send inbox email:", inboxResult.error);
+    console.error("[Contact] Inbox delivery failed:", inboxResult.error);
   }
 
   return { success: true };

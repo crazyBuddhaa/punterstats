@@ -18,23 +18,33 @@ export async function GET(request: NextRequest) {
     const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!exchangeError) {
-      // Send welcome email only on first sign-in (new user confirmation)
-      // next defaults to /dashboard; password reset uses next=/update-password
-      const isNewUser = next === "/dashboard" && data?.user?.email_confirmed_at !== null;
-      if (isNewUser && data?.user?.email) {
-        // Try to get display name from profile
+      // Send welcome email only to genuinely new users.
+      // A new user's account will have been created in the last few minutes
+      // (they registered, received the confirmation email, and clicked it).
+      // Returning users (password reset, re-auth) have a created_at that is
+      // hours or days old, so this check never fires for them.
+      const FIVE_MINUTES_MS = 5 * 60 * 1000;
+      const isNewUser =
+        data?.user?.email &&
+        data?.user?.created_at &&
+        Date.now() - new Date(data.user.created_at).getTime() < FIVE_MINUTES_MS;
+
+      if (isNewUser) {
         const { data: profile } = await supabase
           .from("profiles")
           .select("display_name")
           .eq("id", data.user.id)
           .single();
 
-        const displayName = profile?.display_name ?? data.user.email.split("@")[0];
+        const displayName =
+          profile?.display_name ?? data.user.email!.split("@")[0];
         const template = welcomeEmail(displayName);
 
-        // Fire-and-forget — don't block redirect on email delivery
-        sendEmail({ to: data.user.email, ...template }).catch((err) =>
-          console.error("[Welcome email] Failed:", err)
+        // Fire-and-forget — do not block the redirect on email delivery.
+        // .catch() ensures the rejected promise is handled and does not
+        // surface as an unhandled rejection in the Node.js process.
+        sendEmail({ to: data.user.email!, ...template }).catch((err) =>
+          console.error("[Welcome email] Delivery failed:", err)
         );
       }
 

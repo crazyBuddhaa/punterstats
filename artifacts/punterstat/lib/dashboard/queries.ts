@@ -153,7 +153,7 @@ export async function getInProgressLessons(userId: string): Promise<InProgressLe
     .limit(20);
 
   return (data ?? []).flatMap((row) => {
-    const lesson = row.lessons as NestedLesson;
+    const lesson = row.lessons as unknown as NestedLesson;
     if (!lesson?.courses) return [];
     return [
       {
@@ -182,7 +182,7 @@ export async function getCompletedLessons(userId: string): Promise<CompletedLess
     .limit(50);
 
   return (data ?? []).flatMap((row) => {
-    const lesson = row.lessons as NestedLesson;
+    const lesson = row.lessons as unknown as NestedLesson;
     if (!lesson?.courses) return [];
     return [
       {
@@ -208,7 +208,7 @@ export async function getBookmarks(userId: string): Promise<BookmarkedLesson[]> 
     .order("created_at", { ascending: false });
 
   return (data ?? []).flatMap((row) => {
-    const lesson = row.lessons as NestedLesson;
+    const lesson = row.lessons as unknown as NestedLesson;
     if (!lesson?.courses) return [];
     return [
       {
@@ -278,7 +278,7 @@ export async function getCourseProgress(userId: string): Promise<CourseProgressI
 
   const map: Record<string, { title: string; slug: string; level: string; completed: number; total: number }> = {};
   for (const row of data) {
-    const lesson = row.lessons as {
+    const lesson = row.lessons as unknown as {
       course_id: string;
       courses: { id: string; title: string; slug: string; level: string } | null;
     } | null;

@@ -101,3 +101,57 @@ export function DashboardSidebar({ unreadCount = 0 }: DashboardSidebarProps) {
     </nav>
   );
 }
+
+/** Compact horizontal scrollable tab bar for mobile */
+export function DashboardMobileNav({ unreadCount = 0 }: DashboardSidebarProps) {
+  const allItems = [
+    ...topItems,
+    ...bottomItems.map((item) => ({
+      ...item,
+      badge: item.href === "/dashboard/notifications" ? unreadCount : undefined,
+    })),
+  ];
+
+  return <MobileNavInner items={allItems} />;
+}
+
+function MobileNavInner({
+  items,
+}: {
+  items: Array<{
+    href: string;
+    label: string;
+    icon: React.ElementType;
+    exact?: boolean;
+    badge?: number;
+  }>;
+}) {
+  const pathname = usePathname();
+
+  return (
+    <div className="flex gap-1 py-2">
+      {items.map(({ href, label, icon: Icon, exact, badge }) => {
+        const active = exact ? pathname === href : pathname.startsWith(href);
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap relative ${
+              active
+                ? "bg-[#3D2DFF]/10 text-[#3D2DFF]"
+                : "text-[#1e293b]/60 hover:bg-slate-100 hover:text-[#0f172a]"
+            }`}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0" />
+            {label}
+            {badge && badge > 0 ? (
+              <span className="ml-0.5 rounded-full bg-[#3D2DFF] px-1 py-px text-[9px] font-bold leading-none text-white">
+                {badge > 9 ? "9+" : badge}
+              </span>
+            ) : null}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}

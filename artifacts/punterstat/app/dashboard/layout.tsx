@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { requireAuth } from "@/lib/auth/helpers";
 import { getDashboardStats } from "@/lib/dashboard/queries";
-import { DashboardSidebar } from "@/components/dashboard/sidebar";
+import { DashboardSidebar, DashboardMobileNav } from "@/components/dashboard/sidebar";
 import { signOut } from "@/lib/auth/actions";
 import { LayoutDashboard, LogOut, ExternalLink } from "lucide-react";
 
@@ -68,25 +68,27 @@ export default async function DashboardLayout({
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-7xl gap-0 px-4 py-6 sm:px-6 lg:gap-8">
-        {/* Sidebar — desktop */}
+      {/* Mobile nav strip — horizontal scroll above content */}
+      <div className="sticky top-14 z-30 border-b border-border bg-white lg:hidden">
+        <div className="mx-auto max-w-7xl overflow-x-auto px-4 sm:px-6">
+          <DashboardMobileNav unreadCount={stats.unreadNotifications} />
+        </div>
+      </div>
+
+      <div className="mx-auto flex max-w-7xl gap-8 px-4 py-6 sm:px-6">
+        {/* Sidebar — desktop only */}
         <aside className="hidden w-56 shrink-0 lg:block">
           <div className="sticky top-20 rounded-2xl border border-border bg-white p-3 shadow-sm">
             <div className="mb-3 flex items-center gap-2 border-b border-border pb-3">
-              <LayoutDashboard className="h-4 w-4 text-teal-600" />
+              <LayoutDashboard className="h-4 w-4 text-[#3D2DFF]" />
               <span className="text-sm font-semibold text-[#0f172a]">Dashboard</span>
             </div>
             <DashboardSidebar unreadCount={stats.unreadNotifications} />
           </div>
         </aside>
 
-        {/* Mobile nav strip */}
-        <div className="mb-4 w-full overflow-x-auto lg:hidden">
-          <DashboardSidebar unreadCount={stats.unreadNotifications} />
-        </div>
-
-        {/* Main content */}
-        <main className="min-w-0 flex-1">{children}</main>
+        {/* Main content — full width on mobile, flex-1 on desktop */}
+        <main className="min-w-0 w-full lg:flex-1">{children}</main>
       </div>
     </div>
   );

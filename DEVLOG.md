@@ -309,23 +309,43 @@ Known Issues / Open Items:
 ---
 
 ### [Stage 9 — Admin Dashboard]
-Date: 
-Agent: @
+Date: 2026-07-03
+Agent: @replit-agent
 
 Added:
-- 
+- supabase/migrations/005_admin_rls.sql — `is_admin()` security-definer helper function; admin bypass RLS policies for profiles, subscriptions, courses, lessons, course_categories, blog_posts, notifications, feature_flags (RLS enabled here), audit_logs (RLS enabled here), admin_roles (RLS enabled here)
+- lib/admin/queries.ts — read queries: getAdminStats (10 parallel counts + subscription breakdown), getAllUsers (profiles + subscriptions join), getAllCourses (with lesson count + category), getLessonsForCourse, getCourseById, getAllBlogPosts, getBlogPostById, getFeatureFlags
+- lib/admin/actions.ts — server actions (all requireAdmin()-gated + audit-logged): toggleCoursePublished, toggleLessonPublished (self-resolves course_id from DB), updateUserRole (blocks self-demotion), toggleFeatureFlag, createBlogPost, updateBlogPost (preserves original published_at), deleteBlogPost, toggleBlogPostPublished
+- components/admin/admin-sidebar.tsx — client sidebar with usePathname active-link state; exact-match for overview
+- components/admin/publish-toggle.tsx — client toggle button (Live/Draft pill); calls 2-arg action
+- components/admin/role-selector.tsx — client select dropdown for user role changes; self-guard renders read-only label
+- components/admin/flag-toggle.tsx — client optimistic toggle switch with revert-on-error
+- components/admin/blog-form.tsx — client form for create/edit blog posts; auto-slugify from title; publish toggle; Markdown textarea
+- components/admin/blog-delete-button.tsx — client delete button with confirmation dialog
+- app/admin/layout.tsx — requireAdmin() guard; dark top bar with Shield badge; sticky desktop sidebar; mobile horizontal scroll strip
+- app/admin/page.tsx — overview: 4 stat cards (users, sim sessions, courses, lessons), blog published/draft summary, subscription plan breakdown bars, quick-action links
+- app/admin/users/page.tsx — user table with role badge counts; inline RoleSelector per row
+- app/admin/courses/page.tsx — course table with level badge, lesson count, premium tag, PublishToggle, link to lessons
+- app/admin/courses/[courseId]/lessons/page.tsx — lesson table for a course with sort order, duration, PublishToggle
+- app/admin/blog/page.tsx — blog listing with tags, excerpt preview, PublishToggle, edit link, BlogDeleteButton
+- app/admin/blog/new/page.tsx — new post page wrapping BlogForm
+- app/admin/blog/[id]/edit/page.tsx — edit post page; 404 if post not found
+- app/admin/flags/page.tsx — feature flags list with FlagToggle components; warning banner
 
 Changed:
-- 
+- N/A (admin is a new top-level route group; does not touch existing layouts)
 
 Fixed / Issues Resolved:
-- 
+- Removed invalid `profiles!blog_posts_author_id_fkey` Supabase join in getAllBlogPosts — blog_posts.author_id FK points to auth.users, not profiles, so auto-join via PostgREST syntax fails at runtime; authorName is null in admin view (no functional impact)
+- Simplified toggleLessonPublished from 3-arg to 2-arg by self-resolving course_id inside the action, eliminating unsafe function-type cast at call site
 
 Removed:
-- 
+- N/A
 
 Known Issues / Open Items:
-- 
+- Author display name not shown on blog admin list (auth.users not directly queryable via anon key; Stage 10 public blog can resolve via a separate profiles lookup by user_id if authors have profiles)
+- Course/lesson content editing (title, description, slug, content fields) not yet in UI — done via Supabase Studio; a future stage can add inline edit forms
+- Subscription management (plan upgrades, cancellations) is read-only; no Stripe integration yet
 
 ---
 

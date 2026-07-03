@@ -186,28 +186,29 @@ export async function getCourseById(courseId: string): Promise<{ id: string; tit
 
 export async function getAllBlogPosts(): Promise<AdminBlogPost[]> {
   const supabase = await createClient();
+  // Note: blog_posts.author_id references auth.users (not profiles), so we
+  // cannot auto-join to profiles via Supabase's FK syntax. authorName is
+  // always null in the admin view; Stage 10 public pages can do a separate
+  // profile lookup if needed.
   const { data } = await supabase
     .from("blog_posts")
-    .select("id, title, slug, excerpt, content, thumbnail_url, tags, is_published, published_at, created_at, updated_at, author_id, profiles!blog_posts_author_id_fkey(display_name)")
+    .select("id, title, slug, excerpt, content, thumbnail_url, tags, is_published, published_at, created_at, updated_at")
     .order("created_at", { ascending: false });
 
-  return (data ?? []).map((row) => {
-    const author = row.profiles as unknown as { display_name: string | null } | null;
-    return {
-      id: row.id,
-      title: row.title,
-      slug: row.slug,
-      excerpt: row.excerpt ?? null,
-      content: row.content,
-      thumbnailUrl: row.thumbnail_url ?? null,
-      tags: row.tags ?? [],
-      isPublished: row.is_published,
-      publishedAt: row.published_at ?? null,
-      authorName: author?.display_name ?? null,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    };
-  });
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    excerpt: row.excerpt ?? null,
+    content: row.content,
+    thumbnailUrl: row.thumbnail_url ?? null,
+    tags: row.tags ?? [],
+    isPublished: row.is_published,
+    publishedAt: row.published_at ?? null,
+    authorName: null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
 }
 
 export async function getBlogPostById(id: string): Promise<AdminBlogPost | null> {

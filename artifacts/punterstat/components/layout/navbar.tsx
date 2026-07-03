@@ -3,13 +3,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { Menu, X, LayoutDashboard, LogOut, User, ShieldCheck } from "lucide-react";
+import { Menu, X, LayoutDashboard, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -29,7 +28,6 @@ const navLinks = [
 
 function UserMenu() {
   const user = useAuthStore((s) => s.user);
-  const isAdmin = useAuthStore((s) => s.user?.role === "admin");
   const initials = user?.displayName
     ? (user.displayName.trim().split(/\s+/).filter(Boolean).map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?")
     : "?";
@@ -59,17 +57,6 @@ function UserMenu() {
             Profile
           </Link>
         </DropdownMenuItem>
-        {isAdmin && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/admin" className="flex items-center gap-2 cursor-pointer text-[#3D2DFF] focus:text-[#3D2DFF]">
-                <ShieldCheck className="h-4 w-4" />
-                Admin Dashboard
-              </Link>
-            </DropdownMenuItem>
-          </>
-        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="flex items-center gap-2 text-red-600 focus:text-red-600 cursor-pointer"
@@ -87,12 +74,11 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
-  const isAdmin = useAuthStore((s) => s.user?.role === "admin");
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#0f172a]">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
-        {/* Logo — blends with dark header */}
+        {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-bold text-white">
           <Image src="/logo.png" alt="PunterStat" width={32} height={32} className="rounded-lg" />
           <span className="text-lg tracking-tight">PunterStat</span>
@@ -117,19 +103,6 @@ export function Navbar() {
             <div className="h-8 w-8 rounded-full bg-white/10 animate-pulse" />
           ) : isAuthenticated ? (
             <>
-              {isAdmin && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-[#3D2DFF] hover:bg-[#3D2DFF]/10 hover:text-[#3D2DFF] gap-1.5"
-                  asChild
-                >
-                  <Link href="/admin">
-                    <ShieldCheck className="h-4 w-4" />
-                    Admin
-                  </Link>
-                </Button>
-              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -188,19 +161,6 @@ export function Navbar() {
           <div className="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3">
             {isAuthenticated ? (
               <>
-                {isAdmin && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="justify-center border-[#3D2DFF]/40 text-[#3D2DFF] hover:bg-[#3D2DFF]/10 gap-1.5"
-                    asChild
-                  >
-                    <Link href="/admin" onClick={() => setMobileOpen(false)}>
-                      <ShieldCheck className="h-4 w-4" />
-                      Admin Dashboard
-                    </Link>
-                  </Button>
-                )}
                 <Button
                   variant="outline"
                   size="sm"

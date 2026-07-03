@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+import { CheckCircle2, Loader2, AlertCircle, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { updateProfile } from "@/lib/dashboard/actions";
 import type { UserProfile } from "@/types";
 
@@ -79,6 +80,15 @@ export function ProfileForm({ profile }: ProfileFormProps) {
             </span>
             <span className="text-xs text-[#1e293b]/40">Cannot be changed here</span>
           </div>
+          {profile.role === "admin" && (
+            <Link
+              href="/admin"
+              className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-800 transition-colors"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Visit Admin Dashboard →
+            </Link>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-[#0f172a] mb-1.5">Member Since</label>

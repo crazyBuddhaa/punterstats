@@ -45,13 +45,7 @@ function UserMenu() {
           </Avatar>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
-        <DropdownMenuLabel className="py-1.5 font-normal">
-          <span className="block truncate text-xs font-medium text-[#0f172a]">
-            {user?.displayName ?? "User"}
-          </span>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
+      <DropdownMenuContent align="end" className="w-40">
         <DropdownMenuItem asChild>
           <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer">
             <LayoutDashboard className="h-4 w-4" />

@@ -61,7 +61,7 @@ export default async function AdminLayout({
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-7xl gap-0 px-4 py-6 sm:px-6 lg:gap-8">
+      <div className="mx-auto flex max-w-7xl flex-col gap-0 px-4 py-6 sm:px-6 lg:flex-row lg:gap-8">
         {/* Sidebar — desktop */}
         <aside className="hidden w-52 shrink-0 lg:block">
           <div className="sticky top-20 rounded-2xl border border-border bg-white p-3 shadow-sm">

@@ -56,7 +56,7 @@ export default async function DashboardLayout({
 
       {/* Mobile nav strip — horizontal scroll above content */}
       <div className="sticky top-14 z-30 border-b border-border bg-white lg:hidden">
-        <div className="mx-auto max-w-7xl overflow-x-auto px-4 sm:px-6">
+        <div className="mx-auto max-w-7xl overflow-x-auto scrollbar-hide px-4 sm:px-6">
           <DashboardMobileNav unreadCount={stats.unreadNotifications} />
         </div>
       </div>

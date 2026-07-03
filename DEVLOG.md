@@ -449,20 +449,38 @@ Known Issues / Open Items:
 ---
 
 ### [Stage 12 — SEO, Storage & Polish]
-Date: 
-Agent: @
+Date: 2026-07-03
+Agent: @replit-agent
 
 Added:
--
+- app/sitemap.ts — Next.js dynamic sitemap route; includes all static public pages + published courses (with category/section routing) + published blog posts; Supabase queries wrapped in try/catch so sitemap degrades gracefully when DB env vars are not set
+- app/robots.ts — Next.js robots route; blocks /dashboard/, /admin/, /api/, /auth/ from all crawlers; references /sitemap.xml
+- app/not-found.tsx — custom 404 page: brand-consistent design with large watermark "404", nav links to all four modules, home + explore CTAs
+- app/error.tsx — global error boundary (client component); dev mode shows error message; production shows generic user-facing message with "Try again" reset button
+- app/(main)/loading.tsx — skeleton loading UI for all main public pages (header + 6-card grid)
+- app/dashboard/loading.tsx — skeleton loading UI for dashboard pages (stat cards + content panels)
+- app/admin/loading.tsx — skeleton loading UI for admin pages (stat cards + table rows)
+- lib/cloudinary/upload.ts — SDK-free Cloudinary upload helper: generateUploadSignature() (uses Node crypto, signs folder+timestamp params), uploadToCloudinary() (client-side helper that POSTs a File directly to Cloudinary upload API using the pre-signed params)
+- app/api/upload/route.ts — authenticated GET endpoint that returns a Cloudinary signed upload signature; validates folder param against allowlist ["avatars", "blog", "thumbnails"]; returns 401 if not logged in, 503 if Cloudinary env vars not set
+- components/dashboard/avatar-upload.tsx — client avatar upload component: click-to-upload with camera overlay, optimistic preview, 5 MB size guard, direct-to-Cloudinary upload flow (GET /api/upload → POST to Cloudinary → updateAvatar server action), loading spinner, error display
+- lib/email/resend.ts — SDK-free Resend email helper: sendEmail() using fetch against the Resend REST API; gracefully no-ops with a console.warn if RESEND_API_KEY is not set; welcomeEmail() template with full HTML email layout matching PunterStat brand
+- app/(main)/terms/page.tsx — full Terms of Service page: 11 sections covering platform description, eligibility, accounts, acceptable use, IP, subscriptions, disclaimers, liability, governing law, changes, contact
+- app/(main)/privacy/page.tsx — full Privacy Policy page: 11 sections covering data collection, use, legal basis (UK/EEA), data sharing (Supabase/Cloudinary/Resend), retention, cookies, user rights (GDPR/UK GDPR), security, children, changes, contact
 
 Changed:
--
+- lib/dashboard/actions.ts — added updateAvatar(avatarUrl) server action: validates URL starts with https://, updates users.avatar_url, revalidates /dashboard/profile and /dashboard
+- app/dashboard/profile/page.tsx — replaced static teal initials avatar with AvatarUpload component; fetches current avatar_url from users table server-side; updated description copy
+- app/(main)/page.tsx — added export const metadata with full title, description, and openGraph fields (homepage was the only (main) page missing metadata)
 
 Fixed / Issues Resolved:
--
+- Dashboard profile page avatar was hardcoded teal circle with no upload capability — now fully functional with Cloudinary direct upload
+- Homepage was missing metadata export — all other public pages already had it; now complete
 
 Removed:
--
+- N/A
 
 Known Issues / Open Items:
--
+- Avatar upload requires CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, and NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME to be set in Vercel environment variables; upload API returns 503 with a clear error when not configured
+- Welcome email (lib/email/resend.ts welcomeEmail()) is not yet wired into the sign-up flow; integration point is app/auth/callback/route.ts after successful PKCE code exchange — call sendEmail(welcomeEmail(displayName)) there when RESEND_API_KEY is set
+- Testimonials on the homepage remain static; a future pass can add a testimonials table and admin CRUD panel
+- Blog full-text search not implemented; Supabase textSearch() can be added when content volume warrants it

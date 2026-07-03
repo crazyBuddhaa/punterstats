@@ -2,27 +2,39 @@ import type { Metadata } from "next";
 import { User } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
 import { ProfileForm } from "@/components/dashboard/profile-form";
+import { AvatarUpload } from "@/components/dashboard/avatar-upload";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Profile Settings — Dashboard — PunterStat" };
 
 export default async function ProfilePage() {
   const profile = await requireAuth();
 
+  // Fetch avatar_url from users table
+  const supabase = await createClient();
+  const { data: userData } = await supabase
+    .from("users")
+    .select("avatar_url")
+    .eq("id", profile.userId)
+    .single();
+  const avatarUrl = userData?.avatar_url ?? null;
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-[#0f172a]">Profile Settings</h1>
         <p className="mt-1 text-sm text-[#1e293b]/60">
-          Update your display name and bio.
+          Update your display name, bio, and profile photo.
         </p>
       </div>
 
       <div className="max-w-xl rounded-2xl border border-border bg-white p-6 shadow-sm">
-        {/* Avatar placeholder */}
-        <div className="mb-6 flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-teal-600 text-2xl font-bold text-white">
-            {(profile.displayName ?? "U").slice(0, 1).toUpperCase()}
-          </div>
+        {/* Avatar upload */}
+        <div className="mb-6 flex items-center gap-5">
+          <AvatarUpload
+            currentUrl={avatarUrl}
+            displayName={profile.displayName ?? "User"}
+          />
           <div>
             <p className="font-semibold text-[#0f172a]">{profile.displayName ?? "User"}</p>
             <p className="text-sm text-[#1e293b]/50 capitalize">{profile.role} account</p>

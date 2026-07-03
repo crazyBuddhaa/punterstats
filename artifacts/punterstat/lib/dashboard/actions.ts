@@ -69,3 +69,29 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
   revalidatePath("/dashboard");
   return { success: true };
 }
+
+export async function updateAvatar(avatarUrl: string): Promise<ActionResult> {
+  // Only accept Cloudinary URLs to prevent arbitrary URL injection
+  if (
+    !avatarUrl ||
+    !avatarUrl.startsWith("https://res.cloudinary.com/")
+  ) {
+    return { success: false, error: "Invalid avatar URL." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated." };
+
+  const { error } = await supabase
+    .from("users")
+    .update({ avatar_url: avatarUrl })
+    .eq("id", user.id);
+
+  if (error) return { success: false, error: error.message };
+  revalidatePath("/dashboard/profile");
+  revalidatePath("/dashboard");
+  return { success: true };
+}

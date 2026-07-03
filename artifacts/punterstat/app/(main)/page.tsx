@@ -1,4 +1,16 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "PunterStat — Sports Intelligence & Education Platform",
+  description:
+    "Master how sports systems, probability, and betting mathematics work. Four structured learning modules: Sports University, Betting Academy, Simulation Engine, and Match Breakdown.",
+  openGraph: {
+    title: "PunterStat — Knowledge Before Decision",
+    description:
+      "Learn sports analytics, probability theory, and analytical thinking through structured courses and interactive simulations.",
+  },
+};
 import { Hero } from "@/components/sections/hero";
 import { StatsBar } from "@/components/sections/stats-bar";
 import { ModuleShowcase } from "@/components/sections/module-showcase";

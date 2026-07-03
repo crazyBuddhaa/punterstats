@@ -118,6 +118,138 @@ export async function toggleFeatureFlag(
   return { success: true };
 }
 
+// ─── Course CRUD ──────────────────────────────────────────────────────────────
+
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
+export async function createCourse(formData: FormData): Promise<ActionResult<{ id: string }>> {
+  const profile = await requireAdmin();
+  const supabase = await createClient();
+
+  const title = (formData.get("title") as string)?.trim() ?? "";
+  const slug = (formData.get("slug") as string)?.trim() || slugify(title);
+  const description = (formData.get("description") as string)?.trim() ?? "";
+  const categoryId = (formData.get("category_id") as string)?.trim() || null;
+  const level = (formData.get("level") as string) ?? "beginner";
+  const isPremium = formData.get("is_premium") === "true";
+  const sortOrder = parseInt((formData.get("sort_order") as string) ?? "0", 10) || 0;
+
+  if (!title || title.length < 2) return { success: false, error: "Title must be at least 2 characters." };
+  if (!slug || !/^[a-z0-9-]+$/.test(slug)) return { success: false, error: "Slug may only contain lowercase letters, numbers, and hyphens." };
+
+  const { data, error } = await supabase
+    .from("courses")
+    .insert({ title, slug, description, category_id: categoryId, level, is_premium: isPremium, sort_order: sortOrder })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (error.code === "23505") return { success: false, error: "That slug is already taken. Choose a different one." };
+    return { success: false, error: error.message };
+  }
+  await logAudit(profile.userId, "create", "course", data.id, { title });
+  revalidatePath("/admin/courses");
+  return { success: true, data: { id: data.id } };
+}
+
+export async function updateCourse(id: string, formData: FormData): Promise<ActionResult> {
+  const profile = await requireAdmin();
+  const supabase = await createClient();
+
+  const title = (formData.get("title") as string)?.trim() ?? "";
+  const slug = (formData.get("slug") as string)?.trim() ?? "";
+  const description = (formData.get("description") as string)?.trim() ?? "";
+  const categoryId = (formData.get("category_id") as string)?.trim() || null;
+  const level = (formData.get("level") as string) ?? "beginner";
+  const isPremium = formData.get("is_premium") === "true";
+  const sortOrder = parseInt((formData.get("sort_order") as string) ?? "0", 10) || 0;
+
+  if (!title || title.length < 2) return { success: false, error: "Title must be at least 2 characters." };
+  if (!slug || !/^[a-z0-9-]+$/.test(slug)) return { success: false, error: "Slug may only contain lowercase letters, numbers, and hyphens." };
+
+  const { error } = await supabase
+    .from("courses")
+    .update({ title, slug, description, category_id: categoryId, level, is_premium: isPremium, sort_order: sortOrder })
+    .eq("id", id);
+
+  if (error) {
+    if (error.code === "23505") return { success: false, error: "That slug is already taken. Choose a different one." };
+    return { success: false, error: error.message };
+  }
+  await logAudit(profile.userId, "update", "course", id, { title });
+  revalidatePath("/admin/courses");
+  return { success: true };
+}
+
+// ─── Lesson CRUD ──────────────────────────────────────────────────────────────
+
+export async function createLesson(courseId: string, formData: FormData): Promise<ActionResult<{ id: string }>> {
+  const profile = await requireAdmin();
+  const supabase = await createClient();
+
+  const title = (formData.get("title") as string)?.trim() ?? "";
+  const slug = (formData.get("slug") as string)?.trim() || slugify(title);
+  const content = (formData.get("content") as string)?.trim() || null;
+  const videoUrl = (formData.get("video_url") as string)?.trim() || null;
+  const durationSeconds = parseInt((formData.get("duration_seconds") as string) ?? "0", 10) || null;
+  const sortOrder = parseInt((formData.get("sort_order") as string) ?? "0", 10) || 0;
+  const isPublished = formData.get("is_published") === "true";
+
+  if (!title || title.length < 2) return { success: false, error: "Title must be at least 2 characters." };
+  if (!slug || !/^[a-z0-9-]+$/.test(slug)) return { success: false, error: "Slug may only contain lowercase letters, numbers, and hyphens." };
+
+  const { data, error } = await supabase
+    .from("lessons")
+    .insert({ course_id: courseId, title, slug, content, video_url: videoUrl, duration_seconds: durationSeconds, sort_order: sortOrder, is_published: isPublished })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (error.code === "23505") return { success: false, error: "That slug is already taken within this course." };
+    return { success: false, error: error.message };
+  }
+  await logAudit(profile.userId, "create", "lesson", data.id, { title, courseId });
+  revalidatePath(`/admin/courses/${courseId}/lessons`);
+  revalidatePath("/admin/courses");
+  return { success: true, data: { id: data.id } };
+}
+
+export async function updateLesson(id: string, courseId: string, formData: FormData): Promise<ActionResult> {
+  const profile = await requireAdmin();
+  const supabase = await createClient();
+
+  const title = (formData.get("title") as string)?.trim() ?? "";
+  const slug = (formData.get("slug") as string)?.trim() ?? "";
+  const content = (formData.get("content") as string)?.trim() || null;
+  const videoUrl = (formData.get("video_url") as string)?.trim() || null;
+  const durationSeconds = parseInt((formData.get("duration_seconds") as string) ?? "0", 10) || null;
+  const sortOrder = parseInt((formData.get("sort_order") as string) ?? "0", 10) || 0;
+  const isPublished = formData.get("is_published") === "true";
+
+  if (!title || title.length < 2) return { success: false, error: "Title must be at least 2 characters." };
+  if (!slug || !/^[a-z0-9-]+$/.test(slug)) return { success: false, error: "Slug may only contain lowercase letters, numbers, and hyphens." };
+
+  const { error } = await supabase
+    .from("lessons")
+    .update({ title, slug, content, video_url: videoUrl, duration_seconds: durationSeconds, sort_order: sortOrder, is_published: isPublished })
+    .eq("id", id);
+
+  if (error) {
+    if (error.code === "23505") return { success: false, error: "That slug is already taken within this course." };
+    return { success: false, error: error.message };
+  }
+  await logAudit(profile.userId, "update", "lesson", id, { title });
+  revalidatePath(`/admin/courses/${courseId}/lessons`);
+  return { success: true };
+}
+
 // ─── Blog Posts ───────────────────────────────────────────────────────────────
 
 function parseTags(raw: string): string[] {

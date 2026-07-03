@@ -24,15 +24,25 @@ export interface AdminUser {
   createdAt: string;
 }
 
+export interface AdminCategory {
+  id: string;
+  name: string;
+  slug: string;
+  sortOrder: number;
+}
+
 export interface AdminCourse {
   id: string;
   title: string;
   slug: string;
+  description: string;
   level: string;
   isPremium: boolean;
   isPublished: boolean;
   lessonCount: number;
+  categoryId: string | null;
   categoryName: string | null;
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,6 +51,8 @@ export interface AdminLesson {
   id: string;
   title: string;
   slug: string;
+  content: string | null;
+  videoUrl: string | null;
   isPublished: boolean;
   sortOrder: number;
   durationSeconds: number | null;
@@ -110,44 +122,69 @@ export async function getAdminStats(): Promise<AdminStats> {
 
 export async function getAllUsers(): Promise<AdminUser[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("profiles")
-    .select("id, user_id, display_name, role, created_at, subscriptions(plan)")
-    .order("created_at", { ascending: false });
 
-  return (data ?? []).map((row) => {
-    const sub = row.subscriptions as unknown as { plan: string } | null;
-    return {
-      profileId: row.id,
-      userId: row.user_id,
-      displayName: row.display_name ?? null,
-      email: null, // auth.users is not directly queryable; email shown separately if needed
-      role: row.role,
-      plan: sub?.plan ?? "free",
-      createdAt: row.created_at,
-    };
-  });
+  // profiles and subscriptions both reference auth.users — no direct FK between
+  // them, so PostgREST cannot auto-join. Fetch separately and merge by user_id.
+  const [{ data: profileData }, { data: subData }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, user_id, display_name, role, created_at")
+      .order("created_at", { ascending: false }),
+    supabase.from("subscriptions").select("user_id, plan"),
+  ]);
+
+  const subMap = new Map<string, string>(
+    (subData ?? []).map((s) => [s.user_id as string, s.plan as string])
+  );
+
+  return (profileData ?? []).map((row) => ({
+    profileId: row.id,
+    userId: row.user_id,
+    displayName: row.display_name ?? null,
+    email: null,
+    role: row.role,
+    plan: subMap.get(row.user_id) ?? "free",
+    createdAt: row.created_at,
+  }));
+}
+
+export async function getAllCategories(): Promise<AdminCategory[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("course_categories")
+    .select("id, name, slug, sort_order")
+    .order("sort_order", { ascending: true });
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    sortOrder: row.sort_order,
+  }));
 }
 
 export async function getAllCourses(): Promise<AdminCourse[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("courses")
-    .select("id, title, slug, level, is_premium, is_published, sort_order, created_at, updated_at, course_categories(name), lessons(id)")
+    .select("id, title, slug, description, level, is_premium, is_published, sort_order, category_id, created_at, updated_at, course_categories(id, name), lessons(id)")
     .order("sort_order", { ascending: true });
 
   return (data ?? []).map((row) => {
-    const cat = row.course_categories as unknown as { name: string } | null;
+    const cat = row.course_categories as unknown as { id: string; name: string } | null;
     const lessonArr = row.lessons as unknown as { id: string }[] | null;
     return {
       id: row.id,
       title: row.title,
       slug: row.slug,
+      description: row.description ?? "",
       level: row.level,
       isPremium: row.is_premium,
       isPublished: row.is_published,
       lessonCount: lessonArr?.length ?? 0,
+      categoryId: (row.category_id as string | null) ?? null,
       categoryName: cat?.name ?? null,
+      sortOrder: row.sort_order,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
@@ -158,7 +195,7 @@ export async function getLessonsForCourse(courseId: string): Promise<AdminLesson
   const supabase = await createClient();
   const { data } = await supabase
     .from("lessons")
-    .select("id, title, slug, is_published, sort_order, duration_seconds, created_at, updated_at")
+    .select("id, title, slug, content, video_url, is_published, sort_order, duration_seconds, created_at, updated_at")
     .eq("course_id", courseId)
     .order("sort_order", { ascending: true });
 
@@ -166,12 +203,42 @@ export async function getLessonsForCourse(courseId: string): Promise<AdminLesson
     id: row.id,
     title: row.title,
     slug: row.slug,
+    content: row.content ?? null,
+    videoUrl: row.video_url ?? null,
     isPublished: row.is_published,
     sortOrder: row.sort_order,
     durationSeconds: row.duration_seconds ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));
+}
+
+export async function getCourseWithDetails(courseId: string): Promise<(AdminCourse & { categoryId: string | null }) | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("courses")
+    .select("id, title, slug, description, level, is_premium, is_published, sort_order, category_id, created_at, updated_at, course_categories(id, name), lessons(id)")
+    .eq("id", courseId)
+    .single();
+
+  if (!data) return null;
+  const cat = data.course_categories as unknown as { id: string; name: string } | null;
+  const lessonArr = data.lessons as unknown as { id: string }[] | null;
+  return {
+    id: data.id,
+    title: data.title,
+    slug: data.slug,
+    description: data.description ?? "",
+    level: data.level,
+    isPremium: data.is_premium,
+    isPublished: data.is_published,
+    lessonCount: lessonArr?.length ?? 0,
+    categoryId: (data.category_id as string | null) ?? null,
+    categoryName: cat?.name ?? null,
+    sortOrder: data.sort_order,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  };
 }
 
 export async function getCourseById(courseId: string): Promise<{ id: string; title: string } | null> {

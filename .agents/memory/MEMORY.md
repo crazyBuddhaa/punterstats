@@ -1,1 +1,2 @@
 - [pnpm workspace PostCSS hoisting](pnpm-workspace-postcss.md) — autoprefixer/postcss/tailwindcss must be in dependencies (not devDependencies) for Next.js in pnpm monorepo Vercel builds
+- [PunterStat project state](punterstat-state.md) — all 12 stages complete; repo at 7b7c933; Cloudinary module split pattern; DEVLOG location

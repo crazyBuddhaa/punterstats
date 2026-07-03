@@ -45,12 +45,11 @@ function UserMenu() {
           </Avatar>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col gap-0.5">
-            <span className="font-medium text-[#0f172a] truncate">{user?.displayName ?? "User"}</span>
-            <span className="text-xs text-[#1e293b]/50 capitalize">{user?.role} plan</span>
-          </div>
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuLabel className="py-1.5 font-normal">
+          <span className="block truncate text-xs font-medium text-[#0f172a]">
+            {user?.displayName ?? "User"}
+          </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>

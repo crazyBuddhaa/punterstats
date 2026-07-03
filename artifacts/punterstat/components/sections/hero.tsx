@@ -73,26 +73,28 @@ export function Hero({ className }: HeroProps) {
           </Button>
         </div>
 
-        {/* Feature pills */}
-        <div className="mt-14 flex flex-wrap items-center justify-center gap-3">
-          {[
-            { icon: BookOpen, label: "Sports University" },
-            { icon: Brain, label: "Betting Academy" },
-            { icon: BarChart3, label: "Simulation Engine" },
-            { icon: Search, label: "Match Breakdown" },
-          ].map(({ icon: Icon, label }) => (
-            <div
-              key={label}
-              className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70"
-            >
-              <Icon className="h-3.5 w-3.5 text-[#3D2DFF]" />
-              {label}
-            </div>
-          ))}
+        {/* Feature pills — static, no animation */}
+        <div className="mt-14 flex flex-row flex-wrap items-center justify-center gap-3">
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
+            <BookOpen className="h-3.5 w-3.5 shrink-0 text-[#3D2DFF]" />
+            Sports University
+          </div>
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
+            <Brain className="h-3.5 w-3.5 shrink-0 text-[#3D2DFF]" />
+            Betting Academy
+          </div>
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
+            <BarChart3 className="h-3.5 w-3.5 shrink-0 text-[#3D2DFF]" />
+            Simulation Engine
+          </div>
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
+            <Search className="h-3.5 w-3.5 shrink-0 text-[#3D2DFF]" />
+            Match Breakdown
+          </div>
         </div>
 
         {/* Disclaimer */}
-        <p className="mt-12 text-center text-xs text-white/25">
+        <p className="mt-10 text-center text-xs text-white/25">
           Educational platform only — no real-money transactions, no betting tips.
           Knowledge Before Decision.
         </p>

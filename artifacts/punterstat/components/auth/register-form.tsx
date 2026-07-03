@@ -106,6 +106,19 @@ export function RegisterForm({ checkEmail }: Props) {
               required
             />
           </div>
+
+          <div className="flex items-start gap-2.5 rounded-lg border border-border bg-[#f8fafc] px-3 py-2.5">
+            <input
+              id="ageConfirmed"
+              name="ageConfirmed"
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[#3D2DFF] cursor-pointer"
+              required
+            />
+            <Label htmlFor="ageConfirmed" className="text-xs font-normal leading-relaxed text-[#1e293b]/70 cursor-pointer">
+              I confirm that I am <span className="font-semibold text-[#0f172a]">18 years of age or older</span>. PunterStat is an adult education platform and is not available to minors.
+            </Label>
+          </div>
         </CardContent>
 
         <CardFooter className="flex flex-col gap-4">

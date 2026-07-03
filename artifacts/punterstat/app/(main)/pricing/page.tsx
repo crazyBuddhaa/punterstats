@@ -154,9 +154,9 @@ export default function PricingPage() {
                       {f.included ? (
                         <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#3D2DFF]" />
                       ) : (
-                        <X className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#1e293b]/25" />
+                        <X className="mt-0.5 h-4 w-4 flex-shrink-0 text-rose-400" />
                       )}
-                      <span className={f.included ? "text-[#1e293b]/80" : "text-[#1e293b]/35"}>
+                      <span className={f.included ? "text-[#1e293b]/80" : "text-[#1e293b]/40 line-through"}>
                         {f.label}
                       </span>
                     </li>

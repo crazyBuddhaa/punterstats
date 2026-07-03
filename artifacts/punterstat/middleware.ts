@@ -8,7 +8,7 @@ type CookieToSet = {
   options?: Record<string, unknown>;
 };
 
-const PROTECTED_PREFIXES = ["/dashboard", "/admin"];
+const PROTECTED_PREFIXES = ["/dashboard", "/admin", "/match-breakdown/analyzer"];
 const AUTH_PREFIXES = ["/login", "/register", "/forgot-password", "/update-password"];
 
 export async function middleware(request: NextRequest) {

@@ -16,6 +16,9 @@ const signUpSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters").max(50),
   email: z.string().email("Enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  ageConfirmed: z.literal("on", {
+    errorMap: () => ({ message: "You must confirm you are 18 or older to register." }),
+  }),
 });
 
 const resetPasswordSchema = z.object({
@@ -60,6 +63,7 @@ export async function signUp(
     displayName: formData.get("displayName"),
     email: formData.get("email"),
     password: formData.get("password"),
+    ageConfirmed: formData.get("ageConfirmed"),
   });
 
   if (!parsed.success) {

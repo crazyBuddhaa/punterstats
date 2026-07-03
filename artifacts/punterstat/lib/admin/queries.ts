@@ -36,6 +36,7 @@ export interface AdminCourse {
   title: string;
   slug: string;
   description: string;
+  thumbnailUrl: string | null;
   level: string;
   isPremium: boolean;
   isPublished: boolean;
@@ -167,7 +168,7 @@ export async function getAllCourses(): Promise<AdminCourse[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("courses")
-    .select("id, title, slug, description, level, is_premium, is_published, sort_order, category_id, created_at, updated_at, course_categories(id, name), lessons(id)")
+    .select("id, title, slug, description, thumbnail_url, level, is_premium, is_published, sort_order, category_id, created_at, updated_at, course_categories(id, name), lessons(id)")
     .order("sort_order", { ascending: true });
 
   return (data ?? []).map((row) => {
@@ -178,6 +179,7 @@ export async function getAllCourses(): Promise<AdminCourse[]> {
       title: row.title,
       slug: row.slug,
       description: row.description ?? "",
+      thumbnailUrl: (row.thumbnail_url as string | null) ?? null,
       level: row.level,
       isPremium: row.is_premium,
       isPublished: row.is_published,
@@ -217,7 +219,7 @@ export async function getCourseWithDetails(courseId: string): Promise<(AdminCour
   const supabase = await createClient();
   const { data } = await supabase
     .from("courses")
-    .select("id, title, slug, description, level, is_premium, is_published, sort_order, category_id, created_at, updated_at, course_categories(id, name), lessons(id)")
+    .select("id, title, slug, description, thumbnail_url, level, is_premium, is_published, sort_order, category_id, created_at, updated_at, course_categories(id, name), lessons(id)")
     .eq("id", courseId)
     .single();
 
@@ -229,6 +231,7 @@ export async function getCourseWithDetails(courseId: string): Promise<(AdminCour
     title: data.title,
     slug: data.slug,
     description: data.description ?? "",
+    thumbnailUrl: (data.thumbnail_url as string | null) ?? null,
     level: data.level,
     isPremium: data.is_premium,
     isPublished: data.is_published,

@@ -27,6 +27,7 @@ export function CourseFormModal({ categories, course, onClose }: CourseFormModal
   const [slug, setSlug] = useState(course?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(!!course);
   const [isPremium, setIsPremium] = useState(course?.isPremium ?? false);
+  const [thumbnailUrl, setThumbnailUrl] = useState(course?.thumbnailUrl ?? "");
   const formRef = useRef<HTMLFormElement>(null);
   const isEdit = !!course;
 
@@ -121,6 +122,42 @@ export function CourseFormModal({ categories, course, onClose }: CourseFormModal
                 className="w-full rounded-xl border border-border bg-slate-50 px-3 py-2 text-sm text-[#0f172a] placeholder:text-[#1e293b]/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30 resize-none"
                 placeholder="A short overview of what students will learn…"
               />
+            </div>
+
+            {/* Thumbnail */}
+            <div className="col-span-2">
+              <label className="mb-1 block text-xs font-semibold text-[#1e293b]/70">
+                Thumbnail URL
+              </label>
+              <input
+                name="thumbnail_url"
+                type="url"
+                value={thumbnailUrl}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setThumbnailUrl(e.target.value)}
+                className="w-full rounded-xl border border-border bg-slate-50 px-3 py-2 text-sm text-[#0f172a] placeholder:text-[#1e293b]/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+                placeholder="https://example.com/image.jpg"
+              />
+              {/* Live preview */}
+              <div className={`mt-2 h-32 w-full overflow-hidden rounded-xl border border-border ${thumbnailUrl ? "bg-slate-100" : "bg-slate-50"}`}>
+                {thumbnailUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={thumbnailUrl}
+                    alt="Thumbnail preview"
+                    className="h-full w-full object-cover"
+                    onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <BookOpen className="h-8 w-8 text-[#1e293b]/20" />
+                  </div>
+                )}
+              </div>
+              <p className="mt-1 text-[11px] text-[#1e293b]/40">
+                Paste a direct image URL. Cloudinary URLs work great.
+              </p>
             </div>
 
             <div>

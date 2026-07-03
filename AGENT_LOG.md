@@ -149,3 +149,19 @@ Watch out for:
 - Migration `007_blog_fts.sql` must be applied in Supabase (SQL editor or `supabase db push`) before blog search returns results. Until then the search input renders but queries return empty.
 - `tag-filter.tsx` is now superseded by `BlogSearch` on the blog page but was not deleted — it's an orphaned file. Safe to remove in a future cleanup pass.
 - Contact form now returns an actionable error when `RESEND_API_KEY` is absent; set the key in Vercel environment variables to enable email delivery.
+
+---
+
+### 2026-07-03 — BlogSearch stale snapshot hardening + a11y
+Agent: @replit-agent
+
+What changed & why:
+- Code review flagged that `BlogSearch` composed next URLs from `useSearchParams()` snapshot (React state), which can be stale if multiple interactions fire before the router flushes a transition. Fixed by reading `window.location.search` at action time instead, giving the correct live URL state regardless of React render lag.
+- Added `type="button"` to all non-submit buttons (tag pills, clear button) to prevent accidental form submission.
+- Added `aria-pressed` to each tag pill and `role="group" aria-label="Filter by tag"` to the pill container for screen-reader semantics.
+
+Files touched:
+- `artifacts/punterstat/components/blog/blog-search.tsx`
+
+Watch out for:
+- The `typeof window !== "undefined"` guard is needed because `buildUrl` can theoretically be called during SSR; falls back to the React snapshot in that path (safe, since no interactions fire server-side).

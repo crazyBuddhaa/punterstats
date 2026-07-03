@@ -125,3 +125,27 @@ Watch out for:
 - The upload uses `uploadToCloudinary()` from `lib/cloudinary/upload.ts` — same helper used by avatar uploads.
 - Three env vars must be set in Vercel for uploads to work: `CLOUDINARY_API_SECRET`, `CLOUDINARY_API_KEY`, `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`.
 - The hidden input technique (not a form field the user interacts with directly) means the URL is always in sync with the upload state — no stale blob URLs can leak to the server action.
+
+---
+
+### 2026-07-03 — Blog full-text search + contact form delivery fix
+Agent: @replit-agent
+
+What changed & why:
+- **Blog full-text search**: Added Supabase `textSearch()` across title, excerpt, and content. Created migration `007_blog_fts.sql` (stored `fts` tsvector column + GIN index). Updated `getPublishedPosts()` to accept an optional `search` string using websearch mode (natural-language input, no tsquery syntax needed). Added new `BlogSearch` client component that combines a search input (`?q=`) and tag pill filter (`?tag=`) in one UI — both params work independently; clearing one does not reset the other. Blog page now reads both params, passes them to the query, and shows query-aware empty states. Featured post is suppressed when any filter is active.
+- **Contact form delivery fix**: Previously `submitContact` always returned `{ success: true }` even if `RESEND_API_KEY` was missing or Resend returned an error. Now the inbox email is awaited first; if delivery fails, the user sees a specific error with a direct email fallback. Confirmation email to the submitter remains fire-and-forget (its failure doesn't affect the response).
+- **Open items closed**: Welcome email migration item closed — `006_fixes.sql` already exists in the repo; code already handles missing `welcome_sent` column gracefully (no crash, no email). CVE item closed — confirmed resolved by user.
+- **DEVLOG.md** updated on `main` with a new "Post-Stage" entry covering all of the above.
+
+Files touched:
+- `artifacts/punterstat/supabase/migrations/007_blog_fts.sql` — new
+- `artifacts/punterstat/components/blog/blog-search.tsx` — new
+- `artifacts/punterstat/lib/blog/queries.ts` — search param + textSearch
+- `artifacts/punterstat/app/(main)/blog/page.tsx` — reads `?q=`, uses BlogSearch
+- `artifacts/punterstat/lib/contact/actions.ts` — proper error surfacing
+- `DEVLOG.md` — new "Post-Stage" log entry appended
+
+Watch out for:
+- Migration `007_blog_fts.sql` must be applied in Supabase (SQL editor or `supabase db push`) before blog search returns results. Until then the search input renders but queries return empty.
+- `tag-filter.tsx` is now superseded by `BlogSearch` on the blog page but was not deleted — it's an orphaned file. Safe to remove in a future cleanup pass.
+- Contact form now returns an actionable error when `RESEND_API_KEY` is absent; set the key in Vercel environment variables to enable email delivery.

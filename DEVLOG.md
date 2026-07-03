@@ -16,19 +16,19 @@ Date: YYYY-MM-DD
 Agent: @replit-username
 
 Added:
-- 
+-
 
 Changed:
-- 
+-
 
 Fixed / Issues Resolved:
-- 
+-
 
 Removed:
-- 
+-
 
 Known Issues / Open Items:
-- 
+-
 ```
 
 Leave a section empty (e.g. "Added: -") rather than deleting it if nothing applies. If an entry has no known issues, write "None."
@@ -60,8 +60,8 @@ Changed:
 - N/A (initial setup)
 
 Fixed / Issues Resolved:
-- Vercel build failure: `pnpm-lock.yaml` mismatch resolved by adding `installCommand: "pnpm install --no-frozen-lockfile"` to vercel.json
-- Vercel build failure: `Cannot find module 'autoprefixer'` — in pnpm workspaces, Next.js PostCSS loader resolves plugins from root node_modules; moved autoprefixer, postcss, and tailwindcss from devDependencies to dependencies so pnpm hoists them correctly
+- Vercel build failure: pnpm-lock.yaml mismatch resolved by adding installCommand: "pnpm install --no-frozen-lockfile" to vercel.json
+- Vercel build failure: Cannot find module 'autoprefixer' — in pnpm workspaces, Next.js PostCSS loader resolves plugins from root node_modules; moved autoprefixer, postcss, and tailwindcss from devDependencies to dependencies so pnpm hoists them correctly
 
 Removed:
 - N/A (initial setup)
@@ -90,7 +90,7 @@ Added:
 
 Changed:
 - app/layout.tsx — wired Navbar, Footer, and Providers into root layout
-- app/page.tsx — replaced placeholder with full Hero → StatsBar → FeaturesGrid → CtaSection composition
+- app/page.tsx — replaced placeholder with full Hero > StatsBar > FeaturesGrid > CtaSection composition
 - app/globals.css — added smooth scroll, selection highlight (#0d9488), slim custom scrollbar, focus ring, text-gradient, card-hover, glass utilities; updated Inter font import to variable-weight range
 
 Removed:
@@ -98,7 +98,7 @@ Removed:
 
 Known Issues / Open Items:
 - Auth pages (/login, /register) are live nav links but pages do not exist yet (Stage 3)
-- All module pages (/sports-university, /betting-academy, etc.) are stub routes (Stages 4–7)
+- All module pages (/sports-university, /betting-academy, etc.) are stub routes (Stages 4-7)
 
 ---
 
@@ -107,13 +107,13 @@ Date: 2026-07-02
 Agent: @replit-agent
 
 Added:
-- Platform logo (public/logo.png) — provided by user, 225×180 JPEG
+- Platform logo (public/logo.png) — provided by user, 225x180 JPEG
 
 Changed:
 - Navbar and Footer: replaced BookOpen icon with actual logo image (next/image)
 - Brand accent colour replaced globally from teal (#0d9488) to logo blue (#3D2DFF) across all 11 affected files: globals.css, tailwind.config.ts, button, badge, alert, toast, page-shell, footer, hero, features-grid, cta-section
-- tailwind.config.ts: renamed brand token from `brand.teal` → `brand.blue`
-- globals.css: updated --accent HSL value (174 90% 31% → 245 100% 59%), selection highlight, focus ring, and text-gradient to use #3D2DFF / #6B5FFF
+- tailwind.config.ts: renamed brand token from brand.teal to brand.blue
+- globals.css: updated --accent HSL value (174 90% 31% to 245 100% 59%), selection highlight, focus ring, and text-gradient to use #3D2DFF / #6B5FFF
 
 Fixed / Issues Resolved:
 - N/A
@@ -246,132 +246,6 @@ Known Issues / Open Items:
 ---
 
 ### [Stage 6 — Simulation Engine Module]
-Date: 
-Agent: @
-
-Added:
-- 
-
-Changed:
-- 
-
-Fixed / Issues Resolved:
-- 
-
-Removed:
-- 
-
-Known Issues / Open Items:
-- 
-
----
-
-### [Stage 7 — Match Breakdown Engine Module]
-Date: 
-Agent: @
-
-Added:
-- 
-
-Changed:
-- 
-
-Fixed / Issues Resolved:
-- 
-
-Removed:
-- 
-
-Known Issues / Open Items:
-- 
-
----
-
-### [Stage 8 — Protected Dashboard Pages]
-Date: 
-Agent: @
-
-Added:
-- 
-
-Changed:
-- 
-
-Fixed / Issues Resolved:
-- 
-
-Removed:
-- 
-
-Known Issues / Open Items:
-- 
-
----
-
-### [Stage 9 — Admin Dashboard]
-Date: 2026-07-03
-Agent: @replit-agent
-
-Added:
-- supabase/migrations/005_admin_rls.sql — `is_admin()` security-definer helper function; admin bypass RLS policies for profiles, subscriptions, courses, lessons, course_categories, blog_posts, notifications, feature_flags (RLS enabled here), audit_logs (RLS enabled here), admin_roles (RLS enabled here)
-- lib/admin/queries.ts — read queries: getAdminStats (10 parallel counts + subscription breakdown), getAllUsers (profiles + subscriptions join), getAllCourses (with lesson count + category), getLessonsForCourse, getCourseById, getAllBlogPosts, getBlogPostById, getFeatureFlags
-- lib/admin/actions.ts — server actions (all requireAdmin()-gated + audit-logged): toggleCoursePublished, toggleLessonPublished (self-resolves course_id from DB), updateUserRole (blocks self-demotion), toggleFeatureFlag, createBlogPost, updateBlogPost (preserves original published_at), deleteBlogPost, toggleBlogPostPublished
-- components/admin/admin-sidebar.tsx — client sidebar with usePathname active-link state; exact-match for overview
-- components/admin/publish-toggle.tsx — client toggle button (Live/Draft pill); calls 2-arg action
-- components/admin/role-selector.tsx — client select dropdown for user role changes; self-guard renders read-only label
-- components/admin/flag-toggle.tsx — client optimistic toggle switch with revert-on-error
-- components/admin/blog-form.tsx — client form for create/edit blog posts; auto-slugify from title; publish toggle; Markdown textarea
-- components/admin/blog-delete-button.tsx — client delete button with confirmation dialog
-- app/admin/layout.tsx — requireAdmin() guard; dark top bar with Shield badge; sticky desktop sidebar; mobile horizontal scroll strip
-- app/admin/page.tsx — overview: 4 stat cards (users, sim sessions, courses, lessons), blog published/draft summary, subscription plan breakdown bars, quick-action links
-- app/admin/users/page.tsx — user table with role badge counts; inline RoleSelector per row
-- app/admin/courses/page.tsx — course table with level badge, lesson count, premium tag, PublishToggle, link to lessons
-- app/admin/courses/[courseId]/lessons/page.tsx — lesson table for a course with sort order, duration, PublishToggle
-- app/admin/blog/page.tsx — blog listing with tags, excerpt preview, PublishToggle, edit link, BlogDeleteButton
-- app/admin/blog/new/page.tsx — new post page wrapping BlogForm
-- app/admin/blog/[id]/edit/page.tsx — edit post page; 404 if post not found
-- app/admin/flags/page.tsx — feature flags list with FlagToggle components; warning banner
-
-Changed:
-- N/A (admin is a new top-level route group; does not touch existing layouts)
-
-Fixed / Issues Resolved:
-- Removed invalid `profiles!blog_posts_author_id_fkey` Supabase join in getAllBlogPosts — blog_posts.author_id FK points to auth.users, not profiles, so auto-join via PostgREST syntax fails at runtime; authorName is null in admin view (no functional impact)
-- Simplified toggleLessonPublished from 3-arg to 2-arg by self-resolving course_id inside the action, eliminating unsafe function-type cast at call site
-
-Removed:
-- N/A
-
-Known Issues / Open Items:
-- Author display name not shown on blog admin list (auth.users not directly queryable via anon key; Stage 10 public blog can resolve via a separate profiles lookup by user_id if authors have profiles)
-- Course/lesson content editing (title, description, slug, content fields) not yet in UI — done via Supabase Studio; a future stage can add inline edit forms
-- Subscription management (plan upgrades, cancellations) is read-only; no Stripe integration yet
-
----
-
-### [Stage 10 — Public Pages & Blog]
-Date: 
-Agent: @
-
-Added:
-- 
-
-Changed:
-- 
-
-Fixed / Issues Resolved:
-- 
-
-Removed:
-- 
-
-Known Issues / Open Items:
-- 
-
----
-
-
-### [Stage 6 — Simulation Engine Module]
 Date: 2026-07-02
 Agent: @replit-agent
 
@@ -409,8 +283,8 @@ Added:
 - components/match-breakdown/form-badges.tsx — FormBadge (W/D/L coloured pill), FormRow (labelled result strip)
 - components/match-breakdown/factor-card.tsx — per-factor card with two-sided edge bar, confidence pill, and educational explanation text
 - components/match-breakdown/probability-display.tsx — outcome probability bars with implied odds; xG stat cards; combined xG note; key signals list; educational disclaimer
-- components/match-breakdown/match-analyzer.tsx — 6-step multi-form client component: context → home form → away form → H2H → availability → results; W/D/L result picker buttons; WeightedFormScore; runs analyzeMatch() on step 5; save-to-Supabase action for auth users; reset flow
-- app/(main)/match-breakdown/page.tsx — landing page: hero, disclaimer bar, six-factor grid with icons + explanations, three-step how-it-works, "What you'll learn" grid
+- components/match-breakdown/match-analyzer.tsx — 6-step multi-form client component: context > home form > away form > H2H > availability > results; W/D/L result picker buttons; WeightedFormScore; runs analyzeMatch() on step 5; save-to-Supabase action for auth users; reset flow
+- app/(main)/match-breakdown/page.tsx — landing page: hero, disclaimer bar, six-factor grid with icons + explanations, three-step how-it-works, What you'll learn grid
 - app/(main)/match-breakdown/analyzer/page.tsx — server wrapper; reads auth user; shows sign-in nudge for guests; renders MatchAnalyzer with isAuthenticated prop
 
 Changed:
@@ -472,30 +346,99 @@ Date: 2026-07-03
 Agent: @replit-agent
 
 Fixed / Issues Resolved:
-- Vercel build failed with TS2352 type error in lib/dashboard/queries.ts: Supabase infers joined relation columns (e.g. `row.lessons`) as array types, so a direct cast to a single-object helper type (`NestedLesson`) fails the overlap check. Fixed all four affected casts (`getInProgressLessons`, `getCompletedLessons`, `getBookmarks`, `getCourseProgress`) by routing through `as unknown as <TargetType>`, which is the correct TypeScript idiom when the source type is structurally incompatible but logically correct.
+- Vercel build failed with TS2352 type error in lib/dashboard/queries.ts: Supabase infers joined relation columns (e.g. row.lessons) as array types, so a direct cast to a single-object helper type (NestedLesson) fails the overlap check. Fixed all four affected casts (getInProgressLessons, getCompletedLessons, getBookmarks, getCourseProgress) by routing through "as unknown as <TargetType>", which is the correct TypeScript idiom when the source type is structurally incompatible but logically correct.
 
 Commit: 07c3adb
 
 ---
 
-### [Stage 11 — Homepage]
+### [Stage 9 — Admin Dashboard]
+Date: 2026-07-03
+Agent: @replit-agent
+
+Added:
+- supabase/migrations/005_admin_rls.sql — is_admin() security-definer helper function; admin bypass RLS policies for profiles, subscriptions, courses, lessons, course_categories, blog_posts, notifications, feature_flags (RLS enabled here), audit_logs (RLS enabled here), admin_roles (RLS enabled here)
+- lib/admin/queries.ts — read queries: getAdminStats (10 parallel counts + subscription breakdown), getAllUsers (profiles + subscriptions join), getAllCourses (with lesson count + category), getLessonsForCourse, getCourseById, getAllBlogPosts, getBlogPostById, getFeatureFlags
+- lib/admin/actions.ts — server actions (all requireAdmin()-gated + audit-logged): toggleCoursePublished, toggleLessonPublished (self-resolves course_id from DB), updateUserRole (blocks self-demotion), toggleFeatureFlag, createBlogPost, updateBlogPost (preserves original published_at), deleteBlogPost, toggleBlogPostPublished
+- components/admin/admin-sidebar.tsx — client sidebar with usePathname active-link state; exact-match for overview
+- components/admin/publish-toggle.tsx — client toggle button (Live/Draft pill); calls 2-arg action
+- components/admin/role-selector.tsx — client select dropdown for user role changes; self-guard renders read-only label
+- components/admin/flag-toggle.tsx — client optimistic toggle switch with revert-on-error
+- components/admin/blog-form.tsx — client form for create/edit blog posts; auto-slugify from title; publish toggle; Markdown textarea
+- components/admin/blog-delete-button.tsx — client delete button with confirmation dialog
+- app/admin/layout.tsx — requireAdmin() guard; dark top bar with Shield badge; sticky desktop sidebar; mobile horizontal scroll strip
+- app/admin/page.tsx — overview: 4 stat cards (users, sim sessions, courses, lessons), blog published/draft summary, subscription plan breakdown bars, quick-action links
+- app/admin/users/page.tsx — user table with role badge counts; inline RoleSelector per row
+- app/admin/courses/page.tsx — course table with level badge, lesson count, premium tag, PublishToggle, link to lessons
+- app/admin/courses/[courseId]/lessons/page.tsx — lesson table for a course with sort order, duration, PublishToggle
+- app/admin/blog/page.tsx — blog listing with tags, excerpt preview, PublishToggle, edit link, BlogDeleteButton
+- app/admin/blog/new/page.tsx — new post page wrapping BlogForm
+- app/admin/blog/[id]/edit/page.tsx — edit post page; 404 if post not found
+- app/admin/flags/page.tsx — feature flags list with FlagToggle components; warning banner
+
+Changed:
+- N/A (admin is a new top-level route group; does not touch existing layouts)
+
+Fixed / Issues Resolved:
+- Removed invalid profiles!blog_posts_author_id_fkey Supabase join in getAllBlogPosts — blog_posts.author_id FK points to auth.users, not profiles, so auto-join via PostgREST syntax fails at runtime; authorName is null in admin view (no functional impact)
+- Simplified toggleLessonPublished from 3-arg to 2-arg by self-resolving course_id inside the action, eliminating unsafe function-type cast at call site
+
+Removed:
+- N/A
+
+Known Issues / Open Items:
+- Author display name not shown on blog admin list (auth.users not directly queryable via anon key; Stage 10 public blog can resolve via a separate profiles lookup by user_id if authors have profiles)
+- Course/lesson content editing (title, description, slug, content fields) not yet in UI — done via Supabase Studio; a future stage can add inline edit forms
+- Subscription management (plan upgrades, cancellations) is read-only; no Stripe integration yet
+
+---
+
+### [Stage 10 — Public Blog & Pricing]
+Date: 2026-07-03
+Agent: @replit-agent
+
+Added:
+- lib/blog/queries.ts — server-side public blog queries: getPublishedPosts (with optional tag filter using .contains()), getPostBySlug, getAllTags (deduped from all published posts), getRelatedPosts (overlapping tags, excludes current post, limit 3)
+- components/blog/post-card.tsx — blog card with thumbnail (next/image), title, excerpt (line-clamp-3), tag badges, published date; featured prop enables horizontal layout for listing page hero card
+- components/blog/tag-filter.tsx — client component; reads ?tag= search param via useSearchParams; updates URL via useRouter; renders All + per-tag badge buttons with active-state styling
+- app/(main)/blog/page.tsx — public blog listing: dark hero, tag filter (Suspense-wrapped), featured post (horizontal layout), rest in 3-column grid; empty state when no posts or no posts for tag
+- app/(main)/blog/[slug]/page.tsx — blog post reader: dark header with tags + date, optional full-width thumbnail (next/image priority), ContentRenderer (headings/lists/blockquotes/paragraphs), tag footer links, related posts grid, back-to-blog button; generateMetadata for title/description/OG image
+- app/(main)/pricing/page.tsx — pricing page: Free / Premium (9 GBP/mo) / Pro (19 GBP/mo) plan cards with feature checklist (Check/X icons), "Most popular" badge on Premium, FAQ section (4 items), CTA footer strip
+
+Changed:
+- DEVLOG.md — reorganised in strict chronological order; removed duplicate blank Stage 6/7/8 placeholder blocks that were left after their actual entries were appended
+
+Fixed / Issues Resolved:
+- N/A
+
+Removed:
+- Duplicate blank Stage 6, 7, 8 DEVLOG placeholder blocks (entries already existed below Stage 10 placeholder)
+
+Known Issues / Open Items:
+- Pricing plan selection (?plan=premium) on the register page is read from the URL but not yet wired to Supabase subscription upsert; full payment flow is Stage 12 (monetisation)
+- Blog author name not shown (blog_posts.author_id references auth.users, not profiles; a profiles lookup by matching id could be added if authors maintain profiles)
+- No blog search (full-text search via Supabase textSearch() can be added in Stage 12 polish)
+
+---
+
+### [Stage 11 — Homepage Polish]
 Date: 
 Agent: @
 
 Added:
-- 
+-
 
 Changed:
-- 
+-
 
 Fixed / Issues Resolved:
-- 
+-
 
 Removed:
-- 
+-
 
 Known Issues / Open Items:
-- 
+-
 
 ---
 
@@ -504,16 +447,16 @@ Date:
 Agent: @
 
 Added:
-- 
+-
 
 Changed:
-- 
+-
 
 Fixed / Issues Resolved:
-- 
+-
 
 Removed:
-- 
+-
 
 Known Issues / Open Items:
-- 
+-

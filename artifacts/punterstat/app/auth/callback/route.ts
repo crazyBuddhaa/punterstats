@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { sendEmail, welcomeEmail } from "@/lib/email/resend";
+import { sendEmail } from "@/lib/email/resend";
+import { welcomeEmail } from "@/lib/email/templates";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);

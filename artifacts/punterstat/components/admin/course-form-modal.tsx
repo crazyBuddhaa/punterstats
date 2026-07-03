@@ -185,7 +185,7 @@ export function CourseFormModal({ categories, course, onClose }: CourseFormModal
               {/* Below-preview row: hint + clear button */}
               <div className="mt-1.5 flex items-center justify-between">
                 <p className="text-[11px] text-[#1e293b]/40">
-                  JPG, PNG, WebP · max 8 MB
+                  JPG, PNG, WebP · max 8 MB · recommended <span className="font-medium text-[#1e293b]/60">1280 × 720 px</span> (16:9)
                 </p>
                 {thumbnailUrl && !isUploading && (
                   <button

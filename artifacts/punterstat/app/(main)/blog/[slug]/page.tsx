@@ -126,9 +126,14 @@ export default async function BlogPostPage({ params }: Props) {
             <p className="mt-4 text-base text-white/60 leading-relaxed">{post.excerpt}</p>
           )}
 
-          <div className="mt-6 flex items-center gap-1.5 pb-8 text-xs text-white/30">
-            <Calendar className="h-3.5 w-3.5" />
-            {formatDate(post.publishedAt ?? post.createdAt)}
+          <div className="mt-6 flex flex-wrap items-center gap-3 pb-8 text-xs text-white/30">
+            <span className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5" />
+              {formatDate(post.publishedAt ?? post.createdAt)}
+            </span>
+            {post.authorName && (
+              <span className="text-white/30">by {post.authorName}</span>
+            )}
           </div>
         </div>
       </section>

@@ -30,7 +30,7 @@ const navLinks = [
 function UserMenu() {
   const user = useAuthStore((s) => s.user);
   const initials = user?.displayName
-    ? user.displayName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    ? (user.displayName.trim().split(/\s+/).filter(Boolean).map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?")
     : "?";
 
   return (
@@ -68,7 +68,7 @@ function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="flex items-center gap-2 text-red-600 focus:text-red-600 cursor-pointer"
-          onSelect={() => signOut()}
+          onSelect={async () => { await signOut(); }}
         >
           <LogOut className="h-4 w-4" />
           Sign out
@@ -181,7 +181,7 @@ export function Navbar() {
                   variant="ghost"
                   size="sm"
                   className="justify-center text-red-400 hover:bg-white/10 hover:text-red-300"
-                  onClick={() => { setMobileOpen(false); signOut(); }}
+                  onClick={async () => { setMobileOpen(false); await signOut(); }}
                 >
                   Sign out
                 </Button>

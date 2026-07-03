@@ -42,7 +42,7 @@ export default async function AdminCoursesPage() {
                   <th className="px-5 py-3">Lessons</th>
                   <th className="px-5 py-3">Premium</th>
                   <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3">Lessons</th>
+                  <th className="px-5 py-3">Manage</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

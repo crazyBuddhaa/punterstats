@@ -160,6 +160,7 @@ export async function createBlogPost(formData: FormData): Promise<ActionResult<{
     .from("blog_posts")
     .insert({
       author_id: profile.userId,
+      author_name: profile.displayName ?? null,
       title,
       slug,
       excerpt,
@@ -172,7 +173,12 @@ export async function createBlogPost(formData: FormData): Promise<ActionResult<{
     .select("id")
     .single();
 
-  if (error) return { success: false, error: error.message };
+  if (error) {
+    if (error.code === "23505" && error.message.includes("slug")) {
+      return { success: false, error: "This slug is already in use. Choose a different slug." };
+    }
+    return { success: false, error: error.message };
+  }
   await logAudit(profile.userId, "create", "blog_post", data.id, { title, isPublished });
   revalidatePath("/admin/blog");
   revalidatePath("/blog");
@@ -224,7 +230,12 @@ export async function updateBlogPost(
     })
     .eq("id", id);
 
-  if (error) return { success: false, error: error.message };
+  if (error) {
+    if (error.code === "23505" && error.message.includes("slug")) {
+      return { success: false, error: "This slug is already in use. Choose a different slug." };
+    }
+    return { success: false, error: error.message };
+  }
   await logAudit(profile.userId, "update", "blog_post", id, { title, isPublished });
   revalidatePath("/admin/blog");
   revalidatePath(`/admin/blog/${id}/edit`);

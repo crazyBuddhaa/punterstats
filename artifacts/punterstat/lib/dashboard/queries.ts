@@ -19,6 +19,8 @@ export interface InProgressLesson {
   courseId: string;
   courseTitle: string;
   courseSlug: string;
+  categorySlug: string;
+  section: string;
   updatedAt: string;
 }
 
@@ -31,6 +33,8 @@ export interface CompletedLesson {
   courseId: string;
   courseTitle: string;
   courseSlug: string;
+  categorySlug: string;
+  section: string;
 }
 
 export interface BookmarkedLesson {
@@ -41,6 +45,8 @@ export interface BookmarkedLesson {
   courseId: string;
   courseTitle: string;
   courseSlug: string;
+  categorySlug: string;
+  section: string;
   createdAt: string;
 }
 
@@ -101,7 +107,13 @@ type NestedLesson = {
   title: string;
   slug: string;
   course_id: string;
-  courses: { id: string; title: string; slug: string; level?: string } | null;
+  courses: {
+    id: string;
+    title: string;
+    slug: string;
+    level?: string;
+    course_categories: { slug: string; section: string } | null;
+  } | null;
 } | null;
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -145,7 +157,7 @@ export async function getInProgressLessons(userId: string): Promise<InProgressLe
   const supabase = await createClient();
   const { data } = await supabase
     .from("lesson_progress")
-    .select("id, progress_pct, updated_at, lessons(id, title, slug, course_id, courses(id, title, slug))")
+    .select("id, progress_pct, updated_at, lessons(id, title, slug, course_id, courses(id, title, slug, course_categories(slug, section)))")
     .eq("user_id", userId)
     .eq("completed", false)
     .gt("progress_pct", 0)
@@ -165,6 +177,8 @@ export async function getInProgressLessons(userId: string): Promise<InProgressLe
         courseId: lesson.courses.id,
         courseTitle: lesson.courses.title,
         courseSlug: lesson.courses.slug,
+        categorySlug: lesson.courses.course_categories?.slug ?? "",
+        section: lesson.courses.course_categories?.section ?? "sports_university",
         updatedAt: row.updated_at,
       },
     ];
@@ -175,7 +189,7 @@ export async function getCompletedLessons(userId: string): Promise<CompletedLess
   const supabase = await createClient();
   const { data } = await supabase
     .from("lesson_progress")
-    .select("id, completed_at, lessons(id, title, slug, course_id, courses(id, title, slug))")
+    .select("id, completed_at, lessons(id, title, slug, course_id, courses(id, title, slug, course_categories(slug, section)))")
     .eq("user_id", userId)
     .eq("completed", true)
     .order("completed_at", { ascending: false })
@@ -194,6 +208,8 @@ export async function getCompletedLessons(userId: string): Promise<CompletedLess
         courseId: lesson.courses.id,
         courseTitle: lesson.courses.title,
         courseSlug: lesson.courses.slug,
+        categorySlug: lesson.courses.course_categories?.slug ?? "",
+        section: lesson.courses.course_categories?.section ?? "sports_university",
       },
     ];
   });
@@ -203,7 +219,7 @@ export async function getBookmarks(userId: string): Promise<BookmarkedLesson[]> 
   const supabase = await createClient();
   const { data } = await supabase
     .from("bookmarks")
-    .select("id, created_at, lessons(id, title, slug, course_id, courses(id, title, slug))")
+    .select("id, created_at, lessons(id, title, slug, course_id, courses(id, title, slug, course_categories(slug, section)))")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
@@ -219,6 +235,8 @@ export async function getBookmarks(userId: string): Promise<BookmarkedLesson[]> 
         courseId: lesson.courses.id,
         courseTitle: lesson.courses.title,
         courseSlug: lesson.courses.slug,
+        categorySlug: lesson.courses.course_categories?.slug ?? "",
+        section: lesson.courses.course_categories?.section ?? "sports_university",
         createdAt: row.created_at,
       },
     ];

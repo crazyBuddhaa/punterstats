@@ -2,20 +2,39 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Bookmark, ExternalLink } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
-import { getBookmarks } from "@/lib/dashboard/queries";
+import { getBookmarks, type BookmarkedLesson } from "@/lib/dashboard/queries";
 import { EmptyState } from "@/components/dashboard/empty-state";
 
 export const metadata: Metadata = { title: "Saved Lessons — Dashboard — PunterStat" };
+
+function lessonUrl(item: Pick<BookmarkedLesson, "section" | "categorySlug" | "courseSlug" | "lessonSlug">): string {
+  const base = item.section === "betting_academy" ? "/betting-academy" : "/sports-university";
+  return `${base}/${item.categorySlug}/${item.courseSlug}/${item.lessonSlug}`;
+}
+
+function courseUrl(item: Pick<BookmarkedLesson, "section" | "categorySlug" | "courseSlug">): string {
+  const base = item.section === "betting_academy" ? "/betting-academy" : "/sports-university";
+  return `${base}/${item.categorySlug}/${item.courseSlug}`;
+}
 
 export default async function BookmarksPage() {
   const profile = await requireAuth();
   const bookmarks = await getBookmarks(profile.userId);
 
   // Group by course
-  const byCourse: Record<string, { courseTitle: string; courseSlug: string; items: typeof bookmarks }> = {};
+  const byCourse: Record<
+    string,
+    { courseTitle: string; courseSlug: string; categorySlug: string; section: string; items: typeof bookmarks }
+  > = {};
   for (const b of bookmarks) {
     if (!byCourse[b.courseId]) {
-      byCourse[b.courseId] = { courseTitle: b.courseTitle, courseSlug: b.courseSlug, items: [] };
+      byCourse[b.courseId] = {
+        courseTitle: b.courseTitle,
+        courseSlug: b.courseSlug,
+        categorySlug: b.categorySlug,
+        section: b.section,
+        items: [],
+      };
     }
     byCourse[b.courseId].items.push(b);
   }
@@ -48,7 +67,7 @@ export default async function BookmarksPage() {
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="font-semibold text-[#0f172a]">{group.courseTitle}</h2>
                 <Link
-                  href={`/sports-university/${group.courseSlug}`}
+                  href={courseUrl(group)}
                   className="flex items-center gap-1 text-xs font-medium text-teal-600 hover:text-teal-700"
                 >
                   Open course <ExternalLink className="h-3 w-3" />
@@ -74,7 +93,7 @@ export default async function BookmarksPage() {
                         })}
                       </span>
                       <Link
-                        href={`/sports-university/${item.courseSlug}/${item.lessonSlug}`}
+                        href={lessonUrl(item)}
                         className="text-xs font-medium text-teal-600 hover:text-teal-700"
                       >
                         Go to lesson →

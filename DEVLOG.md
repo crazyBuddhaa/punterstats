@@ -513,7 +513,48 @@ Removed:
 - components/sections/module-showcase.tsx — removed dead component (was excluded from homepage in Stage 12 refactor but file remained)
 
 Known Issues / Open Items:
-- Welcome email fires on every successful code exchange where next=/dashboard; if a user clicks the confirmation link multiple times, they may receive multiple welcome emails (low impact; can add a profiles.welcome_sent boolean guard if needed)
 - Contact form email delivery depends on RESEND_API_KEY being set; form submission always succeeds from the user's perspective regardless of delivery status
-- Blog author name not shown (auth.users not directly queryable via anon key)
-- Lesson URLs in dashboard continue-learning/bookmarks assume sports-university route; betting-academy lessons need separate URL resolution
+
+---
+
+### [Bug Fix Pass — Known Issues Resolution & Full Codebase Audit]
+Date: 2026-07-03
+Agent: @replit-agent
+
+Added:
+- supabase/migrations/006_fixes.sql — adds welcome_sent boolean to profiles (default false) and author_name text to blog_posts; backfills author_name from profiles for existing posts
+- app/admin/error.tsx — admin-specific error boundary; keeps sidebar/layout visible on failure, shows error digest in development, "Try again" reset button
+
+Changed:
+- app/auth/callback/route.ts — replaced fragile 5-minute time-window isNewUser check with atomic conditional UPDATE (WHERE welcome_sent = false); only the first concurrent callback wins the race and triggers the email — subsequent re-clicks affect 0 rows and are skipped
+- lib/dashboard/queries.ts — extended NestedLesson type to include course_categories(slug, section); added section and categorySlug fields to InProgressLesson, CompletedLesson, and BookmarkedLesson interfaces; updated all three select queries and row mappings accordingly
+- app/dashboard/continue-learning/page.tsx — replaced hardcoded /sports-university/ hrefs with a lessonUrl() helper that resolves the correct base path (/sports-university or /betting-academy) from the lesson's section field
+- app/dashboard/bookmarks/page.tsx — full rewrite: byCourse grouping now carries section and categorySlug; lessonUrl() and courseUrl() helpers replace hardcoded /sports-university/ hrefs
+- lib/dashboard/actions.ts — updateAvatar was targeting the wrong table (auth.users instead of public.profiles) and wrong PK column (id instead of user_id); fixed both; added revalidatePath("/", "layout") so the navbar avatar refreshes immediately
+- components/layout/navbar.tsx — initials computation now uses trim().split(/\s+/).filter(Boolean) to prevent crash on empty or whitespace-only displayName; signOut calls wrapped with async/await to suppress unhandled-promise warnings
+- types/index.ts — added authorName: string | null to BlogPost interface
+- lib/blog/queries.ts — mapPost() now maps author_name column to authorName
+- lib/admin/actions.ts — createBlogPost stores profile.displayName as author_name at write time (avoids auth.users join restriction at read time); both createBlogPost and updateBlogPost now return a user-friendly "This slug is already in use" message on Postgres duplicate-key error (code 23505) instead of the raw DB message
+- app/(main)/blog/[slug]/page.tsx — author name displayed alongside publish date in post header when available
+- components/blog/post-card.tsx — author name displayed in card footer alongside date
+- components/dashboard/avatar-upload.tsx — true optimistic preview: URL.createObjectURL() shown immediately on file select (before upload starts); blob URL revoked after Cloudinary URL arrives or on failure
+- app/admin/courses/page.tsx — fixed duplicate "Lessons" column header; last column renamed to "Manage"
+- middleware.ts — extended matcher negative-lookahead to exclude sitemap.xml and robots.txt (was running middleware unnecessarily on these static routes)
+
+Fixed / Issues Resolved:
+- Dashboard continue-learning and bookmarks pages linked all lessons to /sports-university/... regardless of whether they belonged to Sports University or Betting Academy — now resolved with section-aware URL helpers
+- updateAvatar silently failed (targeted non-existent auth.users table via anon client); avatar uploads appeared to succeed but never persisted
+- Welcome email could fire on every confirmation link click within 5 minutes; now guaranteed exactly-once via atomic DB guard
+- Blog posts showed no author name (auth.users not queryable by anon key); resolved by denormalizing author_name into blog_posts at write time
+- Admin courses table had two columns both labelled "Lessons" — last column now correctly labelled "Manage"
+- Duplicate blog slug gave raw Postgres constraint error to admin; now shows human-readable message
+- Navbar initials crashed if displayName was empty string or contained only whitespace
+- sitemap.xml and robots.txt requests were hitting the middleware (and triggering a Supabase getUser() call) unnecessarily
+
+Removed:
+- N/A
+
+Known Issues / Open Items:
+- Contact form email delivery depends on RESEND_API_KEY being set; form submission always succeeds from the user's perspective regardless of delivery status
+- Blog full-text search not implemented; Supabase textSearch() can be added when content volume warrants it
+- Welcome email requires migration 006 to be applied to Supabase before the atomic guard is active; without it the welcome_sent update affects 0 rows (column missing) and the email sends on every callback — apply migration first

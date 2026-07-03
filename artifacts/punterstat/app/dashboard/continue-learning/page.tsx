@@ -2,8 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BookOpen, CheckCircle2, Clock } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
-import { getInProgressLessons, getCompletedLessons } from "@/lib/dashboard/queries";
+import { getInProgressLessons, getCompletedLessons, type InProgressLesson, type CompletedLesson } from "@/lib/dashboard/queries";
 import { EmptyState } from "@/components/dashboard/empty-state";
+
+function lessonUrl(item: Pick<InProgressLesson | CompletedLesson, "section" | "categorySlug" | "courseSlug" | "lessonSlug">): string {
+  const base = item.section === "betting_academy" ? "/betting-academy" : "/sports-university";
+  return `${base}/${item.categorySlug}/${item.courseSlug}/${item.lessonSlug}`;
+}
 
 export const metadata: Metadata = { title: "Continue Learning — Dashboard — PunterStat" };
 
@@ -64,7 +69,7 @@ export default async function ContinueLearningPage() {
                 </div>
                 <ProgressBar pct={item.progressPct} />
                 <Link
-                  href={`/sports-university/${item.courseSlug}/${item.lessonSlug}`}
+                  href={lessonUrl(item)}
                   className="mt-4 flex w-full items-center justify-center rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-700"
                 >
                   Continue →
@@ -108,7 +113,7 @@ export default async function ContinueLearningPage() {
                     </span>
                   )}
                   <Link
-                    href={`/sports-university/${item.courseSlug}/${item.lessonSlug}`}
+                    href={lessonUrl(item)}
                     className="text-xs font-medium text-teal-600 hover:text-teal-700"
                   >
                     Review →

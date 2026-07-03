@@ -5,6 +5,7 @@ function mapPost(row: Record<string, unknown>): BlogPost {
   return {
     id: row.id as string,
     authorId: row.author_id as string,
+    authorName: (row.author_name as string | null) ?? null,
     title: row.title as string,
     slug: row.slug as string,
     excerpt: row.excerpt as string | null,

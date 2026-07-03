@@ -62,9 +62,12 @@ export function PostCard({ post, featured = false }: Props) {
           )}
 
           <CardFooter className="pt-0">
-            <div className="flex items-center gap-1.5 text-xs text-[#1e293b]/40">
-              <Calendar className="h-3.5 w-3.5" />
-              {formatDate(post.publishedAt ?? post.createdAt)}
+            <div className="flex flex-wrap items-center gap-3 text-xs text-[#1e293b]/40">
+              <span className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                {formatDate(post.publishedAt ?? post.createdAt)}
+              </span>
+              {post.authorName && <span>by {post.authorName}</span>}
             </div>
           </CardFooter>
         </div>

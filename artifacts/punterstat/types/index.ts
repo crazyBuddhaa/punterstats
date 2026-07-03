@@ -132,6 +132,7 @@ export interface MatchAnalysis {
 export interface BlogPost {
   id: string;
   authorId: string;
+  authorName: string | null;
   title: string;
   slug: string;
   excerpt: string | null;

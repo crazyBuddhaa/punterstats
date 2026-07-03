@@ -18,13 +18,15 @@ export function AvatarUpload({ currentUrl, displayName }: AvatarUploadProps) {
   const [isPending, startTransition] = useTransition();
   const initials = (displayName || "U").slice(0, 1).toUpperCase();
 
-  async function handleFile(file: File) {
+  async function handleFile(file: File, objectUrl: string) {
     if (!file.type.startsWith("image/")) {
       setError("Please select an image file.");
+      URL.revokeObjectURL(objectUrl);
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
       setError("Image must be smaller than 5 MB.");
+      URL.revokeObjectURL(objectUrl);
       return;
     }
     setError(null);
@@ -42,7 +44,8 @@ export function AvatarUpload({ currentUrl, displayName }: AvatarUploadProps) {
         // Upload directly to Cloudinary
         const secureUrl = await uploadToCloudinary(file, sig);
 
-        // Optimistic preview
+        // Swap optimistic blob URL for the real Cloudinary URL
+        URL.revokeObjectURL(objectUrl);
         setPreview(secureUrl);
 
         // Persist to Supabase
@@ -52,6 +55,7 @@ export function AvatarUpload({ currentUrl, displayName }: AvatarUploadProps) {
           setPreview(currentUrl ?? null);
         }
       } catch (err) {
+        URL.revokeObjectURL(objectUrl);
         setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
         setPreview(currentUrl ?? null);
       }
@@ -120,7 +124,12 @@ export function AvatarUpload({ currentUrl, displayName }: AvatarUploadProps) {
         className="sr-only"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) handleFile(file);
+          if (file) {
+            // Show instant local preview before the upload starts
+            const objectUrl = URL.createObjectURL(file);
+            setPreview(objectUrl);
+            handleFile(file, objectUrl);
+          }
           e.target.value = "";
         }}
       />

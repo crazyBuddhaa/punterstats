@@ -447,6 +447,17 @@ Known Issues / Open Items:
 
 ---
 
+### [Hotfix — Stage 8 TypeScript Build Failure]
+Date: 2026-07-03
+Agent: @replit-agent
+
+Fixed / Issues Resolved:
+- Vercel build failed with TS2352 type error in lib/dashboard/queries.ts: Supabase infers joined relation columns (e.g. `row.lessons`) as array types, so a direct cast to a single-object helper type (`NestedLesson`) fails the overlap check. Fixed all four affected casts (`getInProgressLessons`, `getCompletedLessons`, `getBookmarks`, `getCourseProgress`) by routing through `as unknown as <TargetType>`, which is the correct TypeScript idiom when the source type is structurally incompatible but logically correct.
+
+Commit: 07c3adb
+
+---
+
 ### [Stage 11 — Homepage]
 Date: 
 Agent: @

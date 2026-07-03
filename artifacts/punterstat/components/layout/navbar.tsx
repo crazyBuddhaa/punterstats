@@ -29,8 +29,7 @@ const navLinks = [
 
 function UserMenu() {
   const user = useAuthStore((s) => s.user);
-  const hasRole = useAuthStore((s) => s.hasRole);
-  const isAdmin = hasRole("admin");
+  const isAdmin = useAuthStore((s) => s.user?.role === "admin");
   const initials = user?.displayName
     ? (user.displayName.trim().split(/\s+/).filter(Boolean).map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?")
     : "?";
@@ -88,8 +87,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
-  const hasRole = useAuthStore((s) => s.hasRole);
-  const isAdmin = isAuthenticated && hasRole("admin");
+  const isAdmin = useAuthStore((s) => s.user?.role === "admin");
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#0f172a]">

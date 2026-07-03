@@ -6,8 +6,8 @@ const footerLinks = {
   Platform: [
     { href: "/sports-university", label: "Sports University" },
     { href: "/betting-academy", label: "Betting Academy" },
-    { href: "/simulation", label: "Simulation Engine" },
-    { href: "/match-analysis", label: "Match Analysis" },
+    { href: "/simulation-engine", label: "Simulation Engine" },
+    { href: "/match-breakdown", label: "Match Analysis" },
   ],
   Company: [
     { href: "/about", label: "About" },

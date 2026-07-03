@@ -484,3 +484,36 @@ Known Issues / Open Items:
 - Welcome email (lib/email/resend.ts welcomeEmail()) is not yet wired into the sign-up flow; integration point is app/auth/callback/route.ts after successful PKCE code exchange — call sendEmail(welcomeEmail(displayName)) there when RESEND_API_KEY is set
 - Testimonials on the homepage remain static; a future pass can add a testimonials table and admin CRUD panel
 - Blog full-text search not implemented; Supabase textSearch() can be added when content volume warrants it
+
+---
+
+### [Post-Stage 12 — Missing Pages, Bug Fixes & Cleanup]
+Date: 2026-07-03
+Agent: @replit-agent
+
+Added:
+- app/(main)/about/page.tsx — full About page: dark hero, philosophy section ("Knowledge Before Decision"), 4-module grid with links, 4-value principles grid, educational disclaimer card, CTA strip
+- app/(main)/faq/page.tsx — comprehensive FAQ: 5 sections (About PunterStat, Platform & Modules, Accounts & Access, Data & Privacy, Technical), 18 questions using native <details>/<summary> accordion, section anchor links, contact CTA
+- app/(main)/contact/page.tsx — Contact page: server-rendered layout with ContactForm client component + side info panel (email addresses, response time, FAQ link, legal notice)
+- components/contact/contact-form.tsx — client contact form using useActionState; name/email/subject/message fields; per-field Zod validation errors; success state with confirmation message; loading spinner
+- lib/contact/actions.ts — submitContact server action: Zod validation, sends email to hello@punterstat.com inbox and confirmation reply to user via sendEmail(); graceful failure (logs error, doesn't block submission)
+
+Changed:
+- app/auth/callback/route.ts — wired welcome email: after successful PKCE code exchange, fetches display_name from profiles table and fires sendEmail(welcomeEmail(displayName)) fire-and-forget (does not block redirect)
+- components/layout/footer.tsx — fixed two broken Platform links: /simulation → /simulation-engine, /match-analysis → /match-breakdown
+- app/(main)/page.tsx — removed ModuleShowcase and Testimonials from homepage composition (simplified to Hero → StatsBar → HowItWorks → FeaturesGrid → CtaSection)
+
+Fixed / Issues Resolved:
+- Footer "Simulation Engine" and "Match Analysis" links were 404ing — now point to correct routes (/simulation-engine, /match-breakdown)
+- Welcome email was built but never sent — now fires automatically after email confirmation (PKCE exchange)
+- /about, /faq, /contact were listed in footer and spec but had no backing pages — all three now fully implemented
+
+Removed:
+- components/sections/testimonials.tsx — static placeholder copy removed completely per product decision; no replacement planned
+- components/sections/module-showcase.tsx — removed dead component (was excluded from homepage in Stage 12 refactor but file remained)
+
+Known Issues / Open Items:
+- Welcome email fires on every successful code exchange where next=/dashboard; if a user clicks the confirmation link multiple times, they may receive multiple welcome emails (low impact; can add a profiles.welcome_sent boolean guard if needed)
+- Contact form email delivery depends on RESEND_API_KEY being set; form submission always succeeds from the user's perspective regardless of delivery status
+- Blog author name not shown (auth.users not directly queryable via anon key)
+- Lesson URLs in dashboard continue-learning/bookmarks assume sports-university route; betting-academy lessons need separate URL resolution

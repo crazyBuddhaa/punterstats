@@ -33,27 +33,13 @@ export default async function DashboardLayout({
               Back to site
             </Link>
 
-            <div className="flex items-center gap-2.5 rounded-full border border-border bg-slate-50 pl-3 pr-1 py-1">
-              <div className="flex flex-col items-end">
-                <span className="text-xs font-semibold text-[#0f172a] leading-tight">
-                  {profile.displayName ?? "User"}
-                </span>
-                <span
-                  className={`text-[10px] font-medium capitalize leading-tight ${
-                    profile.role === "admin"
-                      ? "text-violet-600"
-                      : profile.role === "premium"
-                      ? "text-amber-600"
-                      : "text-[#1e293b]/50"
-                  }`}
-                >
-                  {profile.role}
-                </span>
-              </div>
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">
-                {(profile.displayName ?? "U").slice(0, 1).toUpperCase()}
-              </div>
-            </div>
+            <Link
+              href="/dashboard/profile"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white hover:bg-teal-700 transition-colors"
+              title={profile.displayName ?? "Profile"}
+            >
+              {(profile.displayName ?? "U").slice(0, 1).toUpperCase()}
+            </Link>
 
             <form action={signOut}>
               <button

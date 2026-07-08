@@ -6,11 +6,20 @@ interface AuthState {
   user: UserProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  /**
+   * Becomes true after the Zustand persist middleware has rehydrated state
+   * from localStorage. Components that render auth-dependent UI (e.g. Navbar
+   * avatars, dashboard links) should gate on this flag to avoid a brief
+   * mismatch between the SSR render (always unauthenticated) and the first
+   * client frame (which may already have a persisted user).
+   */
+  _hasHydrated: boolean;
 
   setUser: (user: UserProfile | null) => void;
   setLoading: (loading: boolean) => void;
   signOut: () => void;
   hasRole: (role: UserRole) => boolean;
+  setHasHydrated: (value: boolean) => void;
 }
 
 const ROLE_HIERARCHY: Record<UserRole, number> = {
@@ -29,6 +38,7 @@ export const useAuthStore = create<AuthState>()(
       // setLoading(true) explicitly and then setUser() to clear it.
       isLoading: false,
       isAuthenticated: false,
+      _hasHydrated: false,
 
       setUser: (user) =>
         set({
@@ -51,18 +61,35 @@ export const useAuthStore = create<AuthState>()(
         if (!user) return false;
         return ROLE_HIERARCHY[user.role] >= ROLE_HIERARCHY[requiredRole];
       },
+
+      setHasHydrated: (value) => set({ _hasHydrated: value }),
     }),
     {
       name: "punterstat-auth",
-      // Only persist user — derived state is recomputed on rehydration
+      // Only persist user — derived state is recomputed on rehydration.
+      // _hasHydrated is intentionally excluded: it is always false on the
+      // initial SSR render and set to true once the client rehydrates.
       partialize: (state) => ({ user: state.user }),
-      // After rehydration, sync isAuthenticated from the restored user value
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.isAuthenticated = state.user !== null;
           state.isLoading = false;
+          state._hasHydrated = true;
         }
       },
     }
   )
 );
+
+/**
+ * Hook that returns true once the Zustand auth store has rehydrated from
+ * localStorage. Use this to defer auth-dependent rendering and avoid
+ * SSR/client hydration mismatches in the Navbar and dashboard sidebar.
+ *
+ * Example:
+ *   const hydrated = useAuthHydrated();
+ *   if (!hydrated) return <Skeleton />;
+ */
+export function useAuthHydrated(): boolean {
+  return useAuthStore((s) => s._hasHydrated);
+}

@@ -1,46 +1,46 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import { Hero } from "@/components/sections/hero";
+import { StatsBar } from "@/components/sections/stats-bar";
+import { FeaturesGrid } from "@/components/sections/features-grid";
+import { DataShowcase } from "@/components/sections/data-showcase";
+import { HowItWorks } from "@/components/sections/how-it-works";
+import { CtaSection } from "@/components/sections/cta-section";
 
 export const metadata: Metadata = {
   title: "PunterStat — Sports Intelligence & Education Platform",
   description:
-    "Master how sports systems, probability, and betting mathematics work. Four structured learning modules: Sports University, Betting Academy, Simulation Engine, and Match Breakdown.",
+    "Master sports probability, betting mathematics, and analytical thinking. 400+ structured lessons, real historical data (33 seasons, 20 bookmakers), and interactive tools — built for serious sports thinkers.",
   openGraph: {
-    title: "PunterStat — Knowledge Before Decision",
+    title: "PunterStat — Think Analytically. Bet Responsibly.",
     description:
-      "Learn sports analytics, probability theory, and analytical thinking through structured courses and interactive simulations.",
+      "A complete sports intelligence platform: Sports University, Betting Academy, Simulation Engine, Match Breakdown, and 33 seasons of historical data. Knowledge Before Decision.",
+    images: ["/hero-visual.jpg"],
   },
 };
-import { Hero } from "@/components/sections/hero";
-import { StatsBar } from "@/components/sections/stats-bar";
-import { HowItWorks } from "@/components/sections/how-it-works";
-import { FeaturesGrid } from "@/components/sections/features-grid";
-import { CtaSection } from "@/components/sections/cta-section";
 
-async function getHomepageData() {
+async function getIsAuthenticated(): Promise<boolean> {
   try {
     const supabase = await createClient();
-    const [{ count: courseCount }, { count: lessonCount }, { data: { user } }] =
-      await Promise.all([
-        supabase.from("courses").select("*", { count: "exact", head: true }).eq("is_published", true),
-        supabase.from("lessons").select("*", { count: "exact", head: true }).eq("is_published", true),
-        supabase.auth.getUser(),
-      ]);
-    return { courses: courseCount ?? 0, lessons: lessonCount ?? 0, isAuthenticated: !!user };
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return !!user;
   } catch {
-    return { courses: 0, lessons: 0, isAuthenticated: false };
+    return false;
   }
 }
 
 export default async function Home() {
-  const { courses, lessons, isAuthenticated } = await getHomepageData();
+  const isAuthenticated = await getIsAuthenticated();
 
   return (
     <>
       <Hero isAuthenticated={isAuthenticated} />
-      <StatsBar courses={courses} lessons={lessons} />
-      <HowItWorks />
+      <StatsBar />
       <FeaturesGrid />
+      <DataShowcase />
+      <HowItWorks />
       <CtaSection isAuthenticated={isAuthenticated} />
     </>
   );

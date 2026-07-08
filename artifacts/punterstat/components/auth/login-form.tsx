@@ -102,6 +102,18 @@ export function LoginForm({ redirectTo: _redirectTo, serverError }: Props) {
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Sign in
           </Button>
+
+          <div className="relative w-full">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-[#1e293b]/40">or</span>
+            </div>
+          </div>
+
+          <GoogleSignInButton />
+
           <p className="text-center text-sm text-[#1e293b]/60">
             Don&apos;t have an account?{" "}
             <Link

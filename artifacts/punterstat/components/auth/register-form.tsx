@@ -146,6 +146,18 @@ export function RegisterForm({ checkEmail }: Props) {
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Create free account
           </Button>
+
+          <div className="relative w-full">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-[#1e293b]/40">or</span>
+            </div>
+          </div>
+
+          <GoogleSignInButton label="Sign up with Google" />
+
           <p className="text-center text-xs text-[#1e293b]/50 leading-relaxed px-2">
             By creating an account you agree to our{" "}
             <Link href="/terms" className="text-[#3D2DFF] hover:underline">
@@ -155,7 +167,8 @@ export function RegisterForm({ checkEmail }: Props) {
             <Link href="/privacy" className="text-[#3D2DFF] hover:underline">
               Privacy Policy
             </Link>
-            .
+            , and confirm you are{" "}
+            <span className="font-semibold text-[#0f172a]">18 or older</span>.
           </p>
           <p className="text-center text-sm text-[#1e293b]/60">
             Already have an account?{" "}

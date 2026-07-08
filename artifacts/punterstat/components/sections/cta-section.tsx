@@ -11,17 +11,21 @@ interface CtaSectionProps {
   primaryHref?: string;
   secondaryLabel?: string;
   secondaryHref?: string;
+  isAuthenticated?: boolean;
 }
 
 export function CtaSection({
   className,
   title = "Start building your sports intelligence today.",
   description = "Free to begin. No credit card required. No tips, no noise — just structured knowledge.",
-  primaryLabel = "Create Free Account",
-  primaryHref = "/register",
+  primaryLabel,
+  primaryHref,
   secondaryLabel = "View pricing",
   secondaryHref = "/pricing",
+  isAuthenticated = false,
 }: CtaSectionProps) {
+  const resolvedPrimaryLabel = primaryLabel ?? (isAuthenticated ? "Go to Dashboard" : "Create Free Account");
+  const resolvedPrimaryHref = primaryHref ?? (isAuthenticated ? "/dashboard" : "/register");
   return (
     <section
       className={cn(
@@ -44,8 +48,8 @@ export function CtaSection({
         </p>
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <Button size="lg" asChild className="gap-2 px-8 bg-[#3D2DFF] hover:bg-[#3D2DFF]/90">
-            <Link href={primaryHref}>
-              {primaryLabel}
+            <Link href={resolvedPrimaryHref}>
+              {resolvedPrimaryLabel}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>

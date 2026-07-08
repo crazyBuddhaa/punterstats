@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/sync-season",
       "schedule": "0 6 * * 1"
+    },
+    {
+      "path": "/api/cron/resolve-predictions",
+      "schedule": "0 3 * * *"
     }
   ]
 }

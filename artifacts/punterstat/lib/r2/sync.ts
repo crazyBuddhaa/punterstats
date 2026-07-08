@@ -11,7 +11,7 @@
  * Seasons available: 1993/94 (code "9394") to the current season.
  */
 
-import { putFootballCsv, getManifest, putManifest, objectExists, footballCsvKey } from "./dataset";
+import { putFootballCsv, getManifestWithETag, putManifestConditional, objectExists, footballCsvKey } from "./dataset";
 import { parseFDCsv } from "./csv-parser";
 import { LEAGUE_MAP } from "@/lib/historical-stats/league-map";
 import type { R2SyncResult } from "./types";
@@ -185,47 +185,71 @@ export async function syncOneSeason(
  * Update the R2 manifest.json with the results of a sync run.
  * Idempotent — merges into existing manifest data rather than overwriting.
  */
+/**
+ * Apply sync results to manifest.json using optimistic locking.
+ *
+ * Reads the manifest together with its ETag, computes the update, then writes
+ * back using If-Match so Cloudflare R2 rejects the write (412) if another
+ * process modified the manifest between read and write. Retries up to
+ * maxRetries times with exponential back-off before giving up.
+ *
+ * This prevents concurrent cron runs or manual API calls from overwriting each
+ * other's changes and producing a corrupt/stale manifest.json.
+ */
 export async function updateManifestWithResults(
-  results: R2SyncResult[]
+  results: R2SyncResult[],
+  maxRetries = 3,
 ): Promise<void> {
-  const manifest = await getManifest();
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const { manifest, etag } = await getManifestWithETag();
 
-  for (const r of results) {
-    if (!r.success || r.rowCount === 0) continue;
+    for (const r of results) {
+      if (!r.success || r.rowCount === 0) continue;
 
-    const leagueInfo = LEAGUE_MAP[r.leagueCode];
-    if (!manifest.leagues[r.leagueCode]) {
-      manifest.leagues[r.leagueCode] = {
-        code: r.leagueCode,
-        name: leagueInfo?.name ?? r.leagueCode,
-        country: leagueInfo?.country ?? "Unknown",
-        seasons: [],
-        lastSyncAt: null,
+      const leagueInfo = LEAGUE_MAP[r.leagueCode];
+      if (!manifest.leagues[r.leagueCode]) {
+        manifest.leagues[r.leagueCode] = {
+          code: r.leagueCode,
+          name: leagueInfo?.name ?? r.leagueCode,
+          country: leagueInfo?.country ?? "Unknown",
+          seasons: [],
+          lastSyncAt: null,
+        };
+      }
+
+      const league = manifest.leagues[r.leagueCode];
+
+      const existing = league.seasons.findIndex((s) => s.code === r.seasonCode);
+      const seasonMeta = {
+        code: r.seasonCode,
+        label: r.seasonLabel,
+        archivedAt: new Date().toISOString(),
+        rowCount: r.rowCount,
+        fileSizeBytes: r.fileSizeBytes,
       };
+      if (existing >= 0) {
+        league.seasons[existing] = seasonMeta;
+      } else {
+        league.seasons.push(seasonMeta);
+      }
+      league.seasons.sort((a, b) => a.code.localeCompare(b.code));
+      league.lastSyncAt = new Date().toISOString();
     }
 
-    const league = manifest.leagues[r.leagueCode];
+    manifest.updatedAt = new Date().toISOString();
 
-    // Upsert the season entry
-    const existing = league.seasons.findIndex((s) => s.code === r.seasonCode);
-    const seasonMeta = {
-      code: r.seasonCode,
-      label: r.seasonLabel,
-      archivedAt: new Date().toISOString(),
-      rowCount: r.rowCount,
-      fileSizeBytes: r.fileSizeBytes,
-    };
-    if (existing >= 0) {
-      league.seasons[existing] = seasonMeta;
-    } else {
-      league.seasons.push(seasonMeta);
+    const wrote = await putManifestConditional(manifest, etag);
+    if (wrote) return;
+
+    // 412 — concurrent modification. Back off and re-read before retrying.
+    if (attempt < maxRetries - 1) {
+      await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
     }
-    league.seasons.sort((a, b) => a.code.localeCompare(b.code));
-    league.lastSyncAt = new Date().toISOString();
   }
 
-  manifest.updatedAt = new Date().toISOString();
-  await putManifest(manifest);
+  throw new Error(
+    `[r2/manifest] updateManifestWithResults failed after ${maxRetries} attempts — concurrent modification`,
+  );
 }
 
 // ── High-level sync functions ─────────────────────────────────────────────────

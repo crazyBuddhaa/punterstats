@@ -163,10 +163,107 @@ export async function getManifest(): Promise<R2Manifest> {
 }
 
 /**
+ * Read manifest.json and return both the parsed content and the current ETag.
+ * The ETag is used for optimistic locking via putManifestConditional().
+ * Returns etag=null when the manifest doesn't exist yet.
+ */
+export async function getManifestWithETag(): Promise<{
+  manifest: R2Manifest;
+  etag: string | null;
+}> {
+  const client = getR2Client();
+  const bucket = getR2Bucket();
+
+  try {
+    const cmd = new GetObjectCommand({ Bucket: bucket, Key: MANIFEST_KEY });
+    const res = await client.send(cmd);
+
+    if (!res.Body) return { manifest: { ...EMPTY_MANIFEST }, etag: null };
+
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of res.Body as AsyncIterable<Uint8Array>) {
+      chunks.push(chunk);
+    }
+    const text = Buffer.concat(chunks).toString("utf8");
+
+    try {
+      return {
+        manifest: JSON.parse(text) as R2Manifest,
+        etag: res.ETag ?? null,
+      };
+    } catch {
+      return { manifest: { ...EMPTY_MANIFEST }, etag: null };
+    }
+  } catch (err: unknown) {
+    const code =
+      (err as { name?: string }).name ?? (err as { Code?: string }).Code;
+    if (code === "NoSuchKey" || code === "NotFound") {
+      return { manifest: { ...EMPTY_MANIFEST }, etag: null };
+    }
+    throw err;
+  }
+}
+
+/**
  * Write (overwrite) manifest.json in R2.
  */
 export async function putManifest(manifest: R2Manifest): Promise<void> {
   await putObject(MANIFEST_KEY, JSON.stringify(manifest, null, 2), "application/json");
+}
+
+/**
+ * Conditionally write manifest.json only when the stored ETag matches
+ * the one we read (optimistic locking — prevents concurrent sync corruption).
+ *
+ * Returns true  → write succeeded.
+ * Returns false → ETag mismatch (another writer raced us); caller should retry.
+ * Throws        → unexpected storage error.
+ *
+ * When etag is null (manifest didn't exist at read time) the If-Match header
+ * is omitted and the write proceeds unconditionally — first-write semantics.
+ */
+export async function putManifestConditional(
+  manifest: R2Manifest,
+  etag: string | null,
+): Promise<boolean> {
+  const client = getR2Client();
+  const bucket = getR2Bucket();
+  const body = JSON.stringify(manifest, null, 2);
+
+  const cmd = new PutObjectCommand({
+    Bucket: bucket,
+    Key: MANIFEST_KEY,
+    Body: body,
+    ContentType: "application/json",
+    ContentLength: Buffer.byteLength(body, "utf8"),
+  });
+
+  // Inject If-Match header so Cloudflare R2 rejects the write (412) when
+  // another process modified the manifest between our read and this write.
+  if (etag) {
+    cmd.middlewareStack.add(
+      (next) => async (args) => {
+        const req = args.request as { headers: Record<string, string> };
+        req.headers["If-Match"] = etag;
+        return next(args);
+      },
+      { step: "build", name: "addIfMatchHeader" },
+    );
+  }
+
+  try {
+    await client.send(cmd);
+    return true;
+  } catch (err: unknown) {
+    const name = (err as { name?: string }).name;
+    const status = (
+      err as { $metadata?: { httpStatusCode?: number } }
+    ).$metadata?.httpStatusCode;
+
+    // 412 = concurrent modification; signal caller to re-read and retry.
+    if (name === "PreconditionFailed" || status === 412) return false;
+    throw err;
+  }
 }
 
 // ── Football CSV helpers ──────────────────────────────────────────────────────

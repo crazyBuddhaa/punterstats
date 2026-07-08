@@ -33,6 +33,9 @@ const RATE_LIMITED_API_ROUTES: Array<{
   { prefix: "/api/calibration",    limit: 20, windowMs: 60_000, label: "calibration" },
   // R2 dataset listing: public, lightweight (reads manifest.json from R2).
   { prefix: "/api/r2/datasets",    limit: 30, windowMs: 60_000, label: "r2-datasets" },
+  // Cron endpoints: secondary guard in case a handler misses its CRON_SECRET check.
+  // Vercel's scheduler sends 1 req/trigger; 5/min leaves room for manual retries.
+  { prefix: "/api/cron",           limit:  5, windowMs: 60_000, label: "cron"        },
 ];
 
 /** True if `pathname` is exactly `prefix` or starts with `prefix/`. */

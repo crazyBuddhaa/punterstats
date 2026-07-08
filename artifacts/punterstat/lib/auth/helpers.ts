@@ -14,12 +14,20 @@ export async function getUserProfile(): Promise<UserProfile | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data } = await supabase
+  const { data, error: profileError } = await supabase
     .from("profiles")
     .select("*")
     .eq("user_id", user.id)
     .single();
 
+  if (profileError) {
+    // PGRST116 = "no rows returned" — treat as missing profile, not a crash.
+    // Any other code is a genuine DB/network error worth surfacing in logs.
+    if (profileError.code !== "PGRST116") {
+      console.error("[getUserProfile] DB error:", profileError.code, profileError.message);
+    }
+    return null;
+  }
   if (!data) return null;
 
   return {

@@ -106,12 +106,24 @@ export async function getFixtures(options?: {
   const primaryUsage = await getUsage("footballdata-io");
   const primaryLimit = QUOTAS["footballdata-io"].limit;
 
+  let primaryError: string | undefined;
+
   if (primaryUsage < primaryLimit * RECOVERY_THRESHOLD) {
     const primaryResult = await getFootballDataIoFixtures(options);
     if (primaryResult.success) return primaryResult;
-    // Primary failed — fall through to secondary.
+    // Capture the primary error so we can surface it if the fallback also fails.
+    primaryError = primaryResult.error;
   }
 
   // ── Fallback: football-data.org (unlimited) ──────────────────────────────
-  return getFootballDataFixtures(options);
+  const fallbackResult = await getFootballDataFixtures(options);
+  if (fallbackResult.success) return fallbackResult;
+
+  // Both providers failed — combine errors so callers and logs get the full picture.
+  return {
+    success: false,
+    error: primaryError
+      ? `Primary (footballdata.io): ${primaryError} | Fallback (football-data.org): ${fallbackResult.error}`
+      : fallbackResult.error,
+  };
 }

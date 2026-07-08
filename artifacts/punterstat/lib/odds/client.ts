@@ -100,11 +100,33 @@ export async function getOdds(
     url.searchParams.set("oddsFormat", "decimal");
 
     const res = await fetch(url.toString());
+
+    // Log quota headers on every live call so we can track exhaustion risk.
+    const remaining = res.headers.get("x-requests-remaining");
+    const used      = res.headers.get("x-requests-used");
+    if (remaining !== null) {
+      const rem = parseInt(remaining, 10);
+      if (rem < 50) {
+        console.warn(
+          `[odds/client] ⚠ Odds API quota critically low: ${rem} requests remaining (used: ${used ?? "?"}).`
+        );
+      } else if (rem < 150) {
+        console.warn(
+          `[odds/client] Odds API quota getting low: ${rem} remaining (used: ${used ?? "?"}).`
+        );
+      }
+    }
+
     if (!res.ok) {
+      // 401 = key invalid; 422 = invalid sport key; 429 = quota exhausted
       const body = await res.text();
       await releaseOddsLock(sportKey);
       if (staleEvents.length > 0) {
+        // Serve stale data rather than breaking the user experience.
         return { success: true, events: staleEvents, fromCache: true };
+      }
+      if (res.status === 429) {
+        return { success: false, error: "Odds API quota exhausted — data temporarily unavailable." };
       }
       return { success: false, error: `Odds API error ${res.status}: ${body.slice(0, 200)}` };
     }

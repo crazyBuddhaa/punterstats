@@ -97,7 +97,7 @@ SET content = '<h2>Where goals actually come from</h2>
 <h2>Prevention: the other half of the equation</h2>
 <p>Defensive organisation prevents goals by reducing the quality and quantity of chances the opposition can create. The key defensive metrics are:</p>
 <ul>
-<li><strong>Expected Goals Allowed (xGA):</strong> How many goals a team's defence should have conceded based on the shots allowed. Teams that consistently concede fewer goals than their xGA have excellent goalkeeping or slightly fortunate finishing from opponents — and vice versa.</li>
+<li><strong>Expected Goals Allowed (xGA):</strong> How many goals a team''s defence should have conceded based on the shots allowed. Teams that consistently concede fewer goals than their xGA have excellent goalkeeping or slightly fortunate finishing from opponents — and vice versa.</li>
 <li><strong>Defensive line management:</strong> Holding a high line compresses space in the middle of the pitch but creates vulnerability to balls played in behind. A low block is harder to break down but cedes possession and invites pressure.</li>
 <li><strong>Set-piece defence:</strong> With 25–30% of goals coming from dead balls, a team''s set-piece defensive organisation is as important as their open-play structure. Elite defensive teams work intensively on marking systems, blocking runners, and clearing the first ball at corners.</li>
 </ul>

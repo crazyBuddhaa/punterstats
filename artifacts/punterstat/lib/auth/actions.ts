@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { ApiResponse } from "@/types";
 import { audit, AuditAction } from "@/lib/audit/logger";
+import { sendEmail } from "@/lib/email/resend";
+import { welcomeEmail } from "@/lib/email/templates";
 
 // ── Schemas ────────────────────────────────────────────────
 const signInSchema = z.object({
@@ -94,11 +96,28 @@ export async function signUp(
     await audit(data.user.id, AuditAction.USER_REGISTERED, "auth", data.user.id, {
       emailConfirmationRequired: true,
     });
+
+    // Send welcome email before redirect. We await with a safety timeout so a
+    // slow Resend response never blocks signup for more than 3 s. Any error is
+    // logged and swallowed — a missing welcome email must not abort registration.
+    const { subject, html, text } = welcomeEmail(parsed.data.displayName);
+    await Promise.race([
+      sendEmail({ to: parsed.data.email, subject, html, text }),
+      new Promise<void>((resolve) => setTimeout(resolve, 3000)),
+    ]).catch((err) => console.error("[Auth] Welcome email failed:", err));
+
     redirect("/register?message=check-email");
   }
 
   if (data.user) {
     await audit(data.user.id, AuditAction.USER_REGISTERED, "auth", data.user.id);
+
+    // Auto-confirmed path — same pattern.
+    const { subject, html, text } = welcomeEmail(parsed.data.displayName);
+    await Promise.race([
+      sendEmail({ to: parsed.data.email, subject, html, text }),
+      new Promise<void>((resolve) => setTimeout(resolve, 3000)),
+    ]).catch((err) => console.error("[Auth] Welcome email failed:", err));
   }
 
   revalidatePath("/", "layout");

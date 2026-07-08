@@ -66,16 +66,21 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "punterstat-auth",
-      // Only persist user — derived state is recomputed on rehydration.
+      // Only persist user — all derived state is recomputed on rehydration.
       // _hasHydrated is intentionally excluded: it is always false on the
-      // initial SSR render and set to true once the client rehydrates.
+      // initial SSR render and must be set via setState after rehydration.
       partialize: (state) => ({ user: state.user }),
       onRehydrateStorage: () => (state) => {
         if (state) {
+          // Sync derived fields from the restored user value.
           state.isAuthenticated = state.user !== null;
           state.isLoading = false;
-          state._hasHydrated = true;
         }
+        // Call setState directly so all subscribers are notified.
+        // This runs after the store is fully initialised, so the circular
+        // reference to useAuthStore is safe (closures capture the reference,
+        // not the value at definition time).
+        useAuthStore.setState({ _hasHydrated: true });
       },
     }
   )

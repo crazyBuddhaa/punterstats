@@ -17,29 +17,31 @@ import { HowItWorks } from "@/components/sections/how-it-works";
 import { FeaturesGrid } from "@/components/sections/features-grid";
 import { CtaSection } from "@/components/sections/cta-section";
 
-async function getHomepageStats() {
+async function getHomepageData() {
   try {
     const supabase = await createClient();
-    const [{ count: courseCount }, { count: lessonCount }] = await Promise.all([
-      supabase.from("courses").select("*", { count: "exact", head: true }).eq("is_published", true),
-      supabase.from("lessons").select("*", { count: "exact", head: true }).eq("is_published", true),
-    ]);
-    return { courses: courseCount ?? 0, lessons: lessonCount ?? 0 };
+    const [{ count: courseCount }, { count: lessonCount }, { data: { user } }] =
+      await Promise.all([
+        supabase.from("courses").select("*", { count: "exact", head: true }).eq("is_published", true),
+        supabase.from("lessons").select("*", { count: "exact", head: true }).eq("is_published", true),
+        supabase.auth.getUser(),
+      ]);
+    return { courses: courseCount ?? 0, lessons: lessonCount ?? 0, isAuthenticated: !!user };
   } catch {
-    return { courses: 0, lessons: 0 };
+    return { courses: 0, lessons: 0, isAuthenticated: false };
   }
 }
 
 export default async function Home() {
-  const stats = await getHomepageStats();
+  const { courses, lessons, isAuthenticated } = await getHomepageData();
 
   return (
     <>
-      <Hero />
-      <StatsBar courses={stats.courses} lessons={stats.lessons} />
+      <Hero isAuthenticated={isAuthenticated} />
+      <StatsBar courses={courses} lessons={lessons} />
       <HowItWorks />
       <FeaturesGrid />
-      <CtaSection />
+      <CtaSection isAuthenticated={isAuthenticated} />
     </>
   );
 }

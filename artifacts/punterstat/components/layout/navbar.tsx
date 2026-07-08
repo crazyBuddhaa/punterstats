@@ -99,8 +99,8 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-screen border-b border-white/10 bg-[#0f172a]">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-white">
+        {/* Logo — points to dashboard when authenticated, landing page otherwise */}
+        <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-2 font-bold text-white">
           <Image src="/logo.png" alt="PunterStat" width={32} height={32} className="rounded-lg" />
           <span className="text-lg tracking-tight">PunterStat</span>
         </Link>

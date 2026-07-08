@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils";
 
 interface HeroProps {
   className?: string;
+  isAuthenticated?: boolean;
 }
 
-export function Hero({ className }: HeroProps) {
+export function Hero({ className, isAuthenticated = false }: HeroProps) {
   return (
     <section
       className={cn(
@@ -58,8 +59,8 @@ export function Hero({ className }: HeroProps) {
         {/* CTAs */}
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <Button size="lg" asChild className="gap-2 px-8 bg-[#3D2DFF] hover:bg-[#3D2DFF]/90">
-            <Link href="/register">
-              Start Learning Free
+            <Link href={isAuthenticated ? "/dashboard" : "/register"}>
+              {isAuthenticated ? "Go to Dashboard" : "Start Learning Free"}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>

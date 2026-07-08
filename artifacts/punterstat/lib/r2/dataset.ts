@@ -238,18 +238,25 @@ export async function putManifestConditional(
     ContentLength: Buffer.byteLength(body, "utf8"),
   });
 
-  // Inject If-Match header so Cloudflare R2 rejects the write (412) when
-  // another process modified the manifest between our read and this write.
-  if (etag) {
-    cmd.middlewareStack.add(
-      (next) => async (args) => {
-        const req = args.request as { headers: Record<string, string> };
+  // Inject a conditional write header so Cloudflare R2 rejects the write (412)
+  // when another process touched the manifest between our read and this write.
+  //
+  // • etag present → If-Match: "<etag>"  — only overwrite this exact version.
+  // • etag null    → If-None-Match: *    — only write if the key doesn't exist yet
+  //                  (first-write semantics; prevents two concurrent bootstraps
+  //                   from both "winning" a race on an empty bucket).
+  cmd.middlewareStack.add(
+    (next) => async (args) => {
+      const req = args.request as { headers: Record<string, string> };
+      if (etag) {
         req.headers["If-Match"] = etag;
-        return next(args);
-      },
-      { step: "build", name: "addIfMatchHeader" },
-    );
-  }
+      } else {
+        req.headers["If-None-Match"] = "*";
+      }
+      return next(args);
+    },
+    { step: "build", name: "addConditionalWriteHeader" },
+  );
 
   try {
     await client.send(cmd);

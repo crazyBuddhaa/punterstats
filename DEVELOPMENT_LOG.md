@@ -221,3 +221,55 @@ Several planned lesson expansions reference PunterStat's Cloudflare R2 historica
 ---
 
 *Last updated: 2026-07-08 — Stage 1 push*
+
+---
+
+### Content — Betting Academy HTML Rewrite
+
+#### ✅ Stage: Full Markdown-to-HTML Rewrite — All Betting Academy Lessons (Migration 044)
+**Date:** 2026-07-08
+
+Rewrote all 232 Betting Academy lessons from migrations 016–023 from Markdown format to full HTML, matching the quality and structure of the Football Fundamentals HTML lessons (migrations 040–043). Each lesson now has:
+- Rich HTML structure: `<h2>`, `<p>`, `<ul>`, `<li>`, `<table>`, `<strong>` tags
+- Expanded content with real data references from the PunterStat FDCO historical dataset (top-5 European leagues + EFL, 1993/94–2025/26, up to 20 bookmakers per match)
+- `<h2>Key Takeaway</h2>` closing section per lesson
+
+**Courses rewritten (232 lessons total):**
+
+*Odds & Markets (57 lessons):*
+- Understanding Odds Formats (lessons 4–10)
+- How Bookmaker Margins Work (lessons 1–10)
+- Odds Comparison & Line Shopping (10 lessons)
+- Live & In-Play Odds (10 lessons)
+- Exchange Betting & Lay Markets (10 lessons)
+- Building Your Own Lines (10 lessons)
+
+*Probability & Value (56 lessons):*
+- Implied Probability Explained (lessons 3–10)
+- Finding Value Bets (10 lessons)
+- Expected Value in Practice (10 lessons)
+- Mathematics of Variance (10 lessons)
+- Market Inefficiencies Deep Dive (10 lessons)
+- Building a Predictive Edge (8 lessons)
+
+*Bet Types (60 lessons):*
+- Singles, Doubles & Accumulators (10 lessons)
+- Handicap & Asian Handicap (10 lessons)
+- Over/Under Totals Markets (10 lessons)
+- Outright & Futures Betting (10 lessons)
+- Live In-Play Bet Types (10 lessons)
+- Player Props & Specials (10 lessons)
+
+*Bankroll Management (59 lessons):*
+- Bankroll Fundamentals (9 lessons)
+- Staking Strategies (10 lessons)
+- Risk Management & Ruin Theory (10 lessons)
+- Psychology of Stake Sizing (10 lessons)
+- Portfolio & Bankroll Allocation (10 lessons)
+- Professional Bankroll Operations (10 lessons)
+
+**Migration file:** `supabase/migrations/044_betting_academy_markdown_to_html.sql`
+
+**Note:** Migration 043 added markdown-format Key Takeaways to Odds & Markets lessons (016) — migration 044 fully replaces those with the proper HTML versions. The old markdown Key Takeaways are overwritten.
+
+*Last updated: 2026-07-08 — Migration 044*

@@ -112,15 +112,69 @@ function calibrationCurve(predictions: ResolvedPrediction[]): CalibrationBucket[
 }
 
 /**
+ * Validate that each prediction's three outcome probabilities sum to
+ * approximately 1.0 (within a 1% tolerance). Filters out malformed entries
+ * and logs a warning with a count so the caller is aware of data quality issues.
+ *
+ * This prevents garbage inputs (e.g. un-normalised de-vigged odds or partial
+ * DB rows) from silently producing misleading Brier scores.
+ */
+function validateAndNormalize(predictions: ResolvedPrediction[]): ResolvedPrediction[] {
+  const valid: ResolvedPrediction[] = [];
+  let skipped = 0;
+
+  for (const p of predictions) {
+    const sum = p.predictedHomeWinProb + p.predictedDrawProb + p.predictedAwayWinProb;
+
+    if (sum <= 0 || !isFinite(sum)) {
+      skipped++;
+      continue;
+    }
+
+    // Within ±1% → accept as-is (rounding noise from de-vig is expected).
+    if (Math.abs(sum - 1) <= 0.01) {
+      valid.push(p);
+      continue;
+    }
+
+    // Outside tolerance but recoverable → normalise and accept.
+    if (sum > 0) {
+      valid.push({
+        predictedHomeWinProb: p.predictedHomeWinProb / sum,
+        predictedDrawProb:    p.predictedDrawProb    / sum,
+        predictedAwayWinProb: p.predictedAwayWinProb / sum,
+        actualResult:         p.actualResult,
+      });
+      continue;
+    }
+
+    skipped++;
+  }
+
+  if (skipped > 0) {
+    console.warn(
+      `[calibration/scorer] Skipped ${skipped} of ${predictions.length} predictions ` +
+      `— probabilities were zero, negative, or non-finite.`
+    );
+  }
+
+  return valid;
+}
+
+/**
  * Computes the full calibration summary for a set of resolved predictions.
  * Unresolved predictions (no actual_result yet) should be filtered out by
  * the caller before this is invoked.
+ *
+ * Predictions whose probabilities don't sum to ~1 are normalised automatically;
+ * completely invalid entries (zero/negative/non-finite) are dropped and logged.
  */
 export function scoreCalibration(predictions: ResolvedPrediction[]): CalibrationSummary {
+  const clean = validateAndNormalize(predictions);
   return {
-    sampleSize: predictions.length,
-    brierScore: Math.round(brierScore(predictions) * 10000) / 10000,
-    accuracy: Math.round(accuracy(predictions) * 1000) / 1000,
-    calibrationCurve: calibrationCurve(predictions),
+    sampleSize: clean.length,
+    brierScore: Math.round(brierScore(clean) * 10000) / 10000,
+    accuracy: Math.round(accuracy(clean) * 1000) / 1000,
+    calibrationCurve: calibrationCurve(clean),
   };
 }

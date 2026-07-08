@@ -97,6 +97,14 @@ export async function downloadKaggleFile(
 
 /**
  * Download all three files of the international football results dataset.
+ *
+ * Throws if the primary file (results.csv) fails — it is the minimum required
+ * for a useful ingest. Logs warnings for goalscorers/shootouts failures and
+ * returns empty strings for those files so partial ingests can proceed.
+ *
+ * Previously used Promise.allSettled and silently returned "" for any failure,
+ * which caused garbage or empty rows to be ingested with no indication of the
+ * underlying error.
  */
 export async function downloadInternationalDataset(): Promise<{
   results: string;
@@ -112,8 +120,32 @@ export async function downloadInternationalDataset(): Promise<{
     downloadKaggleFile(owner, dataset, "shootouts.csv"),
   ]);
 
+  // results.csv is mandatory — throw so callers know the download failed
+  // rather than ingesting an empty dataset and silently wiping match records.
+  if (results.status === "rejected") {
+    throw new Error(
+      `[kaggle] results.csv download failed — aborting international ingest: ${
+        results.reason instanceof Error ? results.reason.message : String(results.reason)
+      }`
+    );
+  }
+
+  // Secondary files are optional — warn but allow partial ingest.
+  if (goalscorers.status === "rejected") {
+    console.warn(
+      "[kaggle] goalscorers.csv download failed — goalscorer rows will be skipped:",
+      goalscorers.reason instanceof Error ? goalscorers.reason.message : goalscorers.reason
+    );
+  }
+  if (shootouts.status === "rejected") {
+    console.warn(
+      "[kaggle] shootouts.csv download failed — shootout rows will be skipped:",
+      shootouts.reason instanceof Error ? shootouts.reason.message : shootouts.reason
+    );
+  }
+
   return {
-    results:     results.status     === "fulfilled" ? results.value     : "",
+    results:     results.value,
     goalscorers: goalscorers.status === "fulfilled" ? goalscorers.value : "",
     shootouts:   shootouts.status   === "fulfilled" ? shootouts.value   : "",
   };

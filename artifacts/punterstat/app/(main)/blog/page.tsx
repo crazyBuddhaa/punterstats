@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { PenLine } from "lucide-react";
 import { PostCard } from "@/components/blog/post-card";
 import { BlogSearch } from "@/components/blog/blog-search";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getPublishedPosts, getAllTags } from "@/lib/blog/queries";
 
 // ISR: revalidate the blog index every 30 minutes so new posts surface quickly.
@@ -50,7 +51,16 @@ export default async function BlogPage({ searchParams }: Props) {
       <section className="container mx-auto max-w-6xl px-4 py-12">
         {/* Search + tag filter */}
         <div className="mb-8">
-          <Suspense fallback={null}>
+          <Suspense
+            fallback={
+              <div className="flex flex-wrap items-center gap-3">
+                <Skeleton className="h-9 w-56 rounded-lg" />
+                <Skeleton className="h-7 w-16 rounded-full" />
+                <Skeleton className="h-7 w-20 rounded-full" />
+                <Skeleton className="h-7 w-14 rounded-full" />
+              </div>
+            }
+          >
             <BlogSearch tags={tags} />
           </Suspense>
         </div>

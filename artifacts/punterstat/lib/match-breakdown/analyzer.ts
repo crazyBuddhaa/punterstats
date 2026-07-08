@@ -23,17 +23,85 @@ function poissonCdf(lambda: number, max: number): number {
   return Math.min(1, p);
 }
 
+// ─── Dixon-Coles low-score correction ────────────────────────────────────────
+//
+// Raw Poisson independence under-estimates 0-0 and 1-1 outcomes and
+// over-estimates 1-0 and 0-1 outcomes relative to observed football data.
+// Dixon & Coles (1997) address this with a multiplicative correction factor τ
+// applied to the four low-scoring cells of the joint probability matrix.
+//
+// ρ (rho) is negative (≈ −0.135) which means the correction:
+//   • boosts  P(0-0) and P(1-1)
+//   • reduces P(1-0) and P(0-1)
+//
+// All other scorelines use τ = 1 (uncorrected).
+
+const MAX_GOALS = 8;         // truncate at 8+ goals per side (negligible mass)
+const DC_RHO    = -0.135;    // published estimate — Dixon & Coles 1997, Table 3
+
+/**
+ * Dixon-Coles τ correction for the four low-scoring cells.
+ * Returns 1 for all other (i, j) pairs.
+ */
+function dcTau(i: number, j: number, lambda: number, mu: number): number {
+  if (i === 0 && j === 0) return 1 - lambda * mu * DC_RHO;
+  if (i === 0 && j === 1) return 1 + lambda * DC_RHO;
+  if (i === 1 && j === 0) return 1 + mu * DC_RHO;
+  if (i === 1 && j === 1) return 1 - DC_RHO;
+  return 1;
+}
+
+/**
+ * Build the corrected joint score probability matrix P(i goals, j goals)
+ * using Dixon-Coles τ adjustment. Truncated at MAX_GOALS each side and
+ * normalised so all cells sum to 1 (truncation + correction shifts the total
+ * by ≈0.01–0.03, which re-normalisation handles cleanly).
+ */
+function scoreMatrix(lambda: number, mu: number): number[][] {
+  const mat: number[][] = [];
+  let total = 0;
+
+  for (let i = 0; i <= MAX_GOALS; i++) {
+    mat[i] = [];
+    for (let j = 0; j <= MAX_GOALS; j++) {
+      const p = poissonPmf(lambda, i) * poissonPmf(mu, j) * dcTau(i, j, lambda, mu);
+      mat[i][j] = p;
+      total += p;
+    }
+  }
+
+  // Re-normalise after correction + truncation
+  if (total > 0) {
+    for (let i = 0; i <= MAX_GOALS; i++) {
+      for (let j = 0; j <= MAX_GOALS; j++) {
+        mat[i][j] /= total;
+      }
+    }
+  }
+
+  return mat;
+}
+
 function derivedMarkets(homeXG: number, awayXG: number, homeWin: number, draw: number, awayWin: number): DerivedMarkets {
-  const totalXG = homeXG + awayXG;
+  // Derive all score-based markets from the Dixon-Coles corrected joint
+  // probability matrix rather than from independent Poisson marginals.
+  const mat = scoreMatrix(homeXG, awayXG);
 
-  const under15 = poissonCdf(totalXG, 1);
-  const under25 = poissonCdf(totalXG, 2);
-  const under35 = poissonCdf(totalXG, 3);
+  let under15 = 0, under25 = 0, under35 = 0;
+  let pHomeScore0 = 0, pAwayScore0 = 0, btts = 0;
 
-  const pHomeScore0 = poissonPmf(homeXG, 0);
-  const pAwayScore0 = poissonPmf(awayXG, 0);
-
-  const btts = (1 - pHomeScore0) * (1 - pAwayScore0);
+  for (let i = 0; i <= MAX_GOALS; i++) {
+    for (let j = 0; j <= MAX_GOALS; j++) {
+      const p   = mat[i][j];
+      const tot = i + j;
+      if (tot <= 1) under15 += p;
+      if (tot <= 2) under25 += p;
+      if (tot <= 3) under35 += p;
+      if (i === 0) pHomeScore0 += p;   // away keeps a clean sheet
+      if (j === 0) pAwayScore0 += p;   // home keeps a clean sheet
+      if (i > 0 && j > 0) btts += p;
+    }
+  }
 
   return {
     over25: 1 - under25,

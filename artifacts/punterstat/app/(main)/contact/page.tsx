@@ -14,14 +14,14 @@ const contactInfo = [
   {
     icon: Mail,
     label: "General enquiries",
-    value: "hello@punterstat.com",
-    href: "mailto:hello@punterstat.com",
+    value: "hello@punterstat.site",
+    href: "mailto:hello@punterstat.site",
   },
   {
     icon: MessageSquare,
     label: "Support",
-    value: "support@punterstat.com",
-    href: "mailto:support@punterstat.com",
+    value: "support@punterstat.site",
+    href: "mailto:support@punterstat.site",
   },
   {
     icon: Clock,
@@ -102,10 +102,10 @@ export default function ContactPage() {
                   betting advice, process transactions, or facilitate gambling.
                   For legal matters:{" "}
                   <Link
-                    href="mailto:legal@punterstat.com"
+                    href="mailto:legal@punterstat.site"
                     className="text-[#3D2DFF]"
                   >
-                    legal@punterstat.com
+                    legal@punterstat.site
                   </Link>
                 </p>
               </div>

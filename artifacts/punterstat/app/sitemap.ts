@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase/server";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://punterstat.com";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://punterstat.site";
 
 function url(path: string, priority = 0.7, freq: MetadataRoute.Sitemap[number]["changeFrequency"] = "weekly"): MetadataRoute.Sitemap[number] {
   return { url: `${BASE_URL}${path}`, lastModified: new Date(), changeFrequency: freq, priority };

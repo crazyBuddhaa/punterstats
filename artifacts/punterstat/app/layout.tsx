@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: process.env.NEXT_PUBLIC_APP_URL ?? "https://punterstat.com",
+    url: process.env.NEXT_PUBLIC_APP_URL ?? "https://punterstat.site",
     title: "PunterStat — Sports Intelligence & Education Platform",
     description:
       "Knowledge Before Decision. Learn how sports systems and probability work.",

@@ -5,7 +5,7 @@ type EmailTemplate = { subject: string; html: string; text: string };
 
 export function welcomeEmail(displayName: string): EmailTemplate {
   const name = displayName || "there";
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://punterstat.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://punterstat.site";
 
   return {
     subject: "Welcome to PunterStat — Knowledge Before Decision",

@@ -170,8 +170,8 @@ export default async function SubscriptionPage() {
       <div className="rounded-2xl border border-border bg-white p-5 text-sm text-[#1e293b]/60">
         <p>
           To manage billing, cancel, or change your plan, contact{" "}
-          <a href="mailto:support@punterstats.com" className="text-teal-600 underline hover:text-teal-700">
-            support@punterstats.com
+          <a href="mailto:support@punterstat.site" className="text-teal-600 underline hover:text-teal-700">
+            support@punterstat.site
           </a>
           . Full self-serve billing is coming soon.
         </p>

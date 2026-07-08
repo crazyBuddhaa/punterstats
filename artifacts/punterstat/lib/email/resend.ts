@@ -20,7 +20,7 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions): 
     return { success: false, error: "Email not configured" };
   }
 
-  const from = process.env.RESEND_FROM_EMAIL ?? "noreply@punterstat.com";
+  const from = process.env.RESEND_FROM_EMAIL ?? "noreply@punterstat.site";
 
   try {
     const res = await fetch("https://api.resend.com/emails", {

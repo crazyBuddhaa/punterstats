@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 const LAST_UPDATED = "3 July 2026";
-const CONTACT = "legal@punterstat.com";
+const CONTACT = "legal@punterstat.site";
 
 export default function TermsPage() {
   return (

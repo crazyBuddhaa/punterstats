@@ -54,8 +54,8 @@ export default async function ProfilePage() {
         </div>
         <p className="text-sm text-rose-700/80">
           To delete your account or request a data export, contact{" "}
-          <a href="mailto:support@punterstats.com" className="underline hover:text-rose-800">
-            support@punterstats.com
+          <a href="mailto:support@punterstat.site" className="underline hover:text-rose-800">
+            support@punterstat.site
           </a>
           .
         </p>

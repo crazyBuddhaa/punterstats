@@ -93,7 +93,7 @@ const FAQ = [
   },
   {
     q: "Do you offer team or institutional pricing?",
-    a: "Contact us at hello@punterstat.com to discuss group access for sports academies, coaching staff, or educational institutions.",
+    a: "Contact us at hello@punterstat.site to discuss group access for sports academies, coaching staff, or educational institutions.",
   },
 ];
 

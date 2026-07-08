@@ -58,12 +58,12 @@ export async function submitContact(
   const safeSubject = escapeHtml(subject);
   const safeMessage = escapeHtml(message);
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://punterstat.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://punterstat.site";
 
   // Send to support inbox — this is the critical delivery; if it fails the
   // message has not been received and we must tell the user.
   const inboxResult = await sendEmail({
-    to: "hello@punterstat.com",
+    to: "support@punterstat.site",
     subject: `[Contact] ${safeSubject}`,
     html: `<!DOCTYPE html><html><body style="font-family:-apple-system,sans-serif;padding:32px;max-width:560px;">
 <h2 style="color:#0f172a;margin:0 0 16px">New contact form submission</h2>
@@ -83,8 +83,8 @@ export async function submitContact(
     return {
       error:
         inboxResult.error === "Email not configured"
-          ? "Email service is not configured. Please reach us directly at hello@punterstat.com."
-          : "We couldn't send your message right now. Please try again, or email us directly at hello@punterstat.com.",
+          ? "Email service is not configured. Please reach us directly at support@punterstat.site."
+          : "We couldn't send your message right now. Please try again, or email us directly at support@punterstat.site.",
     };
   }
 

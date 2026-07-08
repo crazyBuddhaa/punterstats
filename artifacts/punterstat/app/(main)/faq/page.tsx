@@ -78,7 +78,7 @@ const faqSections = [
       },
       {
         q: "Do you offer group or institutional access?",
-        a: "Yes. Contact us at hello@punterstat.com to discuss pricing for sports academies, coaching staff, universities, or corporate groups.",
+        a: "Yes. Contact us at hello@punterstat.site to discuss pricing for sports academies, coaching staff, universities, or corporate groups.",
       },
     ],
   },
@@ -95,7 +95,7 @@ const faqSections = [
       },
       {
         q: "Is PunterStat GDPR compliant?",
-        a: "Yes. We process personal data under the UK GDPR and EU GDPR. You have the right to access, correct, and delete your data at any time. Contact legal@punterstat.com to exercise your rights.",
+        a: "Yes. We process personal data under the UK GDPR and EU GDPR. You have the right to access, correct, and delete your data at any time. Contact legal@punterstat.site to exercise your rights.",
       },
     ],
   },
@@ -108,7 +108,7 @@ const faqSections = [
       },
       {
         q: "Do I need to install anything?",
-        a: "No. PunterStat is a web platform — there is nothing to download or install. Open your browser, go to punterstat.com, and you're ready.",
+        a: "No. PunterStat is a web platform — there is nothing to download or install. Open your browser, go to punterstat.site, and you're ready.",
       },
     ],
   },
@@ -119,7 +119,7 @@ export default function FaqPage() {
     <PageShell>
       <PageHeader
         title="Frequently asked questions"
-        description="Can't find what you're looking for? Email us at hello@punterstat.com"
+        description="Can't find what you're looking for? Email us at hello@punterstat.site"
       />
 
       <div className="mx-auto max-w-3xl pb-20">

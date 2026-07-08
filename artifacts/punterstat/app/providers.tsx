@@ -30,6 +30,36 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
   return data ? rowToProfile(data) : null;
 }
 
+type AuthUser = {
+  id: string;
+  email?: string;
+  created_at: string;
+  // Supabase types user_metadata as Record<string, unknown>
+  user_metadata: Record<string, unknown>;
+};
+
+/** Build a minimal profile from Supabase auth user metadata.
+ *  Used when the profiles row doesn't exist yet (e.g. first OAuth login
+ *  before the DB trigger has run) so the user isn't falsely logged out. */
+function profileFromAuthUser(user: AuthUser): UserProfile {
+  const meta = user.user_metadata;
+  const displayName =
+    (meta?.full_name as string | undefined) ??
+    (meta?.display_name as string | undefined) ??
+    user.email?.split("@")[0] ??
+    null;
+  return {
+    id: user.id,
+    userId: user.id,
+    displayName,
+    avatarUrl: (meta?.avatar_url as string | undefined) ?? null,
+    bio: null,
+    role: "user",
+    createdAt: user.created_at,
+    updatedAt: user.created_at,
+  };
+}
+
 function AuthSync() {
   const setUser = useAuthStore((s) => s.setUser);
   const signOutStore = useAuthStore((s) => s.signOut);
@@ -41,7 +71,10 @@ function AuthSync() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (user) {
         const profile = await fetchProfile(user.id);
-        setUser(profile);
+        // Fall back to a minimal profile built from auth metadata so the user
+        // is never falsely logged out when their profiles row is missing
+        // (e.g. first OAuth login before the DB trigger has committed).
+        setUser(profile ?? profileFromAuthUser(user as AuthUser));
       } else {
         signOutStore();
       }
@@ -52,7 +85,7 @@ function AuthSync() {
       async (event, session) => {
         if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
           const profile = await fetchProfile(session.user.id);
-          setUser(profile);
+          setUser(profile ?? profileFromAuthUser(session.user as AuthUser));
         } else if (event === "SIGNED_OUT") {
           signOutStore();
         }

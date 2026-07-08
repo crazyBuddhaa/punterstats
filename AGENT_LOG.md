@@ -165,3 +165,43 @@ Files touched:
 
 Watch out for:
 - The `typeof window !== "undefined"` guard is needed because `buildUrl` can theoretically be called during SSR; falls back to the React snapshot in that path (safe, since no interactions fire server-side).
+
+---
+
+### 2026-07-08 — Domain correction + prediction resolution + operational hardening
+Agent: @replit-agent
+
+What changed & why:
+- **Domain/contact sweep (Stage 1)**: All hard-coded `punterstat.com` and `punterstats.com` references replaced with `punterstat.site` and `support@punterstat.site` across 15 files. Two typos fixed: `support@punterstats.com` in `profile/page.tsx` and `subscription/page.tsx` (extra "s"). `.env.local.example` default updated. README corrected: Stages 2–14 now show ✅; tech stack table expanded with R2/Sportradar/Odds API/footballdata rows; `RESEND_FROM_EMAIL`, `ODDS_API_KEY`, `CRON_SECRET` and six other env vars added to the table.
+- **Automated prediction resolution (Stage 2)**: The biggest operational gap — `actual_result` on `prediction_records` was manually filled forever, which meant the Calibration Engine never had data. Added `lib/predictions/resolver.ts` with `resolveUnresolved()`: fetches rows where `actual_result IS NULL` and `match_date <= NOW()-2h`, then matches against `historical_matches` using exact ilike first, Jaccard token-overlap fallback (≥0.4 threshold, ambiguity guard: skips if top two candidates within 0.05 score). Added cron route `/api/cron/resolve-predictions` (CRON_SECRET-protected, same pattern as sync-season). Added `"0 3 * * *"` daily schedule in `vercel.json`.
+- **Odds API quota visibility (Stage 3)**: `lib/odds/client.ts` now reads `x-requests-remaining` / `x-requests-used` headers on every cache-miss call. Logs a WARN at <150 remaining and a critical WARN at <50. Returns a user-friendly string on HTTP 429 instead of a raw error. Stale-cache fallback on 429 preserved.
+- **Zustand SSR hydration (Stage 4)**: Added `_hasHydrated: boolean` to the auth store (excluded from `partialize`). `onRehydrateStorage` calls `useAuthStore.setState({ _hasHydrated: true })` (not direct mutation, which wouldn't notify subscribers). Exported `useAuthHydrated()` hook so Navbar/dashboard can gate auth-dependent renders on hydration completion.
+- **Code-review fixes**: After an architect review, two additional corrections applied: (a) `safeLike()` escapes `%`/`_`/`\\` in team names before ilike to prevent SQL wildcard expansion; (b) ambiguity guard added to resolver (returns null rather than picking a winner when top two fuzzy candidates are within 0.05 of each other).
+
+Files touched:
+- `artifacts/punterstat/app/(main)/contact/page.tsx` — email cards + legal mailto
+- `artifacts/punterstat/app/(main)/faq/page.tsx` — 4 domain references
+- `artifacts/punterstat/app/(main)/pricing/page.tsx` — group enquiry email
+- `artifacts/punterstat/app/(main)/privacy/page.tsx` — CONTACT constant
+- `artifacts/punterstat/app/(main)/terms/page.tsx` — CONTACT constant
+- `artifacts/punterstat/app/dashboard/profile/page.tsx` — punterstats typo
+- `artifacts/punterstat/app/dashboard/subscription/page.tsx` — punterstats typo
+- `artifacts/punterstat/app/layout.tsx` — OG fallback URL
+- `artifacts/punterstat/app/robots.ts` — fallback BASE_URL
+- `artifacts/punterstat/app/sitemap.ts` — fallback BASE_URL
+- `artifacts/punterstat/lib/contact/actions.ts` — inbox email + error strings + appUrl
+- `artifacts/punterstat/lib/email/resend.ts` — fallback from-address
+- `artifacts/punterstat/lib/email/templates.ts` — fallback appUrl
+- `artifacts/punterstat/app/api/cron/resolve-predictions/route.ts` — new
+- `artifacts/punterstat/lib/predictions/resolver.ts` — new
+- `artifacts/punterstat/lib/odds/client.ts` — quota headers + 429 handling
+- `artifacts/punterstat/store/auth.ts` — _hasHydrated + useAuthHydrated()
+- `artifacts/punterstat/vercel.json` — daily resolve-predictions cron
+- `artifacts/punterstat/.env.local.example` — RESEND_FROM_EMAIL default
+- `artifacts/punterstat/README.md` — stages, stack, env vars
+
+Watch out for:
+- `resolveUnresolved()` uses the admin Supabase client (bypasses RLS) and writes `actual_result` directly. If `historical_matches` doesn't yet have a row for a recently-played match (sync-season cron only runs Mondays), the prediction row stays unresolved until the next daily cron after the weekly sync catches up.
+- The daily cron processes up to 200 rows per run. If a backlog builds up (e.g. service was down), re-trigger manually via `curl -H "Authorization: Bearer $CRON_SECRET" https://punterstat.site/api/cron/resolve-predictions` until processed/unmatched converges to 0.
+- `useAuthHydrated()` will return false on SSR and during the very first render before localStorage is read. Any component that gates on it must handle the false state gracefully (show a skeleton or nothing, never redirect).
+- The Odds API quota warnings fire at the server/Vercel log level only — not surfaced to users. Add an alerting hook (e.g. Sentry breadcrumb or Slack webhook) if you want active notification when quota runs low.

@@ -149,6 +149,7 @@ export interface BlogPost {
 
 export type SubscriptionPlan = "free" | "premium" | "pro";
 export type SubscriptionStatus = "active" | "cancelled" | "expired" | "trialing";
+export type PaymentProvider = "stripe" | "paystack" | "remita";
 
 export interface Subscription {
   id: string;
@@ -160,6 +161,15 @@ export interface Subscription {
   cancelledAt: string | null;
   createdAt: string;
   updatedAt: string;
+  // Payment provider fields (populated after first payment)
+  paymentProvider: PaymentProvider | null;
+  currency: string;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  paystackCustomerCode: string | null;
+  paystackSubscriptionCode: string | null;
+  remitaRrr: string | null;
+  remitaOrderId: string | null;
 }
 
 // --- Notifications ---

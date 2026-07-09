@@ -39,7 +39,7 @@ const PLANS = [
     badge: "Most popular",
     description: "Full platform access with progress tracking and match analysis.",
     cta: "Start Premium",
-    ctaHref: "/register?plan=premium",
+    ctaHref: "/checkout?plan=premium",
     ctaVariant: "default" as const,
     features: [
       { label: "Sports University (all lessons)", included: true },
@@ -61,7 +61,7 @@ const PLANS = [
     badge: null,
     description: "Everything in Premium plus priority support and early feature access.",
     cta: "Start Pro",
-    ctaHref: "/register?plan=pro",
+    ctaHref: "/checkout?plan=pro",
     ctaVariant: "default" as const,
     features: [
       { label: "Sports University (all lessons)", included: true },
@@ -86,6 +86,10 @@ const FAQ = [
   {
     q: "What does the Free plan include?",
     a: "Free users get full access to Sports University and Betting Academy course content. The Bet Simulator and Probability Simulator are available in a basic form. Progress tracking, bookmarks, and match breakdown require a Premium or Pro plan.",
+  },
+  {
+    q: "Which payment methods do you accept?",
+    a: "We accept card payments via Stripe (UK/international), and African payments via Paystack (cards, bank transfer, USSD) or Remita bank transfer (Nigeria). All plans are billed monthly with no lock-in.",
   },
   {
     q: "Can I cancel anytime?",
@@ -178,19 +182,33 @@ export default function PricingPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-[#1e293b]/40">
-          Prices shown in GBP. VAT may apply. No contracts — cancel anytime.
+          Prices shown in GBP. NGN equivalent available at checkout. VAT may apply. No contracts — cancel anytime.
         </p>
       </section>
 
+      {/* Payment providers */}
+      <section className="border-t border-border/50 bg-white px-4 py-10">
+        <div className="container mx-auto max-w-2xl text-center">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#1e293b]/40 mb-4">
+            Accepted payment methods
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-6 text-sm font-medium text-[#1e293b]/60">
+            <span>💳 Stripe — UK &amp; International</span>
+            <span>🌍 Paystack — Africa</span>
+            <span>🏦 Remita — Nigeria (bank transfer)</span>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ */}
-      <section className="border-t border-border/50 bg-white px-4 py-14">
+      <section className="border-t border-border/50 bg-[#f8fafc] px-4 py-14">
         <div className="container mx-auto max-w-2xl">
           <h2 className="mb-8 text-center text-xl font-bold text-[#0f172a]">
             Frequently asked questions
           </h2>
           <div className="space-y-6">
             {FAQ.map((item) => (
-              <div key={item.q} className="rounded-xl border border-border/50 bg-[#f8fafc] p-5">
+              <div key={item.q} className="rounded-xl border border-border/50 bg-white p-5">
                 <h3 className="mb-2 text-sm font-semibold text-[#0f172a]">{item.q}</h3>
                 <p className="text-sm text-[#1e293b]/60 leading-relaxed">{item.a}</p>
               </div>

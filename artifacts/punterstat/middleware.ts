@@ -9,7 +9,7 @@ type CookieToSet = {
   options?: Record<string, unknown>;
 };
 
-const PROTECTED_PREFIXES = ["/dashboard", "/admin", "/match-breakdown/analyzer"];
+const PROTECTED_PREFIXES = ["/dashboard", "/admin", "/match-breakdown/analyzer", "/checkout"];
 const AUTH_PREFIXES = ["/login", "/register", "/forgot-password", "/update-password"];
 
 // ── Inbound rate limits for API routes ────────────────────────────────────────

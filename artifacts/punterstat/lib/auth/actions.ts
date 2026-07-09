@@ -83,7 +83,7 @@ export async function signUp(
     password: parsed.data.password,
     options: {
       data: { display_name: parsed.data.displayName },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://punterstat.site"}/auth/callback`,
     },
   });
 
@@ -149,7 +149,7 @@ export async function resetPassword(
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/update-password`,
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://punterstat.site"}/auth/callback?next=/update-password`,
   });
 
   if (error) {

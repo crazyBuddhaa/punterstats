@@ -9,6 +9,7 @@ import {
   FileText,
   ToggleLeft,
   ChevronRight,
+  HeartPulse,
 } from "lucide-react";
 
 const NAV = [
@@ -17,6 +18,7 @@ const NAV = [
   { href: "/admin/courses", label: "Courses & Lessons", icon: BookOpen },
   { href: "/admin/blog", label: "Blog Posts", icon: FileText },
   { href: "/admin/flags", label: "Feature Flags", icon: ToggleLeft },
+  { href: "/admin/data-health", label: "Data Health", icon: HeartPulse },
 ];
 
 export function AdminSidebar() {

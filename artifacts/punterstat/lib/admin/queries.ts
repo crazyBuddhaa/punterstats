@@ -2,6 +2,36 @@ import { createClient } from "@/lib/supabase/server";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export interface R2SyncRunRow {
+  id: string;
+  runId: string;
+  trigger: string;
+  startedAt: string;
+  completedAt: string | null;
+  leaguesSynced: string[];
+  totalMatchesUpserted: number;
+  totalOddsUpserted: number;
+  errorCount: number;
+  errors: string[];
+}
+
+export interface ApiQuotaStatusRow {
+  provider: string;
+  requestCount: number;
+  providerRemaining: number | null;
+  windowStart: string;
+  windowEnd: string;
+  lastRequestAt: string;
+}
+
+export interface DataHealthSummary {
+  recentSyncRuns: R2SyncRunRow[];
+  quotaStatus: ApiQuotaStatusRow[];
+  oddsCacheFreshness: { newestFetchedAt: string | null; totalRows: number };
+  fixturesCacheFreshness: { newestFetchedAt: string | null; totalRows: number };
+  overduePredictionResolutions: number;
+}
+
 export interface AdminStats {
   totalUsers: number;
   totalCourses: number;
@@ -320,4 +350,89 @@ export async function getFeatureFlags(): Promise<FeatureFlag[]> {
     description: row.description ?? null,
     updatedAt: row.updated_at,
   }));
+}
+
+/**
+ * Aggregates the signals an admin needs to tell whether background data
+ * pipelines are healthy: recent R2/historical-data sync runs, external API
+ * quota status, cache freshness, and a backlog proxy for the
+ * resolve-predictions cron (which does not persist individual runs).
+ */
+export async function getDataHealthSummary(): Promise<DataHealthSummary> {
+  const supabase = await createClient();
+
+  const [syncRuns, quotaRows, oddsCache, fixturesCache, overdue] = await Promise.all([
+    supabase
+      .from("r2_sync_log")
+      .select(
+        "id, run_id, trigger, started_at, completed_at, leagues_synced, total_matches_upserted, total_odds_upserted, error_count, errors"
+      )
+      .order("started_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("api_quota_log")
+      .select("provider, request_count, provider_remaining, window_start, window_end, last_request_at")
+      .order("last_request_at", { ascending: false })
+      .limit(50),
+    supabase
+      .from("odds_cache")
+      .select("fetched_at", { count: "exact" })
+      .order("fetched_at", { ascending: false })
+      .limit(1),
+    supabase
+      .from("fixtures_cache")
+      .select("fetched_at", { count: "exact" })
+      .order("fetched_at", { ascending: false })
+      .limit(1),
+    // A prediction that should have resolved (match played >2h ago) but
+    // hasn't is a proxy for the resolve-predictions cron stalling — the
+    // cron itself doesn't persist a per-run log to check directly.
+    supabase
+      .from("prediction_records")
+      .select("id", { count: "exact", head: true })
+      .is("actual_result", null)
+      .not("match_date", "is", null)
+      .lte("match_date", new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()),
+  ]);
+
+  const recentSyncRuns: R2SyncRunRow[] = (syncRuns.data ?? []).map((row) => ({
+    id: row.id,
+    runId: row.run_id,
+    trigger: row.trigger,
+    startedAt: row.started_at,
+    completedAt: row.completed_at,
+    leaguesSynced: row.leagues_synced ?? [],
+    totalMatchesUpserted: row.total_matches_upserted,
+    totalOddsUpserted: row.total_odds_upserted,
+    errorCount: row.error_count,
+    errors: row.errors ?? [],
+  }));
+
+  // Reduce to the single most recent row per provider.
+  const quotaByProvider = new Map<string, ApiQuotaStatusRow>();
+  for (const row of quotaRows.data ?? []) {
+    if (quotaByProvider.has(row.provider)) continue;
+    quotaByProvider.set(row.provider, {
+      provider: row.provider,
+      requestCount: row.request_count,
+      providerRemaining: row.provider_remaining ?? null,
+      windowStart: row.window_start,
+      windowEnd: row.window_end,
+      lastRequestAt: row.last_request_at,
+    });
+  }
+
+  return {
+    recentSyncRuns,
+    quotaStatus: Array.from(quotaByProvider.values()),
+    oddsCacheFreshness: {
+      newestFetchedAt: oddsCache.data?.[0]?.fetched_at ?? null,
+      totalRows: oddsCache.count ?? 0,
+    },
+    fixturesCacheFreshness: {
+      newestFetchedAt: fixturesCache.data?.[0]?.fetched_at ?? null,
+      totalRows: fixturesCache.count ?? 0,
+    },
+    overduePredictionResolutions: overdue.count ?? 0,
+  };
 }

@@ -1,4 +1,5 @@
 import { getCachedOdds, writeOddsCache, releaseOddsLock } from "./cache";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { OddsBookmaker, OddsEvent, OddsMarket, OddsOutcome, OddsResult } from "./types";
 
 const ODDS_API_BASE = "https://api.the-odds-api.com/v4";
@@ -114,6 +115,24 @@ export async function getOdds(
         console.warn(
           `[odds/client] Odds API quota getting low: ${rem} remaining (used: ${used ?? "?"}).`
         );
+      }
+
+      // Persist the provider-reported remaining count so the Admin Data
+      // Health Panel can show real quota status. Best-effort — never let a
+      // logging failure break odds fetching.
+      try {
+        const admin = createAdminClient();
+        const now = new Date();
+        await admin.from("api_quota_log").insert({
+          provider: "odds-api",
+          request_count: 1,
+          provider_remaining: rem,
+          window_start: now.toISOString(),
+          window_end: now.toISOString(),
+          last_request_at: now.toISOString(),
+        });
+      } catch (err) {
+        console.error("[odds/client] Failed to persist quota log:", err);
       }
     }
 

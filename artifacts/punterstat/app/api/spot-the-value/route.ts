@@ -3,6 +3,8 @@ import { getOdds } from "@/lib/odds/client";
 import { computeValueFromOddsEvent } from "@/lib/spot-the-value/calculator";
 import { getFixtures } from "@/lib/sports-data/router";
 import type { Fixture } from "@/lib/sports-data/types";
+import { createClient } from "@/lib/supabase/server";
+import { trackEvent, AnalyticsEvent } from "@/lib/analytics/tracker";
 
 // HTTP cache TTLs mirror the underlying Supabase cache TTLs so the browser
 // and Vercel CDN can serve the same response without hitting the origin.
@@ -66,6 +68,17 @@ export async function GET(request: Request) {
     .map((event) => computeValueFromOddsEvent(event))
     .filter((m): m is NonNullable<typeof m> => m !== null)
     .slice(0, 15);
+
+  if (matches.length > 0) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    await trackEvent(user?.id ?? null, AnalyticsEvent.VALUE_COMPARISON_VIEWED, {
+      sport,
+      matchCount: matches.length,
+    });
+  }
 
   return NextResponse.json(
     { mode: "odds", matches, fromCache: result.fromCache, sport },

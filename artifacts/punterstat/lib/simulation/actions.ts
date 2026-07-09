@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { SimulationSession, SimulationHistory } from "@/types";
+import { trackEvent, AnalyticsEvent } from "@/lib/analytics/tracker";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -105,6 +106,13 @@ export async function recordBet(
   if (error || !data) return { success: false, error: error?.message ?? "Failed to record bet." };
 
   await updateSessionBalance(sessionId, balanceAfter);
+
+  await trackEvent(user.id, AnalyticsEvent.SIMULATOR_RUN, {
+    sessionId,
+    outcome,
+    stake,
+    odds,
+  });
 
   revalidatePath("/dashboard/simulation-history");
   return {

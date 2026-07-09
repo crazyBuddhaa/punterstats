@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import type { MatchAnalysisInput, MatchAnalysisResult, SavedAnalysis } from "./types";
+import { trackEvent, AnalyticsEvent } from "@/lib/analytics/tracker";
 
 type ApiResponse<T> = { success: true; data: T } | { success: false; error: string };
 
@@ -37,6 +38,12 @@ export async function saveAnalysis(
     .single();
 
   if (error) return { success: false, error: error.message };
+
+  await trackEvent(user.id, AnalyticsEvent.MATCH_ANALYSIS_SAVED, {
+    analysisId: data.id,
+    homeTeamName: homeTeamName.trim(),
+    awayTeamName: awayTeamName.trim(),
+  });
 
   return {
     success: true,

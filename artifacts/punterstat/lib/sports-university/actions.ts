@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { ApiResponse } from "@/types";
+import { trackEvent, AnalyticsEvent } from "@/lib/analytics/tracker";
 
 export async function markLessonComplete(
   lessonId: string,
@@ -27,6 +28,13 @@ export async function markLessonComplete(
     );
 
   if (error) return { success: false, error: error.message };
+
+  await trackEvent(user.id, AnalyticsEvent.LESSON_COMPLETED, {
+    lessonId,
+    section: "sports_university",
+    categorySlug,
+    courseSlug,
+  });
 
   revalidatePath(`/sports-university/${categorySlug}/${courseSlug}`, "layout");
   return { success: true, data: undefined };

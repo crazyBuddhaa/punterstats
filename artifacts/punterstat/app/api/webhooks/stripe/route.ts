@@ -144,7 +144,12 @@ export async function POST(req: Request) {
       // ── Failed renewal ────────────────────────────────────────────────────
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
-        const subId = invoice.subscription as string | null;
+        // In Stripe API 2026-06-24.dahlia, Invoice.subscription was removed.
+        // The subscription ID now lives at invoice.parent.subscription_details.subscription.
+        // We cast through `any` to handle both old and new shapes at runtime.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const inv = invoice as any;
+        const subId = (inv.subscription ?? inv.parent?.subscription_details?.subscription) as string | null;
         if (!subId) break;
 
         const row = await getSubscriptionByStripeId(subId);

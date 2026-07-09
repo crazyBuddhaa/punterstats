@@ -12,6 +12,7 @@ import {
 } from "@/lib/betting-academy/queries";
 import { CompleteButton } from "@/components/betting-academy/complete-button";
 import { getUser, getUserProfile } from "@/lib/auth/helpers";
+import { LessonContent } from "@/components/lessons/lesson-content";
 import type { LessonProgress } from "@/types";
 
 // Rendering: fully dynamic SSR.
@@ -34,52 +35,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: `${lesson.title} — ${mod.title}` };
 }
 
-/**
- * Decode HTML entities stored in the DB (e.g. &lt;p&gt; → <p>).
- * Some lessons were saved via a plain textarea where the browser submitted
- * entity-encoded text. This is a no-op when content already contains real tags.
- */
-function decodeHtmlEntities(str: string): string {
-  return str
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, "&"); // must be last — avoids double-decoding &amp;lt; etc.
-}
-
-/** Renders admin-authored HTML lesson content. Content is written only by admins. */
-function LessonContent({ html }: { html: string }) {
-  return (
-    <div
-      className="
-        text-sm text-[#1e293b] leading-relaxed
-
-        [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-[#0f172a] [&_h1]:mt-6 [&_h1]:mb-3
-        [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-[#0f172a] [&_h2]:mt-5 [&_h2]:mb-2
-        [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-[#0f172a] [&_h3]:mt-4 [&_h3]:mb-1.5
-
-        [&_p]:mb-3 [&_p]:leading-relaxed
-
-        [&_ul]:list-disc [&_ul]:list-outside [&_ul]:ml-5 [&_ul]:mb-3 [&_ul]:space-y-1.5
-        [&_ol]:list-decimal [&_ol]:list-outside [&_ol]:ml-5 [&_ol]:mb-3 [&_ol]:space-y-1.5
-        [&_li]:text-[#1e293b]/80 [&_li]:leading-relaxed
-
-        [&_a]:text-emerald-600 [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:opacity-80
-
-        [&_img]:rounded-xl [&_img]:max-w-full [&_img]:my-4 [&_img]:block [&_img]:mx-auto
-
-        [&_hr]:border-border [&_hr]:my-6
-
-        [&_strong]:font-semibold [&_em]:italic [&_u]:underline
-
-        [&_blockquote]:border-l-4 [&_blockquote]:border-emerald-500/30
-        [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-[#1e293b]/60 [&_blockquote]:my-4
-      "
-      dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(html) }}
-    />
-  );
-}
 
 export default async function LessonPage({ params }: Props) {
   const { topic: topicSlug, module: moduleSlug, lesson: lessonSlug } = await params;
@@ -212,7 +167,7 @@ export default async function LessonPage({ params }: Props) {
 
             {lesson.content ? (
               <div className="mb-8 rounded-xl border border-border/50 bg-white p-6 shadow-sm">
-                <LessonContent html={lesson.content} />
+                <LessonContent html={lesson.content} variant="betting-academy" />
               </div>
             ) : (
               <div className="mb-8 rounded-xl border border-dashed border-border bg-white p-8 text-center text-sm text-[#1e293b]/40">

@@ -18,6 +18,8 @@ import {
 } from "@/lib/dashboard/queries";
 import { scoreCalibration } from "@/lib/calibration/scorer";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { getRecommendation } from "@/lib/dashboard/recommendations";
+import { RecommendationCard } from "@/components/dashboard/recommendation-card";
 
 function formatDate(str: string) {
   return new Date(str).toLocaleDateString("en-GB", {
@@ -29,12 +31,14 @@ function formatDate(str: string) {
 
 export default async function DashboardPage() {
   const profile = await requireAuth();
-  const [stats, inProgress, simSessions, resolvedPredictions] = await Promise.all([
-    getDashboardStats(profile.userId),
-    getInProgressLessons(profile.userId),
-    getSimulationSessions(profile.userId),
-    getResolvedPredictions(profile.userId),
-  ]);
+  const [stats, inProgress, simSessions, resolvedPredictions, recommendation] =
+    await Promise.all([
+      getDashboardStats(profile.userId),
+      getInProgressLessons(profile.userId),
+      getSimulationSessions(profile.userId),
+      getResolvedPredictions(profile.userId),
+      getRecommendation(profile.userId),
+    ]);
   const calibration = scoreCalibration(resolvedPredictions);
 
   const hour = new Date().getHours();
@@ -97,6 +101,8 @@ export default async function DashboardPage() {
           }
         />
       </div>
+
+      {recommendation && <RecommendationCard rec={recommendation} />}
 
       {stats.unreadNotifications > 0 && (
         <Link

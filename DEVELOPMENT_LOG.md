@@ -244,17 +244,12 @@ The following stages are scoped and sequenced. Stages with no dependencies can b
 
 ---
 
-### 📋 Stage 1 — Annotate Pilot Lesson with a Data Block
-**Effort:** Tiny · **Migration:** 051 · **Depends on:** Stage 5 infrastructure (done)
+### ✅ Stage 1 — Annotate Pilot Lesson with a Data Block
+**Commit:** _(pending)_ · **Migration:** 051 · **Date:** 2026-07-09
 
-The Stage 5 infrastructure is complete. The next step is annotating one lesson with a `data-block` marker to prove the end-to-end flow works in production.
+Inserted a live `home_win_rate` data block into the "Crowd Effect & Home Advantage" lesson (`crowd-effect-home-advantage`, course: `home-advantage-unpacked`), immediately before the Key Takeaway section — right where the lesson narrative references top-five European league home win rates. This is the first live data-block annotation in the codebase, proving the end-to-end `LessonContent` server-component pipeline.
 
-**Suggested pilot:** The Football Fundamentals "Home Advantage" lesson (slug: `home-advantage-crowd-effect` or similar). Add one block:
-```html
-<div data-block="stat" data-factor="home_win_rate" data-league="E0"></div>
-```
-
-**What to build:** `supabase/migrations/051_home_advantage_data_block_pilot.sql` — a single UPDATE statement on the target lesson slug.
+**Migration file:** `supabase/migrations/051_home_advantage_data_block_pilot.sql`
 
 ---
 

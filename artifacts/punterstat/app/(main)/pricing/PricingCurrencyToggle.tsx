@@ -6,9 +6,7 @@ import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import type { PLAN_ROWS } from "./page";
-
-type PlanRow = (typeof PLAN_ROWS)[number];
+import type { PlanRow } from "./plans";
 type Currency = "NGN" | "GBP";
 
 interface Props {

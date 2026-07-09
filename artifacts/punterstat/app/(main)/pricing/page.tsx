@@ -5,83 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import PricingCurrencyToggle from "./PricingCurrencyToggle";
+import { PLAN_ROWS } from "./plans";
 
 export const metadata: Metadata = {
   title: "Pricing",
   description: "Free and premium plans for PunterStat — sports intelligence and education for every level.",
 };
-
-export const PLAN_ROWS = [
-  {
-    name: "Free",
-    gbp: null as string | null,
-    ngn: null as string | null,
-    period: "/month",
-    badge: null as string | null,
-    description: "Explore the platform and start learning at no cost.",
-    cta: "Get started free",
-    ctaHref: "/register",
-    ctaVariant: "outline" as const,
-    features: [
-      { label: "Sports University (all lessons)", included: true },
-      { label: "Betting Academy (all lessons)", included: true },
-      { label: "Bet Simulator (basic)", included: true },
-      { label: "Probability Simulator", included: true },
-      { label: "Match Breakdown Analyzer", included: false },
-      { label: "Progress tracking & completion", included: false },
-      { label: "Lesson bookmarks", included: false },
-      { label: "Simulation history", included: false },
-      { label: "Blog access", included: true },
-      { label: "Priority support", included: false },
-    ],
-  },
-  {
-    name: "Premium",
-    gbp: "£9",
-    ngn: "₦15,000",
-    period: "/month",
-    badge: "Most popular",
-    description: "Full platform access with progress tracking and match analysis.",
-    cta: "Start Premium",
-    ctaHref: "/checkout?plan=premium",
-    ctaVariant: "default" as const,
-    features: [
-      { label: "Sports University (all lessons)", included: true },
-      { label: "Betting Academy (all lessons)", included: true },
-      { label: "Bet Simulator (advanced)", included: true },
-      { label: "Probability Simulator", included: true },
-      { label: "Match Breakdown Analyzer", included: true },
-      { label: "Progress tracking & completion", included: true },
-      { label: "Lesson bookmarks", included: true },
-      { label: "Simulation history", included: true },
-      { label: "Blog access", included: true },
-      { label: "Priority support", included: false },
-    ],
-  },
-  {
-    name: "Pro",
-    gbp: "£19",
-    ngn: "₦32,000",
-    period: "/month",
-    badge: null,
-    description: "Everything in Premium plus priority support and early feature access.",
-    cta: "Start Pro",
-    ctaHref: "/checkout?plan=pro",
-    ctaVariant: "default" as const,
-    features: [
-      { label: "Sports University (all lessons)", included: true },
-      { label: "Betting Academy (all lessons)", included: true },
-      { label: "Bet Simulator (advanced)", included: true },
-      { label: "Probability Simulator", included: true },
-      { label: "Match Breakdown Analyzer", included: true },
-      { label: "Progress tracking & completion", included: true },
-      { label: "Lesson bookmarks", included: true },
-      { label: "Simulation history", included: true },
-      { label: "Blog access", included: true },
-      { label: "Priority support", included: true },
-    ],
-  },
-];
 
 const FAQ = [
   {

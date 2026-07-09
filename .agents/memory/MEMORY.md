@@ -1,0 +1,2 @@
+- [Payment integration](payment-integration.md) — Stripe/Paystack/Remita live on main; migration is 048; Stripe SDK v22 needs apiVersion "2026-06-24.dahlia"
+- [Git sync caution](git-sync.md) — origin/main advances independently; always fetch before writing migrations or the number will collide; pnpm-lock conflicts: accept theirs then reinstall affected packages

@@ -3,6 +3,25 @@ export interface ResolvedPrediction {
   predictedDrawProb: number;
   predictedAwayWinProb: number;
   actualResult: "home_win" | "draw" | "away_win";
+  /** ISO timestamp the prediction was created — optional, only needed for trend scoring. */
+  createdAt?: string;
+}
+
+export interface CalibrationTrendPoint {
+  /** Chronological group label, e.g. "1-5", "6-10". */
+  label: string;
+  brierScore: number;
+  sampleSize: number;
+}
+
+export interface CalibrationTrend {
+  points: CalibrationTrendPoint[];
+  /** Brier score across the earlier half of resolved predictions. */
+  earlierBrierScore: number | null;
+  /** Brier score across the more recent half of resolved predictions. */
+  recentBrierScore: number | null;
+  /** "improving" = recent Brier score is lower (better) than earlier; "declining" = higher; "flat" = negligible change; null = not enough data. */
+  direction: "improving" | "declining" | "flat" | null;
 }
 
 export interface CalibrationBucket {
@@ -177,4 +196,54 @@ export function scoreCalibration(predictions: ResolvedPrediction[]): Calibration
     accuracy: Math.round(accuracy(clean) * 1000) / 1000,
     calibrationCurve: calibrationCurve(clean),
   };
+}
+
+/** Minimum resolved predictions required before a trend/direction is shown at all. */
+const MIN_TREND_SAMPLE = 6;
+/** Difference in Brier score (lower = better) beyond which we call it a real change rather than noise. */
+const FLAT_THRESHOLD = 0.02;
+/** Rolling group size for the trend chart. */
+const GROUP_SIZE = 5;
+
+/**
+ * Computes a Brier-score trend over time so users can see whether their
+ * judgement is improving or declining, not just a single snapshot number.
+ *
+ * Predictions must be sorted chronologically (oldest first) and carry
+ * `createdAt` — the caller is responsible for both (see
+ * getResolvedPredictions, which now selects created_at and orders ascending).
+ *
+ * Method: split the resolved history in half (earlier vs recent) and compare
+ * Brier scores between the two halves. Also buckets predictions into
+ * fixed-size chronological groups (default 5) for a simple trend chart.
+ */
+export function scoreCalibrationTrend(predictions: ResolvedPrediction[]): CalibrationTrend {
+  const clean = validateAndNormalize(predictions);
+
+  const points: CalibrationTrendPoint[] = [];
+  for (let i = 0; i < clean.length; i += GROUP_SIZE) {
+    const group = clean.slice(i, i + GROUP_SIZE);
+    points.push({
+      label: `${i + 1}-${i + group.length}`,
+      brierScore: Math.round(brierScore(group) * 10000) / 10000,
+      sampleSize: group.length,
+    });
+  }
+
+  if (clean.length < MIN_TREND_SAMPLE) {
+    return { points, earlierBrierScore: null, recentBrierScore: null, direction: null };
+  }
+
+  const mid = Math.floor(clean.length / 2);
+  const earlier = clean.slice(0, mid);
+  const recent = clean.slice(mid);
+
+  const earlierBrierScore = Math.round(brierScore(earlier) * 10000) / 10000;
+  const recentBrierScore = Math.round(brierScore(recent) * 10000) / 10000;
+  const delta = earlierBrierScore - recentBrierScore; // positive = recent is better (lower)
+
+  const direction: CalibrationTrend["direction"] =
+    Math.abs(delta) < FLAT_THRESHOLD ? "flat" : delta > 0 ? "improving" : "declining";
+
+  return { points, earlierBrierScore, recentBrierScore, direction };
 }

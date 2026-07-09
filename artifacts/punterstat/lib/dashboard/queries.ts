@@ -364,15 +364,18 @@ export async function getResolvedPredictions(userId: string): Promise<ResolvedPr
   const supabase = await createClient();
   const { data } = await supabase
     .from("prediction_records")
-    .select("predicted_home_win_prob, predicted_draw_prob, predicted_away_win_prob, actual_result")
+    .select("predicted_home_win_prob, predicted_draw_prob, predicted_away_win_prob, actual_result, created_at")
     .eq("user_id", userId)
-    .not("actual_result", "is", null);
+    .not("actual_result", "is", null)
+    // Ascending — scoreCalibrationTrend() needs chronological order (oldest first).
+    .order("created_at", { ascending: true });
 
   return (data ?? []).map((row) => ({
     predictedHomeWinProb: Number(row.predicted_home_win_prob),
     predictedDrawProb: Number(row.predicted_draw_prob),
     predictedAwayWinProb: Number(row.predicted_away_win_prob),
     actualResult: row.actual_result as "home_win" | "draw" | "away_win",
+    createdAt: row.created_at,
   }));
 }
 

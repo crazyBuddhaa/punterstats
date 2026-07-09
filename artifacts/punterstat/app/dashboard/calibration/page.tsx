@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Target, CheckCircle2, ListChecks, Gauge } from "lucide-react";
+import { Target, CheckCircle2, ListChecks, Gauge, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
 import { getResolvedPredictions, getPredictionRecords } from "@/lib/dashboard/queries";
-import { scoreCalibration } from "@/lib/calibration/scorer";
+import { scoreCalibration, scoreCalibrationTrend } from "@/lib/calibration/scorer";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { ResolvePredictionButton } from "@/components/dashboard/resolve-prediction-button";
@@ -28,7 +28,36 @@ export default async function CalibrationPage() {
   ]);
 
   const summary = scoreCalibration(resolved);
+  const trend = scoreCalibrationTrend(resolved);
   const pending = records.filter((r) => !r.actualResult);
+
+  const trendCopy: Record<NonNullable<typeof trend.direction> | "none", { text: string; icon: typeof TrendingUp; color: string; bg: string }> = {
+    improving: {
+      text: "Your judgement is improving — recent predictions score better than your earlier ones.",
+      icon: TrendingUp,
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+    },
+    declining: {
+      text: "Your recent predictions are less well-calibrated than your earlier ones — worth reviewing what changed.",
+      icon: TrendingDown,
+      color: "text-rose-600",
+      bg: "bg-rose-50",
+    },
+    flat: {
+      text: "Your calibration has stayed steady between your earlier and recent predictions.",
+      icon: Minus,
+      color: "text-[#1e293b]/60",
+      bg: "bg-slate-100",
+    },
+    none: {
+      text: "Track a few more predictions to see whether your judgement is improving over time.",
+      icon: Minus,
+      color: "text-[#1e293b]/60",
+      bg: "bg-slate-100",
+    },
+  };
+  const trendInfo = trendCopy[trend.direction ?? "none"];
 
   return (
     <div className="space-y-8">
@@ -115,6 +144,57 @@ export default async function CalibrationPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </section>
+          )}
+
+          {summary.sampleSize > 0 && (
+            <section>
+              <h2 className="mb-3 text-sm font-semibold text-[#1e293b]/60 uppercase tracking-wide">
+                Brier Score Trend
+              </h2>
+              <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
+                <div className={`mb-4 flex items-start gap-3 rounded-xl px-4 py-3 ${trendInfo.bg}`}>
+                  <trendInfo.icon className={`mt-0.5 h-4 w-4 shrink-0 ${trendInfo.color}`} />
+                  <p className={`text-sm ${trendInfo.color}`}>{trendInfo.text}</p>
+                </div>
+
+                {trend.direction !== null && (
+                  <div className="mb-4 grid grid-cols-2 gap-4 text-center">
+                    <div className="rounded-xl bg-slate-50 px-3 py-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-[#1e293b]/40">
+                        Earlier half
+                      </p>
+                      <p className="mt-1 text-lg font-bold text-[#0f172a]">{trend.earlierBrierScore}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 px-3 py-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-[#1e293b]/40">
+                        Recent half
+                      </p>
+                      <p className="mt-1 text-lg font-bold text-[#0f172a]">{trend.recentBrierScore}</p>
+                    </div>
+                  </div>
+                )}
+
+                {trend.points.length > 1 && (
+                  <>
+                    <p className="mb-2 text-xs text-[#1e293b]/50">
+                      Brier score per group of 5 resolved predictions, in order tracked (lower is better).
+                    </p>
+                    <div className="flex items-end gap-2" style={{ height: 80 }}>
+                      {trend.points.map((p) => (
+                        <div key={p.label} className="flex flex-1 flex-col items-center gap-1">
+                          <div
+                            className="w-full rounded-t bg-violet-300"
+                            style={{ height: `${Math.max(6, (1 - p.brierScore / 2) * 64)}px` }}
+                            title={`${p.label}: Brier ${p.brierScore} (n=${p.sampleSize})`}
+                          />
+                          <span className="text-[9px] text-[#1e293b]/40">{p.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </section>
           )}

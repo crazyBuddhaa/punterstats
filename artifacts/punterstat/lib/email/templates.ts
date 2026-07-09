@@ -61,12 +61,22 @@ function shell(innerHtml: string): string {
         <!-- Header -->
         <tr>
           <td style="background:${BRAND.dark};padding:24px 40px;">
-            <p style="margin:0;font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.4px;">
-              PunterStat
-            </p>
-            <p style="margin:4px 0 0;font-size:11px;color:${BRAND.muted};letter-spacing:0.3px;text-transform:uppercase;">
-              Knowledge Before Decision
-            </p>
+            <table role="presentation" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="vertical-align:middle;padding-right:10px;">
+                  <img src="${appUrl()}/logo.png" width="32" height="32" alt="PunterStat"
+                       style="display:block;width:32px;height:32px;border-radius:6px;" />
+                </td>
+                <td style="vertical-align:middle;">
+                  <p style="margin:0;font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.4px;">
+                    PunterStat
+                  </p>
+                  <p style="margin:2px 0 0;font-size:11px;color:${BRAND.muted};letter-spacing:0.3px;text-transform:uppercase;">
+                    Knowledge Before Decision
+                  </p>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
 

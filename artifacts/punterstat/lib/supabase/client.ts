@@ -5,6 +5,16 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // Cookies (including the PKCE code_verifier) must be shared between
+      // apex and www hosts — without an explicit domain they default to
+      // host-only, so a flow that starts on one host and completes on the
+      // other loses the verifier and fails with "PKCE code verifier not
+      // found" / "invalid flow state". See lib/supabase/server.ts for the
+      // matching server-side setting.
+      cookieOptions: {
+        domain:
+          process.env.NODE_ENV === "production" ? ".punterstat.site" : undefined,
+      },
       auth: {
         // OAuth/email codes must always be exchanged server-side by
         // app/auth/callback/route.ts, which also fires the welcome email and

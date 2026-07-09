@@ -4,17 +4,20 @@ import { Check, X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import PricingCurrencyToggle from "./PricingCurrencyToggle";
 
 export const metadata: Metadata = {
   title: "Pricing",
   description: "Free and premium plans for PunterStat — sports intelligence and education for every level.",
 };
 
-const PLANS = [
+export const PLAN_ROWS = [
   {
     name: "Free",
-    price: null,
-    badge: null,
+    gbp: null as string | null,
+    ngn: null as string | null,
+    period: "/month",
+    badge: null as string | null,
     description: "Explore the platform and start learning at no cost.",
     cta: "Get started free",
     ctaHref: "/register",
@@ -34,7 +37,8 @@ const PLANS = [
   },
   {
     name: "Premium",
-    price: "£9",
+    gbp: "£9",
+    ngn: "₦15,000",
     period: "/month",
     badge: "Most popular",
     description: "Full platform access with progress tracking and match analysis.",
@@ -56,7 +60,8 @@ const PLANS = [
   },
   {
     name: "Pro",
-    price: "£19",
+    gbp: "£19",
+    ngn: "₦32,000",
     period: "/month",
     badge: null,
     description: "Everything in Premium plus priority support and early feature access.",
@@ -120,71 +125,8 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Plans */}
-      <section className="container mx-auto max-w-5xl px-4 py-14">
-        <div className="grid gap-6 md:grid-cols-3">
-          {PLANS.map((plan) => (
-            <Card
-              key={plan.name}
-              className={`relative flex flex-col border-border/50 ${plan.badge ? "border-[#3D2DFF]/40 shadow-lg shadow-[#3D2DFF]/5" : ""}`}
-            >
-              {plan.badge && (
-                <div className="absolute -top-3 left-0 right-0 flex justify-center">
-                  <Badge className="bg-[#3D2DFF] text-white text-xs px-3">
-                    {plan.badge}
-                  </Badge>
-                </div>
-              )}
-
-              <CardHeader className="pb-4 pt-6">
-                <h2 className="text-lg font-bold text-[#0f172a]">{plan.name}</h2>
-                <div className="mt-1 flex items-end gap-1">
-                  {plan.price ? (
-                    <>
-                      <span className="text-4xl font-bold text-[#0f172a]">{plan.price}</span>
-                      <span className="mb-1 text-sm text-[#1e293b]/50">{plan.period}</span>
-                    </>
-                  ) : (
-                    <span className="text-4xl font-bold text-[#0f172a]">Free</span>
-                  )}
-                </div>
-                <p className="mt-2 text-sm text-[#1e293b]/60 leading-relaxed">{plan.description}</p>
-              </CardHeader>
-
-              <CardContent className="flex-1 pb-4">
-                <ul className="space-y-3">
-                  {plan.features.map((f) => (
-                    <li key={f.label} className="flex items-start gap-2.5 text-sm">
-                      {f.included ? (
-                        <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#3D2DFF]" />
-                      ) : (
-                        <X className="mt-0.5 h-4 w-4 flex-shrink-0 text-rose-400" />
-                      )}
-                      <span className={f.included ? "text-[#1e293b]/80" : "text-[#1e293b]/40 line-through"}>
-                        {f.label}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-
-              <CardFooter className="pt-0">
-                <Button
-                  variant={plan.ctaVariant}
-                  className={`w-full ${plan.ctaVariant === "default" ? "bg-[#3D2DFF] hover:bg-[#3D2DFF]/90" : ""}`}
-                  asChild
-                >
-                  <Link href={plan.ctaHref}>{plan.cta}</Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-
-        <p className="mt-6 text-center text-xs text-[#1e293b]/40">
-          Prices shown in GBP. NGN equivalent available at checkout. VAT may apply. No contracts — cancel anytime.
-        </p>
-      </section>
+      {/* Plans — currency toggle handled client-side */}
+      <PricingCurrencyToggle plans={PLAN_ROWS} />
 
       {/* Payment providers */}
       <section className="border-t border-border/50 bg-white px-4 py-10">

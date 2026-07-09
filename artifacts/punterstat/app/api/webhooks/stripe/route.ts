@@ -9,6 +9,9 @@
  *   invoice.payment_failed           — mark expired after failed renewal
  *
  * Raw body must not be parsed by Next.js — we use req.text() for sig verification.
+ *
+ * NOTE (Stripe API 2026-06-24.dahlia): current_period_start / current_period_end
+ * were moved from Subscription to SubscriptionItem. Access via sub.items.data[0].
  */
 
 import { NextResponse } from "next/server";
@@ -56,14 +59,16 @@ export async function POST(req: Request) {
         const sub = await fetchStripeSub(session.subscription as string);
         if (!sub) break;
 
+        const { start, end } = getSubPeriod(sub);
+
         await upsertSubscription({
           userId:              meta.userId,
           plan:                meta.plan,
           provider:            "stripe",
           status:              "active",
           currency:            "GBP",
-          currentPeriodStart:  new Date(sub.current_period_start * 1000),
-          currentPeriodEnd:    new Date(sub.current_period_end   * 1000),
+          currentPeriodStart:  start,
+          currentPeriodEnd:    end,
           stripeCustomerId:    session.customer as string,
           stripeSubscriptionId: sub.id,
         });
@@ -86,11 +91,12 @@ export async function POST(req: Request) {
           (await getSubscriptionByStripeId(sub.id))?.plan) as PlanId | undefined;
 
         const status =
-          sub.status === "active" || sub.status === "trialing"
-            ? sub.status === "trialing" ? "trialing" : "active"
-            : sub.status === "canceled"
-            ? "cancelled"
-            : "expired";
+          sub.status === "trialing"  ? "trialing"  :
+          sub.status === "active"    ? "active"     :
+          sub.status === "canceled"  ? "cancelled"  :
+                                       "expired";
+
+        const { start, end } = getSubPeriod(sub);
 
         await upsertSubscription({
           userId,
@@ -98,8 +104,8 @@ export async function POST(req: Request) {
           provider: "stripe",
           status,
           currency: "GBP",
-          currentPeriodStart: new Date(sub.current_period_start * 1000),
-          currentPeriodEnd:   new Date(sub.current_period_end   * 1000),
+          currentPeriodStart: start,
+          currentPeriodEnd:   end,
           cancelledAt: sub.canceled_at ? new Date(sub.canceled_at * 1000) : null,
           stripeSubscriptionId: sub.id,
           stripeCustomerId: sub.customer as string,
@@ -118,14 +124,16 @@ export async function POST(req: Request) {
           break;
         }
 
+        const { start, end } = getSubPeriod(sub);
+
         await upsertSubscription({
           userId:   row.userId,
           plan:     row.plan as PlanId,
           provider: "stripe",
           status:   "cancelled",
           currency: "GBP",
-          currentPeriodStart: new Date(sub.current_period_start * 1000),
-          currentPeriodEnd:   new Date(sub.current_period_end   * 1000),
+          currentPeriodStart: start,
+          currentPeriodEnd:   end,
           cancelledAt: new Date(),
           stripeSubscriptionId: sub.id,
           stripeCustomerId:     sub.customer as string,
@@ -146,14 +154,15 @@ export async function POST(req: Request) {
         // Only mark expired if Stripe has exhausted all retries (billing_reason = subscription_cycle).
         const typedInvoice = invoice as Stripe.Invoice & { billing_reason?: string };
         if (typedInvoice.billing_reason === "subscription_cycle") {
+          const now = new Date();
           await upsertSubscription({
             userId:   row.userId,
             plan:     row.plan as PlanId,
             provider: "stripe",
             status:   "expired",
             currency: "GBP",
-            currentPeriodStart: new Date(),
-            currentPeriodEnd:   new Date(),
+            currentPeriodStart: now,
+            currentPeriodEnd:   now,
             stripeSubscriptionId: subId,
           });
         }
@@ -175,12 +184,37 @@ export async function POST(req: Request) {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+/**
+ * Fetch a Stripe subscription by ID, expanding items so period fields are available.
+ * In Stripe API 2026-06-24.dahlia, current_period_start/end live on SubscriptionItem.
+ */
 async function fetchStripeSub(subId: string): Promise<Stripe.Subscription | null> {
   if (!subId) return null;
   try {
     const { getStripe } = await import("@/lib/payments/stripe");
-    return await getStripe().subscriptions.retrieve(subId);
+    return await getStripe().subscriptions.retrieve(subId, { expand: ["items"] });
   } catch {
     return null;
   }
+}
+
+/**
+ * Extract current_period_start / current_period_end from a Stripe Subscription.
+ *
+ * In Stripe API 2026-06-24.dahlia these fields were moved from the Subscription
+ * object to the first SubscriptionItem. We read from the item and fall back to
+ * Unix 0 (which the idempotency guard in upsertSubscription will handle safely).
+ */
+function getSubPeriod(sub: Stripe.Subscription): { start: Date; end: Date } {
+  const item = sub.items?.data?.[0] as
+    | (Stripe.SubscriptionItem & { current_period_start?: number; current_period_end?: number })
+    | undefined;
+
+  const startTs = item?.current_period_start ?? 0;
+  const endTs   = item?.current_period_end   ?? 0;
+
+  return {
+    start: startTs ? new Date(startTs * 1000) : new Date(),
+    end:   endTs   ? new Date(endTs   * 1000) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  };
 }

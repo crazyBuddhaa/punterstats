@@ -7,11 +7,13 @@ import type { Fixture, FixturesResult } from "./types";
  * SportsAPIPro — free-plan primary source for football fixtures.
  *
  * Free plan is capped at 100 requests/day. Per league we spend 1 request
- * (events/next) per refresh cycle, plus an occasional +1 to resolve a
- * league's current seasonId (cached 24h — see sportsapipro_season_cache).
- * With 12 leagues that's ~12 requests per adaptive-cache refresh; combined
- * with the router's 50%-of-budget cutoff, SportsAPIPro self-throttles to
- * roughly 4 refresh cycles/day before falling back to footballdata.io.
+ * (events/next) per refresh cycle, plus +1 whenever a league's seasonId
+ * cache misses (cached 24h — see sportsapipro_season_cache; both the
+ * seasons lookup and the events call are recorded against quota via
+ * recordApiUsage). With 12 leagues that's ~12 requests/refresh once season
+ * IDs are warm (up to ~24 on a cold day), and combined with the router's
+ * 50%-of-budget cutoff, SportsAPIPro self-throttles to roughly 2-4 refresh
+ * cycles/day before falling back to footballdata.io.
  *
  * Docs: https://docs.sportsapipro.com
  *   - Canonical league IDs: /api-reference/football-v2/canonical-ids
@@ -146,6 +148,10 @@ async function resolveSeasonId(tournamentId: number, apiKey: string): Promise<nu
     const res = await fetch(`${BASE_URL}/tournaments/${tournamentId}/seasons`, {
       headers: { "x-api-key": apiKey, accept: "application/json" },
     });
+    // This is a real upstream request against the 100/day budget — record it
+    // even on failure so the router's throttle reflects actual spend, not
+    // just successful events/next calls.
+    await recordApiUsage(SOURCE);
     if (!res.ok) return cached?.season_id ?? null;
 
     const json = (await res.json()) as SeasonsResponse;

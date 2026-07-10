@@ -12,9 +12,17 @@
 -- are idempotent and cheap to occasionally duplicate, so a plain timestamp
 -- check is sufficient — no refresh-lock contention handling needed.
 
-CREATE TABLE IF NOT EXISTS sportsapipro_season_cache (
+CREATE TABLE IF NOT EXISTS public.sportsapipro_season_cache (
   tournament_id   INTEGER     PRIMARY KEY,
   season_id       INTEGER     NOT NULL,
   season_name     TEXT,
   fetched_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- RLS: service-role only (admin client reads/writes via resolveSeasonId in
+-- lib/sports-data/sportsapipro.ts; no client-side access needed) — same
+-- pattern as cache_refresh_locks (migration 011).
+ALTER TABLE public.sportsapipro_season_cache ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_sportsapipro_season_cache_tournament
+  ON public.sportsapipro_season_cache (tournament_id);

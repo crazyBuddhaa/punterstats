@@ -108,7 +108,15 @@ async function fetchHeadToHead(
     // Note: SportsAPIPro's h2h endpoint reports win/draw/loss counts only —
     // it does not include an average-goals figure, so headToHead.avgGoals
     // is intentionally omitted here and left at the analyzer's manual default.
-    return { homeWins: duel.homeWins, draws: duel.draws, awayWins: duel.awayWins };
+    //
+    // ⚠ SportsAPIPro field-name inversion: in the teamDuel object returned
+    // by match/{matchId}/h2h, "homeWins" refers to wins by the AWAY team in
+    // the current fixture and "awayWins" refers to wins by the HOME team.
+    // This is confirmed by live data (Arsenal home vs Coventry away showed
+    // homeWins=1/awayWins=7 when actual H2H is Arsenal 7 wins, Coventry 1).
+    // The swap below corrects the mapping to match our HeadToHead type where
+    // homeWins = home team's wins and awayWins = away team's wins.
+    return { homeWins: duel.awayWins, draws: duel.draws, awayWins: duel.homeWins };
   } catch (err) {
     console.warn(`[sports-data/sportsapipro-enrich] h2h fetch failed for match ${matchId}:`, err);
     return undefined;

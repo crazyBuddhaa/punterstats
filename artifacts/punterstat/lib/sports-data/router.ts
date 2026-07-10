@@ -129,14 +129,21 @@ export async function getFixtures(options?: {
 }): Promise<FixturesResult> {
   const errors: string[] = [];
 
+  // Whether the caller supplied a filter. When a filter is active, an empty
+  // fixture list is not treated as a provider success — we fall through to
+  // the next provider so a league that one source doesn't cover (e.g.
+  // Championship fixtures not in the SportsAPIPro cache) is still served
+  // by a secondary/tertiary provider rather than silently returning nothing.
+  const hasFilter = !!(options?.league || options?.search);
+
   // ── Primary: SportsAPIPro (100 req/day) ──────────────────────────────────
   const proUsage = await getUsage("sportsapipro");
   const proLimit = QUOTAS["sportsapipro"].limit;
 
   if (proUsage < proLimit * RECOVERY_THRESHOLD) {
     const proResult = await getSportsApiProFixtures(options);
-    if (proResult.success) return proResult;
-    errors.push(`Primary (SportsAPIPro): ${proResult.error}`);
+    if (proResult.success && (!hasFilter || proResult.fixtures.length > 0)) return proResult;
+    if (!proResult.success) errors.push(`Primary (SportsAPIPro): ${proResult.error}`);
   }
 
   // ── Secondary: footballdata.io (monthly-capped) ──────────────────────────
@@ -145,8 +152,8 @@ export async function getFixtures(options?: {
 
   if (secondaryUsage < secondaryLimit * RECOVERY_THRESHOLD) {
     const secondaryResult = await getFootballDataIoFixtures(options);
-    if (secondaryResult.success) return secondaryResult;
-    errors.push(`Secondary (footballdata.io): ${secondaryResult.error}`);
+    if (secondaryResult.success && (!hasFilter || secondaryResult.fixtures.length > 0)) return secondaryResult;
+    if (!secondaryResult.success) errors.push(`Secondary (footballdata.io): ${secondaryResult.error}`);
   }
 
   // ── Tertiary: football-data.org (unlimited) ──────────────────────────────

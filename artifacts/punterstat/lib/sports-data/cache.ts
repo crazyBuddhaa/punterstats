@@ -77,7 +77,10 @@ export async function getCachedFixtures(
     .order("kickoff", { ascending: true });
 
   if (options?.league) {
-    query = query.eq("league", options.league);
+    // Use ilike (case-insensitive substring) instead of exact eq so that
+    // stored league names like "EFL Championship" still match a filter of
+    // "Championship", regardless of which provider wrote the cache entry.
+    query = query.ilike("league", `%${options.league}%`);
   }
   if (options?.search) {
     query = query.or(

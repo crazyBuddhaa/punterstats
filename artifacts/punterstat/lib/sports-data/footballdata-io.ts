@@ -71,11 +71,12 @@ function mapRawMatch(raw: RawMatch): Omit<Fixture, "id" | "source"> {
 }
 
 /**
- * Fetch fixtures from footballdata.io — the monthly-capped fallback source.
+ * Fetch fixtures from footballdata.io — the secondary source (1 000 req/month).
  *
- * The router now tries football-data.org first (no monthly limit); this function
- * is called only when the primary fails or the league is outside its top-5
- * coverage. Reads from the adaptive 1–2 hour cache before spending a credit.
+ * The router tries SportsAPIPro first; this function is called only when
+ * SportsAPIPro fails or its daily budget is too low. football-data.org
+ * (no monthly limit) is tried after this as the tertiary/last-resort source.
+ * Reads from the adaptive 1–2 hour cache before spending a credit.
  *
  * This function acquires the cache refresh lock when it hits the API. If the
  * API call fails, it releases the lock and falls back to stale data.

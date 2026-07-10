@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getSportsApiProFixtures } from "./sportsapipro";
 import { getFootballDataFixtures } from "./football-data";
 import { getFootballDataIoFixtures } from "./footballdata-io";
 import type { FixturesResult, SportsDataSource } from "./types";
@@ -6,16 +7,21 @@ import type { FixturesResult, SportsDataSource } from "./types";
 /**
  * Free-tier quota budgets per provider.
  *
- * footballdata.io:  1 000 req/month → ~33/day — primary source.
+ * SportsAPIPro:  100 req/day — primary source.
  *   The 1–2 hour adaptive cache means we typically issue ≤1 call/hour per
- *   cache group, keeping well within the monthly cap. We track a 24-hour
- *   rolling window and gate fallback at 50% of daily budget.
+ *   cache group, keeping well within the daily cap. We track a 24-hour
+ *   rolling window and gate fallback at 50% of daily budget, same as the
+ *   other providers below.
  *
- * football-data.org:  10 req/min, NO monthly cap — fallback source.
- *   Used only when footballdata.io fails outright or its budget is too low.
- *   Covers PL, La Liga, Bundesliga, Serie A, Ligue 1.
+ * footballdata.io:  1 000 req/month → ~33/day — secondary source.
+ *   Used only when SportsAPIPro fails outright or its budget is too low.
+ *
+ * football-data.org:  10 req/min, NO monthly cap — tertiary/last-resort source.
+ *   Used only when both of the above fail. Covers PL, La Liga, Bundesliga,
+ *   Serie A, Ligue 1.
  */
 const QUOTAS: Record<SportsDataSource, { limit: number; windowMs: number }> = {
+  "sportsapipro":    { limit: 100, windowMs: 24 * 60 * 60 * 1000 },   // 100 req/day
   "footballdata-io": { limit: 33, windowMs: 24 * 60 * 60 * 1000 },    // ~33 req/day
   "football-data":   { limit: 10, windowMs: 60 * 1000 },              // 10 req/min
 };
@@ -82,17 +88,20 @@ async function getUsage(source: SportsDataSource): Promise<number> {
 }
 
 /**
- * Get fixtures using footballdata.io as the primary source (1 000 req/month,
- * adaptive cache keeps actual usage ≤1 call/hour per cache group) and falling
- * back to football-data.org (no monthly cap, 10 req/min) when the primary
- * fails or its daily budget is too low.
+ * Get fixtures using SportsAPIPro as the primary source (100 req/day,
+ * adaptive cache keeps actual usage ≤1 call/hour per cache group), falling
+ * back to footballdata.io (1 000 req/month) and then football-data.org (no
+ * monthly cap, 10 req/min) when a higher-priority source fails or its daily
+ * budget is too low.
  *
  * Routing rules:
- *   1. Check footballdata.io's rolling 24-hour usage first.
- *   2. If usage < 50% of daily limit, call footballdata.io — return on success.
- *   3. If footballdata.io fails OR budget is at/above threshold, call
- *      football-data.org (covers PL, La Liga, Bundesliga, Serie A, Ligue 1).
- *   4. If both fail, surface the footballdata.io error.
+ *   1. Check SportsAPIPro's rolling 24-hour usage first.
+ *   2. If usage < 50% of daily limit, call SportsAPIPro — return on success.
+ *   3. If SportsAPIPro fails OR budget is at/above threshold, try
+ *      footballdata.io under the same 50% threshold rule.
+ *   4. If that also fails or is throttled, call football-data.org (covers
+ *      PL, La Liga, Bundesliga, Serie A, Ligue 1).
+ *   5. If all three fail, surface the combined errors.
  *
  * Callers should always go through this function — never call individual
  * provider clients directly — so quota tracking and fallback stay consistent.
@@ -102,28 +111,33 @@ export async function getFixtures(options?: {
   search?: string;
   forceRefresh?: boolean;
 }): Promise<FixturesResult> {
-  // ── Primary: footballdata.io (monthly-capped) ────────────────────────────
-  const primaryUsage = await getUsage("footballdata-io");
-  const primaryLimit = QUOTAS["footballdata-io"].limit;
+  const errors: string[] = [];
 
-  let primaryError: string | undefined;
+  // ── Primary: SportsAPIPro (100 req/day) ──────────────────────────────────
+  const proUsage = await getUsage("sportsapipro");
+  const proLimit = QUOTAS["sportsapipro"].limit;
 
-  if (primaryUsage < primaryLimit * RECOVERY_THRESHOLD) {
-    const primaryResult = await getFootballDataIoFixtures(options);
-    if (primaryResult.success) return primaryResult;
-    // Capture the primary error so we can surface it if the fallback also fails.
-    primaryError = primaryResult.error;
+  if (proUsage < proLimit * RECOVERY_THRESHOLD) {
+    const proResult = await getSportsApiProFixtures(options);
+    if (proResult.success) return proResult;
+    errors.push(`Primary (SportsAPIPro): ${proResult.error}`);
   }
 
-  // ── Fallback: football-data.org (unlimited) ──────────────────────────────
+  // ── Secondary: footballdata.io (monthly-capped) ──────────────────────────
+  const secondaryUsage = await getUsage("footballdata-io");
+  const secondaryLimit = QUOTAS["footballdata-io"].limit;
+
+  if (secondaryUsage < secondaryLimit * RECOVERY_THRESHOLD) {
+    const secondaryResult = await getFootballDataIoFixtures(options);
+    if (secondaryResult.success) return secondaryResult;
+    errors.push(`Secondary (footballdata.io): ${secondaryResult.error}`);
+  }
+
+  // ── Tertiary: football-data.org (unlimited) ──────────────────────────────
   const fallbackResult = await getFootballDataFixtures(options);
   if (fallbackResult.success) return fallbackResult;
+  errors.push(`Tertiary (football-data.org): ${fallbackResult.error}`);
 
-  // Both providers failed — combine errors so callers and logs get the full picture.
-  return {
-    success: false,
-    error: primaryError
-      ? `Primary (footballdata.io): ${primaryError} | Fallback (football-data.org): ${fallbackResult.error}`
-      : fallbackResult.error,
-  };
+  // All providers failed — combine errors so callers and logs get the full picture.
+  return { success: false, error: errors.join(" | ") };
 }

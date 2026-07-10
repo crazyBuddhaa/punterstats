@@ -1,4 +1,4 @@
-export type SportsDataSource = "footballdata-io" | "football-data";
+export type SportsDataSource = "sportsapipro" | "footballdata-io" | "football-data";
 
 export interface Fixture {
   id: string;

@@ -9,57 +9,80 @@ import type { Fixture, FixturesResult } from "./types";
  * 2h hard TTL, shared with the other sports-data sources) keeps actual usage
  * to roughly one call per cache group per hour, well within budget.
  *
+ * Base URL is versioned + sport-scoped by subdomain (per official docs):
+ *   https://v2.football.sportsapipro.com/api/...
  * Auth:  x-api-key header
  * Docs:  https://docs.sportsapipro.com
  */
-const BASE_URL = "https://api.sportsapipro.com/v1/football";
+const BASE_URL = "https://v2.football.sportsapipro.com/api";
 const SOURCE = "sportsapipro" as const;
 
-interface RawCompetitor {
+interface RawTeam {
   id: number;
   name: string;
-  score: number; // -1 when the game hasn't started yet
 }
 
-interface RawGame {
+interface RawScore {
+  current?: number;
+}
+
+interface RawStatus {
+  code: number;
+  description: string;
+  /** "notstarted" | "inprogress" | "finished" | "postponed" | "canceled" | "abandoned" | "interrupted" */
+  type: string;
+}
+
+interface RawEvent {
   id: number;
-  competitionDisplayName: string;
-  seasonNum: number;
-  startTime: string; // ISO 8601
-  statusGroup: number; // 2 = scheduled, 3 = live, 4 = ended/postponed/cancelled
-  statusText: string; // e.g. "Scheduled" | "1st Half" | "Finished" | "Postponed" | "Cancelled"
-  homeCompetitor: RawCompetitor;
-  awayCompetitor: RawCompetitor;
+  slug: string;
+  tournament: { name: string };
+  season?: { name?: string; year?: string };
+  homeTeam: RawTeam;
+  awayTeam: RawTeam;
+  homeScore?: RawScore;
+  awayScore?: RawScore;
+  status: RawStatus;
+  startTimestamp: number; // unix seconds
 }
 
 interface RawResponse {
   success: boolean;
-  error?: string;
-  message?: string;
-  data?: { games: RawGame[] };
+  error?: string | { code: string; message: string };
+  events?: RawEvent[];
 }
 
-function mapStatus(raw: RawGame): Fixture["status"] {
-  const text = raw.statusText.toLowerCase();
-  if (text.includes("postponed")) return "postponed";
-  if (text.includes("cancel") || text.includes("abandon")) return "cancelled";
-  if (raw.statusGroup === 3) return "live";
-  if (raw.statusGroup === 4) return "finished";
-  return "scheduled";
+function mapStatus(status: RawStatus): Fixture["status"] {
+  switch (status.type) {
+    case "inprogress":
+      return "live";
+    case "finished":
+      return "finished";
+    case "postponed":
+      return "postponed";
+    case "canceled":
+    case "cancelled":
+    case "abandoned":
+    case "interrupted":
+      return "cancelled";
+    case "notstarted":
+    default:
+      return "scheduled";
+  }
 }
 
-function mapRawGame(raw: RawGame): Omit<Fixture, "id" | "source"> {
-  const started = raw.homeCompetitor.score >= 0;
+function mapRawEvent(raw: RawEvent): Omit<Fixture, "id" | "source"> {
+  const started = raw.status.type !== "notstarted";
   return {
     externalId: String(raw.id),
-    league: raw.competitionDisplayName,
-    season: String(raw.seasonNum),
-    homeTeam: raw.homeCompetitor.name,
-    awayTeam: raw.awayCompetitor.name,
-    kickoff: raw.startTime,
-    status: mapStatus(raw),
-    homeScore: started ? raw.homeCompetitor.score : undefined,
-    awayScore: started ? raw.awayCompetitor.score : undefined,
+    league: raw.tournament.name,
+    season: raw.season?.year ?? raw.season?.name,
+    homeTeam: raw.homeTeam.name,
+    awayTeam: raw.awayTeam.name,
+    kickoff: new Date(raw.startTimestamp * 1000).toISOString(),
+    status: mapStatus(raw.status),
+    homeScore: started ? raw.homeScore?.current : undefined,
+    awayScore: started ? raw.awayScore?.current : undefined,
   };
 }
 
@@ -97,9 +120,9 @@ export async function getSportsApiProFixtures(options?: {
   }
 
   try {
-    // "all" covers today's full slate (scheduled + live + finished) across
-    // every competition on the free plan in a single request.
-    const res = await fetch(`${BASE_URL}/all`, {
+    // /today covers the full day's slate (scheduled + live + finished) for
+    // football in a single request.
+    const res = await fetch(`${BASE_URL}/today`, {
       headers: { "x-api-key": apiKey, accept: "application/json" },
       next: { revalidate: 0 }, // always rely on our Supabase cache, not fetch cache
     });
@@ -113,22 +136,23 @@ export async function getSportsApiProFixtures(options?: {
     }
 
     const json = (await res.json()) as RawResponse;
-    if (!json.success || !json.data?.games) {
+    if (!json.success || !json.events) {
       await releaseFixturesLock(SOURCE);
-      return {
-        success: false,
-        error: json.message ?? json.error ?? "No fixture data returned from SportsAPIPro",
-      };
+      const errMsg =
+        typeof json.error === "string"
+          ? json.error
+          : json.error?.message ?? "No fixture data returned from SportsAPIPro";
+      return { success: false, error: errMsg };
     }
 
-    const mapped = json.data.games.map(mapRawGame);
+    const mapped = json.events.map(mapRawEvent);
 
     // Persist the full unfiltered batch so every league/search combo pulls
     // from the same cache write.
     await writeFixturesCache(
       SOURCE,
       mapped,
-      json.data.games.map((g) => g as unknown as Record<string, unknown>)
+      json.events.map((e) => e as unknown as Record<string, unknown>)
     );
 
     let filtered = mapped;

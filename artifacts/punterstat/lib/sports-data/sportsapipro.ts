@@ -1,3 +1,4 @@
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCachedFixtures, writeFixturesCache, releaseFixturesLock } from "./cache";
 import { recordApiUsage } from "./router";
 import type { Fixture, FixturesResult } from "./types";
@@ -5,17 +6,49 @@ import type { Fixture, FixturesResult } from "./types";
 /**
  * SportsAPIPro — free-plan primary source for football fixtures.
  *
- * Free plan is capped at 100 requests/day, but the adaptive cache (1h soft /
- * 2h hard TTL, shared with the other sports-data sources) keeps actual usage
- * to roughly one call per cache group per hour, well within budget.
+ * Free plan is capped at 100 requests/day. Per league we spend 1 request
+ * (events/next) per refresh cycle, plus an occasional +1 to resolve a
+ * league's current seasonId (cached 24h — see sportsapipro_season_cache).
+ * With 12 leagues that's ~12 requests per adaptive-cache refresh; combined
+ * with the router's 50%-of-budget cutoff, SportsAPIPro self-throttles to
+ * roughly 4 refresh cycles/day before falling back to footballdata.io.
  *
- * Base URL is versioned + sport-scoped by subdomain (per official docs):
- *   https://v2.football.sportsapipro.com/api/...
- * Auth:  x-api-key header
- * Docs:  https://docs.sportsapipro.com
+ * Docs: https://docs.sportsapipro.com
+ *   - Canonical league IDs: /api-reference/football-v2/canonical-ids
+ *   - Season resolution:    /api-reference/football-v2/season-ids
+ *   - Tournament endpoints: /api-reference/football-v2/tournament
  */
-const BASE_URL = "https://v2.football.sportsapipro.com/api";
+const BASE_URL = "https://api.sportsapipro.com/v2/football";
 const SOURCE = "sportsapipro" as const;
+const SEASON_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h — seasons roll over a few times/year
+
+/**
+ * uniqueTournament.id (canonical, season-independent) for every league the
+ * UI exposes — see components/match-breakdown/fixture-search.tsx
+ * SUPPORTED_LEAGUES. Keep in sync with that list.
+ *
+ * IDs confirmed via SportsAPIPro docs (Canonical IDs page) for the top 8,
+ * and via GET /v2/football/search?q=... for the remaining four — NOT the
+ * v1 /football/search endpoint, whose "competitions[].id" values are a
+ * different, incompatible ID space from v2's uniqueTournament.id despite
+ * the docs implying equivalence (verified live: v1 search returned id=57
+ * for "Eredivisie", but v2 tournament 57 is actually a German handball cup).
+ * Always confirm a v1-search-derived ID against v2 before trusting it.
+ */
+const LEAGUE_TOURNAMENT_IDS: Record<string, number> = {
+  "Premier League": 17,
+  "La Liga": 8,
+  Bundesliga: 35,
+  "Serie A": 23,
+  "Ligue 1": 34,
+  "Champions League": 7,
+  "Europa League": 679,
+  Championship: 18,
+  Eredivisie: 37,
+  "Primeira Liga": 238,
+  "Scottish Premiership": 36,
+  "World Cup": 16,
+};
 
 interface RawTeam {
   id: number;
@@ -35,7 +68,6 @@ interface RawStatus {
 
 interface RawEvent {
   id: number;
-  slug: string;
   tournament: { name: string };
   season?: { name?: string; year?: string };
   homeTeam: RawTeam;
@@ -46,10 +78,15 @@ interface RawEvent {
   startTimestamp: number; // unix seconds
 }
 
-interface RawResponse {
+interface SeasonsResponse {
+  success: boolean;
+  seasons?: { id: number; name: string; year: string }[];
+}
+
+interface EventsResponse {
   success: boolean;
   error?: string | { code: string; message: string };
-  events?: RawEvent[];
+  data?: { events?: RawEvent[] };
 }
 
 function mapStatus(status: RawStatus): Fixture["status"] {
@@ -87,9 +124,83 @@ function mapRawEvent(raw: RawEvent): Omit<Fixture, "id" | "source"> {
 }
 
 /**
+ * Resolve the current seasonId for a tournament, cached 24h in
+ * sportsapipro_season_cache. Returns null if resolution fails (caller
+ * should skip that league for this refresh rather than fail the whole
+ * batch).
+ */
+async function resolveSeasonId(tournamentId: number, apiKey: string): Promise<number | null> {
+  const supabase = createAdminClient();
+
+  const { data: cached } = await supabase
+    .from("sportsapipro_season_cache")
+    .select("season_id, fetched_at")
+    .eq("tournament_id", tournamentId)
+    .maybeSingle();
+
+  if (cached && Date.now() - new Date(cached.fetched_at).getTime() < SEASON_CACHE_TTL_MS) {
+    return cached.season_id;
+  }
+
+  try {
+    const res = await fetch(`${BASE_URL}/tournaments/${tournamentId}/seasons`, {
+      headers: { "x-api-key": apiKey, accept: "application/json" },
+    });
+    if (!res.ok) return cached?.season_id ?? null;
+
+    const json = (await res.json()) as SeasonsResponse;
+    const current = json.seasons?.[0]; // most recent season is first
+    if (!json.success || !current) return cached?.season_id ?? null;
+
+    await supabase.from("sportsapipro_season_cache").upsert(
+      {
+        tournament_id: tournamentId,
+        season_id: current.id,
+        season_name: current.name,
+        fetched_at: new Date().toISOString(),
+      },
+      { onConflict: "tournament_id" }
+    );
+
+    return current.id;
+  } catch (err) {
+    console.warn(`[sports-data/sportsapipro] season resolution failed for tournament ${tournamentId}:`, err);
+    return cached?.season_id ?? null;
+  }
+}
+
+/**
+ * Fetch upcoming events for one league. Returns [] on any failure — a
+ * single league's outage shouldn't fail the whole batch.
+ */
+async function fetchLeagueUpcoming(
+  league: string,
+  tournamentId: number,
+  apiKey: string
+): Promise<RawEvent[]> {
+  const seasonId = await resolveSeasonId(tournamentId, apiKey);
+  if (seasonId === null) return [];
+
+  try {
+    const res = await fetch(
+      `${BASE_URL}/tournament/${tournamentId}/season/${seasonId}/events/next/0`,
+      { headers: { "x-api-key": apiKey, accept: "application/json" } }
+    );
+    if (!res.ok) return [];
+
+    const json = (await res.json()) as EventsResponse;
+    if (!json.success || !json.data?.events) return [];
+    return json.data.events;
+  } catch (err) {
+    console.warn(`[sports-data/sportsapipro] events fetch failed for ${league}:`, err);
+    return [];
+  }
+}
+
+/**
  * Fetch football fixtures from SportsAPIPro — the primary source.
  *
- * Reads from the adaptive 1–2 hour cache before spending a request against
+ * Reads from the adaptive 1–2 hour cache before spending requests against
  * the 100/day free-plan budget. Go through lib/sports-data/router.ts rather
  * than calling this directly, so quota tracking and fallback stay consistent.
  */
@@ -120,39 +231,33 @@ export async function getSportsApiProFixtures(options?: {
   }
 
   try {
-    // /today covers the full day's slate (scheduled + live + finished) for
-    // football in a single request.
-    const res = await fetch(`${BASE_URL}/today`, {
-      headers: { "x-api-key": apiKey, accept: "application/json" },
-      next: { revalidate: 0 }, // always rely on our Supabase cache, not fetch cache
-    });
+    const leagues = Object.entries(LEAGUE_TOURNAMENT_IDS);
 
-    await recordApiUsage(SOURCE);
+    const results = await Promise.all(
+      leagues.map(async ([league, tournamentId]) => {
+        const events = await fetchLeagueUpcoming(league, tournamentId, apiKey);
+        // One quota unit per league request (season resolution is cached
+        // separately and only counts against quota when it actually misses).
+        await recordApiUsage(SOURCE);
+        return events;
+      })
+    );
 
-    if (!res.ok) {
-      const body = await res.text().catch(() => "(no body)");
+    const allRaw = results.flat();
+
+    if (allRaw.length === 0) {
       await releaseFixturesLock(SOURCE);
-      return { success: false, error: `SportsAPIPro error ${res.status}: ${body}` };
+      return { success: false, error: "No fixture data returned from SportsAPIPro" };
     }
 
-    const json = (await res.json()) as RawResponse;
-    if (!json.success || !json.events) {
-      await releaseFixturesLock(SOURCE);
-      const errMsg =
-        typeof json.error === "string"
-          ? json.error
-          : json.error?.message ?? "No fixture data returned from SportsAPIPro";
-      return { success: false, error: errMsg };
-    }
-
-    const mapped = json.events.map(mapRawEvent);
+    const mapped = allRaw.map(mapRawEvent);
 
     // Persist the full unfiltered batch so every league/search combo pulls
     // from the same cache write.
     await writeFixturesCache(
       SOURCE,
       mapped,
-      json.events.map((e) => e as unknown as Record<string, unknown>)
+      allRaw.map((e) => e as unknown as Record<string, unknown>)
     );
 
     let filtered = mapped;

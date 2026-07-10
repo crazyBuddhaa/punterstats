@@ -41,6 +41,17 @@ function currentWindow(source: SportsDataSource): { start: Date; end: Date } {
 }
 
 /**
+ * Whether a provider still has headroom under the same 50%-of-budget
+ * threshold used for fixtures fallback. Used by on-demand features (e.g.
+ * match enrichment) that have no fallback provider of their own, so they
+ * skip gracefully instead of pushing SportsAPIPro over budget.
+ */
+export async function hasQuotaHeadroom(source: SportsDataSource): Promise<boolean> {
+  const usage = await getUsage(source);
+  return usage < QUOTAS[source].limit * RECOVERY_THRESHOLD;
+}
+
+/**
  * Record one API call against a provider's current quota window.
  * Each provider client calls this after every live (non-cached) request.
  */
@@ -73,7 +84,12 @@ export async function recordApiUsage(source: SportsDataSource): Promise<void> {
   }
 }
 
-async function getUsage(source: SportsDataSource): Promise<number> {
+/**
+ * Exposed so on-demand, non-fallback-able features (e.g. the SportsAPIPro
+ * match-enrichment lookup) can check remaining budget before spending calls
+ * that have no fallback provider.
+ */
+export async function getUsage(source: SportsDataSource): Promise<number> {
   const supabase = createAdminClient();
   const { start } = currentWindow(source);
 

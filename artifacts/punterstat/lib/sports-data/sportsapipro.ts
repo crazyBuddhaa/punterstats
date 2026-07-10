@@ -122,6 +122,8 @@ function mapRawEvent(raw: RawEvent): Omit<Fixture, "id" | "source"> {
     status: mapStatus(raw.status),
     homeScore: started ? raw.homeScore?.current : undefined,
     awayScore: started ? raw.awayScore?.current : undefined,
+    homeTeamId: raw.homeTeam.id,
+    awayTeamId: raw.awayTeam.id,
   };
 }
 

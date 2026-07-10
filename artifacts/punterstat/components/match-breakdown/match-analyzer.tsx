@@ -194,6 +194,8 @@ export function MatchAnalyzer({ isAuthenticated }: MatchAnalyzerProps) {
   const [tracked, setTracked] = useState(false);
   const [trackError, setTrackError] = useState<string | null>(null);
   const [isTracking, startTracking] = useTransition();
+  const [enriching, setEnriching] = useState(false);
+  const [enrichedFrom, setEnrichedFrom] = useState<string | null>(null);
 
   // ── Form state ──────────────────────────────────────────────
   const [homeTeam, setHomeTeam] = useState<TeamForm & { gs: string; gc: string }>({
@@ -234,6 +236,61 @@ export function MatchAnalyzer({ isAuthenticated }: MatchAnalyzerProps) {
     setHomeTeam((p) => ({ ...p, name: fixture.homeTeam }));
     setAwayTeam((p) => ({ ...p, name: fixture.awayTeam }));
     setSelectedFixtureId(fixture.id);
+    setEnrichedFrom(null);
+
+    // Auto-fill form/H2H when the source gave us SportsAPIPro team ids.
+    // Purely additive — on any failure the manual defaults stay in place.
+    if (fixture.homeTeamId == null || fixture.awayTeamId == null) return;
+
+    const params = new URLSearchParams({
+      matchId: fixture.externalId,
+      homeTeamId: String(fixture.homeTeamId),
+      awayTeamId: String(fixture.awayTeamId),
+      homeTeamName: fixture.homeTeam,
+      awayTeamName: fixture.awayTeam,
+    });
+
+    setEnriching(true);
+    fetch(`/api/fixtures/enrich?${params.toString()}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (!json.success) return;
+        if (json.homeForm) {
+          setHomeTeam((p) => ({
+            ...p,
+            last5: json.homeForm.last5,
+            goalsScored: json.homeForm.goalsScored,
+            goalsConceded: json.homeForm.goalsConceded,
+            gs: String(json.homeForm.goalsScored),
+            gc: String(json.homeForm.goalsConceded),
+          }));
+        }
+        if (json.awayForm) {
+          setAwayTeam((p) => ({
+            ...p,
+            last5: json.awayForm.last5,
+            goalsScored: json.awayForm.goalsScored,
+            goalsConceded: json.awayForm.goalsConceded,
+            gs: String(json.awayForm.goalsScored),
+            gc: String(json.awayForm.goalsConceded),
+          }));
+        }
+        if (json.headToHead) {
+          setH2H((p) => ({
+            ...p,
+            homeWins: json.headToHead.homeWins,
+            draws: json.headToHead.draws,
+            awayWins: json.headToHead.awayWins,
+          }));
+        }
+        if (json.homeForm || json.awayForm || json.headToHead) {
+          setEnrichedFrom(`${fixture.homeTeam} vs ${fixture.awayTeam}`);
+        }
+      })
+      .catch(() => {
+        // Silent — enrichment is optional, manual entry remains available.
+      })
+      .finally(() => setEnriching(false));
   }
 
   function updateHomeResult(index: number, r: MatchResult) {
@@ -329,6 +386,8 @@ export function MatchAnalyzer({ isAuthenticated }: MatchAnalyzerProps) {
     setSelectedFixtureId(null);
     setTracked(false);
     setTrackError(null);
+    setEnriching(false);
+    setEnrichedFrom(null);
   }
 
   function handleTrackPrediction() {
@@ -387,6 +446,19 @@ export function MatchAnalyzer({ isAuthenticated }: MatchAnalyzerProps) {
     0: (
       <div className="space-y-5">
         <FixtureSearch onSelect={handleFixtureSelect} />
+
+        {enriching && (
+          <p className="flex items-center gap-1.5 text-xs text-teal-700">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Pulling recent form &amp; head-to-head for this fixture…
+          </p>
+        )}
+        {!enriching && enrichedFrom && (
+          <p className="text-xs text-emerald-700">
+            Auto-filled form &amp; head-to-head from {enrichedFrom} — edit any field below if
+            needed.
+          </p>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

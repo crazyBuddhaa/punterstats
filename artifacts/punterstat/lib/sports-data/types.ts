@@ -12,6 +12,14 @@ export interface Fixture {
   status: "scheduled" | "live" | "finished" | "postponed" | "cancelled";
   homeScore?: number;
   awayScore?: number;
+  /**
+   * SportsAPIPro's numeric team ids — only populated for that source. Used
+   * to fetch match enrichment (recent form, head-to-head) after a fixture
+   * is selected; other sources leave these undefined and enrichment is
+   * simply skipped.
+   */
+  homeTeamId?: number;
+  awayTeamId?: number;
 }
 
 export type FixturesResult =

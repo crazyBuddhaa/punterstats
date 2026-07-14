@@ -69,6 +69,9 @@ export const metadata: Metadata = {
       "Knowledge Before Decision. Learn how sports systems and probability work.",
   },
   robots: { index: true, follow: true },
+  other: {
+    "google-adsense-account": "ca-pub-3580627557521419",
+  },
 };
 
 export default function RootLayout({
@@ -76,7 +79,14 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
+      <head>
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3580627557521419"
+          crossOrigin="anonymous"
+          strategy="beforeInteractive"
+        />
+      </head>
       <body>
         <Script
           id="redirect-leftover-auth-params"

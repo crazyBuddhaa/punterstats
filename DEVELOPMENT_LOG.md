@@ -19,6 +19,27 @@
 
 ### Infrastructure & Auth
 
+#### ✅ Remove Replit Scaffolding
+**Date:** 2026-09-25
+
+Removed leftovers from the Replit pnpm-workspace template that the app never used.
+
+**Removed:**
+- `.replit`, `.replitignore`, `replit.md`, `.agents/` (Replit agent memory), `attached_assets/` (chat screenshots)
+- `artifacts/api-server` (template Express server), `artifacts/mockup-sandbox` (Replit Canvas preview)
+- `lib/api-spec`, `lib/api-zod`, `lib/api-client-react`, `lib/db` (template OpenAPI/Orval/Drizzle packages)
+- `scripts/post-merge.sh`, `scripts/src/hello.ts`, root `tsconfig.json` / `tsconfig.base.json`
+- Root deps `@replit/connectors-sdk` and a duplicate `stripe`; workspace catalog and Linux-only platform overrides
+
+**Changed:**
+- `pnpm-workspace.yaml` — now just `artifacts/*` + `scripts`; kept the 1-day `minimumReleaseAge` supply-chain guard
+- `pnpm-lock.yaml` — pruned to what the app and scripts use; `stripe` now locked under the app (it was only locked at the root before)
+- `scripts` package renamed `punterstat-scripts`, self-contained `tsconfig.json`
+- Payment notes from `.agents/` preserved at `artifacts/punterstat/docs/payments.md`
+- Added root `README.md`
+
+---
+
 #### ✅ Auth Redirect — Authenticated Users on Landing Page
 **Commit:** `f0b183c` · **Date:** 2026-07-08
 

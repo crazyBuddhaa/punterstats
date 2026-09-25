@@ -9,12 +9,21 @@ export const metadata: Metadata = {
     title: "PunterStat — Knowledge Before Decision",
     description:
       "Learn sports analytics, probability theory, and analytical thinking through structured courses and interactive simulations.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "PunterStat — Read the game. Price the odds. Think in probabilities.",
+      },
+    ],
   },
 };
 import { Hero } from "@/components/sections/hero";
 import { StatsBar } from "@/components/sections/stats-bar";
 import { HowItWorks } from "@/components/sections/how-it-works";
-import { FeaturesGrid } from "@/components/sections/features-grid";
+import { ModulesShowcase } from "@/components/sections/modules-showcase";
+import { LessonPreview } from "@/components/sections/lesson-preview";
 import { CtaSection } from "@/components/sections/cta-section";
 
 async function getHomepageData() {
@@ -39,8 +48,9 @@ export default async function Home() {
     <>
       <Hero isAuthenticated={isAuthenticated} />
       <StatsBar courses={courses} lessons={lessons} />
+      <ModulesShowcase />
+      <LessonPreview />
       <HowItWorks />
-      <FeaturesGrid />
       <CtaSection isAuthenticated={isAuthenticated} />
     </>
   );

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -24,30 +25,45 @@ export function CtaSection({
   secondaryHref = "/pricing",
   isAuthenticated = false,
 }: CtaSectionProps) {
-  const resolvedPrimaryLabel = primaryLabel ?? (isAuthenticated ? "Go to Dashboard" : "Create Free Account");
-  const resolvedPrimaryHref = primaryHref ?? (isAuthenticated ? "/dashboard" : "/register");
+  const resolvedPrimaryLabel =
+    primaryLabel ??
+    (isAuthenticated ? "Go to Dashboard" : "Create free account");
+  const resolvedPrimaryHref =
+    primaryHref ?? (isAuthenticated ? "/dashboard" : "/register");
+
   return (
     <section
       className={cn(
-        "relative overflow-hidden bg-[#0f172a] py-20 sm:py-28",
+        "bg-slate-50 px-4 pb-20 sm:px-6 sm:pb-28 lg:px-8",
         className
       )}
     >
-      {/* Glow */}
-      <div className="pointer-events-none absolute bottom-0 left-1/2 h-[400px] w-[700px] -translate-x-1/2 translate-y-1/2 rounded-full bg-[#3D2DFF] opacity-[0.08] blur-3xl" />
+      <div className="relative isolate mx-auto max-w-7xl overflow-hidden rounded-3xl bg-brand-ink px-6 py-16 text-center sm:px-12 sm:py-24">
+        {/* Pitch lines + glow */}
+        <Image
+          src="/illustrations/pitch-pattern.svg"
+          alt=""
+          fill
+          unoptimized
+          className="pointer-events-none -z-10 object-cover opacity-80"
+        />
+        <div className="pointer-events-none absolute left-1/2 top-full -z-10 h-[420px] w-[820px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-blue/40 blur-[100px]" />
 
-      <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6">
-        <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-[#3D2DFF]">
-          Get Started
+        <p className="font-mono text-xs font-medium uppercase tracking-[0.18em] text-brand-violet">
+          Knowledge before decision
         </p>
-        <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+        <h2 className="mx-auto mt-4 max-w-3xl text-3xl font-bold tracking-[-0.03em] text-white sm:text-5xl sm:leading-[1.05]">
           {title}
         </h2>
-        <p className="mx-auto mt-4 max-w-xl text-lg text-white/50">
+        <p className="mx-auto mt-5 max-w-xl text-lg text-slate-300/80">
           {description}
         </p>
-        <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          <Button size="lg" asChild className="gap-2 px-8 bg-[#3D2DFF] hover:bg-[#3D2DFF]/90">
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Button
+            size="lg"
+            asChild
+            className="gap-2 bg-brand-blue px-8 text-white shadow-[0_8px_30px_-6px_rgba(61,45,255,0.8)] hover:bg-brand-blue/90"
+          >
             <Link href={resolvedPrimaryHref}>
               {resolvedPrimaryLabel}
               <ArrowRight className="h-4 w-4" />
@@ -57,14 +73,15 @@ export function CtaSection({
             size="lg"
             variant="outline"
             asChild
-            className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+            className="border-white/15 bg-white/[0.04] text-white hover:bg-white/10 hover:text-white"
           >
             <Link href={secondaryHref}>{secondaryLabel}</Link>
           </Button>
         </div>
-        <p className="mt-8 text-xs text-white/25">
+        <p className="mx-auto mt-10 max-w-lg text-xs leading-relaxed text-slate-500">
           PunterStat is an educational platform. We do not process real-money
-          transactions, provide betting tips, or facilitate gambling of any kind.
+          transactions, provide betting tips, or facilitate gambling of any
+          kind.
         </p>
       </div>
     </section>

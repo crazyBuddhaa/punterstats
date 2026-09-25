@@ -36,7 +36,24 @@ const REDIRECT_LEFTOVER_AUTH_PARAMS = `
 })();
 `;
 
+// Fall back to the production domain if the env var is missing or not a full URL,
+// so a bad value can never break the build via `new URL()`.
+const SITE_URL = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_APP_URL ?? "").origin;
+  } catch {
+    return "https://punterstat.site";
+  }
+})();
+const OG_IMAGE = {
+  url: "/og-image.png",
+  width: 1200,
+  height: 630,
+  alt: "PunterStat — Read the game. Price the odds. Think in probabilities.",
+};
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "PunterStat — Sports Intelligence & Education Platform",
     template: "%s | PunterStat",
@@ -56,17 +73,19 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: process.env.NEXT_PUBLIC_APP_URL ?? "https://punterstat.site",
+    url: SITE_URL,
     title: "PunterStat — Sports Intelligence & Education Platform",
     description:
       "Knowledge Before Decision. Learn how sports systems and probability work.",
     siteName: "PunterStat",
+    images: [OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
     title: "PunterStat — Sports Intelligence & Education Platform",
     description:
       "Knowledge Before Decision. Learn how sports systems and probability work.",
+    images: [OG_IMAGE.url],
   },
   robots: { index: true, follow: true },
   other: {

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="300" viewBox="0 0 480 300" role="img" aria-labelledby="t" fill="none">
+<title id="t">Cumulative expected goals timeline for both teams with goals marked</title>
+<defs>
+  <linearGradient id="match-panel" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#131D38"/><stop offset="1" stop-color="#0F1830"/>
+  </linearGradient>
+  <linearGradient id="match-ind" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#3D2DFF"/><stop offset="1" stop-color="#7B70FF"/>
+  </linearGradient>
+  <radialGradient id="match-glow" cx="0.5" cy="0.5" r="0.5">
+    <stop offset="0" stop-color="#3D2DFF" stop-opacity="0.35"/><stop offset="1" stop-color="#3D2DFF" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+<clipPath id="match-clip"><rect x="0.5" y="0.5" width="479" height="299" rx="16"/></clipPath>
+<rect x="0.5" y="0.5" width="479" height="299" rx="16" fill="url(#match-panel)"/><rect x="1" y="1" width="478" height="298" rx="15.5" stroke="rgba(255,255,255,0.12)"/>
+<g clip-path="url(#match-clip)"><circle cx="420" cy="30" r="190" fill="url(#match-glow)" opacity="0.55"/></g>
+<text x="22" y="32" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10" font-weight="600" fill="#8391AB" text-anchor="start" letter-spacing="1.2">xG FLOW · MATCH TIMELINE</text>
+<line x1="50" y1="240" x2="440" y2="240" stroke="rgba(255,255,255,0.06)"/>
+<text x="42" y="243" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="500" fill="#8391AB" text-anchor="end">0.0</text>
+<line x1="50" y1="202.5" x2="440" y2="202.5" stroke="rgba(255,255,255,0.06)"/>
+<text x="42" y="205.5" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="500" fill="#8391AB" text-anchor="end">0.5</text>
+<line x1="50" y1="165" x2="440" y2="165" stroke="rgba(255,255,255,0.06)"/>
+<text x="42" y="168" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="500" fill="#8391AB" text-anchor="end">1.0</text>
+<line x1="50" y1="127.5" x2="440" y2="127.5" stroke="rgba(255,255,255,0.06)"/>
+<text x="42" y="130.5" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="500" fill="#8391AB" text-anchor="end">1.5</text>
+<line x1="50" y1="90" x2="440" y2="90" stroke="rgba(255,255,255,0.06)"/>
+<text x="42" y="93" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="500" fill="#8391AB" text-anchor="end">2.0</text>
+<text x="50" y="256" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="500" fill="#8391AB" text-anchor="middle">0'</text>
+<text x="115" y="256" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="500" fill="#8391AB" text-anchor="middle">15'</text>
+<text x="180" y="256" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="500" fill="#8391AB" text-anchor="middle">30'</text>
+<text x="245" y="256" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="500" fill="#8391AB" text-anchor="middle">45'</text>
+<text x="310" y="256" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="500" fill="#8391AB" text-anchor="middle">60'</text>
+<text x="375" y="256" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="500" fill="#8391AB" text-anchor="middle">75'</text>
+<text x="440" y="256" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="500" fill="#8391AB" text-anchor="middle">90'</text>
+<line x1="245" y1="60" x2="245" y2="240" stroke="rgba(255,255,255,0.12)" stroke-dasharray="3 4"/>
+<text x="250" y="70" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="600" fill="#8391AB" text-anchor="start">HT</text>
+<path d="M50 240 L102 240 L102 237.8 L167 237.8 L167 224.2 L214.7 224.2 L214.7 219 L262.3 219 L262.3 180 L314.3 180 L314.3 177 L370.7 177 L370.7 167.2 L409.7 167.2 L409.7 162.8 L435.7 162.8 L435.7 147 L440 147" stroke="#94A3B8" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="262.3" cy="180" r="6" fill="#34D399" stroke="#0B1120" stroke-width="2"/>
+<path d="M50 240 L84.7 240 L84.7 235.5 L123.7 235.5 L123.7 212.2 L149.7 212.2 L149.7 209.2 L197.3 209.2 L197.3 200.2 L227.7 200.2 L227.7 166.5 L275.3 166.5 L275.3 160.5 L301.3 160.5 L301.3 144 L336 144 L336 140.2 L357.7 140.2 L357.7 111.8 L392.3 111.8 L392.3 103.5 L422.7 103.5 L422.7 96.8 L440 96.8" stroke="#7B70FF" stroke-width="2.8" stroke-linejoin="round"/>
+<circle cx="227.7" cy="166.5" r="6" fill="#34D399" stroke="#0B1120" stroke-width="2"/>
+<circle cx="357.7" cy="111.8" r="6" fill="#34D399" stroke="#0B1120" stroke-width="2"/>
+<rect x="284" y="18" width="174" height="24" rx="12" fill="rgba(61,45,255,0.18)" stroke="rgba(123,112,255,0.5)"/>
+<text x="371" y="34" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10" font-weight="600" fill="#E2E8F0" text-anchor="middle">xG 1.91 – 1.24 · FT 2–1</text>
+<line x1="50" y1="272" x2="68" y2="272" stroke="#7B70FF" stroke-width="2.8"/><text x="74" y="276" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="600" fill="#8391AB" text-anchor="start">HOME</text>
+<line x1="130" y1="272" x2="148" y2="272" stroke="#94A3B8" stroke-width="2"/><text x="154" y="276" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="600" fill="#8391AB" text-anchor="start">AWAY</text>
+<circle cx="216" cy="272" r="4.5" fill="#34D399"/><text x="226" y="276" font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="9" font-weight="600" fill="#8391AB" text-anchor="start">GOAL</text>
+</svg>

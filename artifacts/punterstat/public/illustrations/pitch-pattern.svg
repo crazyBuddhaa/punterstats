@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="780" viewBox="0 0 1200 780" role="img" aria-labelledby="t" fill="none">
+<title id="t">Pitch line pattern</title>
+<rect x="22.5" y="16" width="1155" height="748" rx="4" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+<line x1="600" y1="16" x2="600" y2="764" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+<circle cx="600" cy="390" r="100.7" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+<circle cx="600" cy="390" r="2" fill="rgba(255,255,255,0.07)"/>
+<rect x="22.5" y="168.2" width="181.5" height="443.5" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+<rect x="22.5" y="289.2" width="60.5" height="201.5" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+<circle cx="143.5" cy="390" r="1.8" fill="rgba(255,255,255,0.07)"/>
+<path d="M204 309.6 A100.7 100.7 0 0 1 204 470.4" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+<rect x="-1.7" y="349.7" width="24.2" height="80.5" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+<rect x="996" y="168.2" width="181.5" height="443.5" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+<rect x="1117" y="289.2" width="60.5" height="201.5" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+<circle cx="1056.5" cy="390" r="1.8" fill="rgba(255,255,255,0.07)"/>
+<path d="M996 309.6 A100.7 100.7 0 0 0 996 470.4" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+<rect x="1177.5" y="349.7" width="24.2" height="80.5" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+</svg>

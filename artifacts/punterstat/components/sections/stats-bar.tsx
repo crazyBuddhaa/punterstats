@@ -11,23 +11,34 @@ export function StatsBar({ className, courses, lessons }: StatsBarProps) {
     { value: courses ? `${courses}+` : "12+", label: "Published courses" },
     { value: lessons ? `${lessons}+` : "50+", label: "In-depth lessons" },
     { value: "4", label: "Core modules" },
-    { value: "100%", label: "Education focused" },
+    { value: "0", label: "Betting tips. Ever." },
   ];
 
   return (
-    <section className={cn("border-y border-[#0f172a]/10 bg-white py-10 sm:py-12", className)}>
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
-          {stats.map((stat) => (
-            <div key={stat.label} className="text-center">
-              <p className="text-3xl font-bold tracking-tight text-[#0f172a] sm:text-4xl">
-                {stat.value}
-              </p>
-              <p className="mt-1 text-sm text-[#1e293b]/50">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+    <section
+      className={cn("border-y border-white/[0.06] bg-[#0D1426]", className)}
+    >
+      <dl className="mx-auto grid max-w-7xl grid-cols-2 px-4 sm:px-6 lg:grid-cols-4 lg:px-8">
+        {stats.map((stat, i) => (
+          <div
+            key={stat.label}
+            className={cn(
+              "flex flex-col gap-1 py-7 sm:py-9",
+              // vertical rules between columns
+              i % 2 === 1 && "border-l border-white/[0.06] pl-6 sm:pl-8",
+              i > 0 && "lg:border-l lg:border-white/[0.06] lg:pl-8",
+              i >= 2 && "border-t border-white/[0.06] lg:border-t-0"
+            )}
+          >
+            <dt className="order-2 font-mono text-[11px] uppercase tracking-[0.14em] text-slate-400">
+              {stat.label}
+            </dt>
+            <dd className="tabular order-1 font-mono text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+              {stat.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }

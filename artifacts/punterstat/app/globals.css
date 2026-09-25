@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -138,6 +138,25 @@
   /* Glass-morphism surface */
   .glass {
     @apply bg-white/80 backdrop-blur-md border border-white/20;
+  }
+
+  /* Faint indigo grid used on dark "terminal" surfaces */
+  .bg-grid-ink {
+    background-image:
+      linear-gradient(rgba(61, 45, 255, 0.09) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(61, 45, 255, 0.09) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* Fade an element out towards its edges */
+  .mask-fade-radial {
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 35%, transparent 75%);
+    mask-image: radial-gradient(ellipse at center, #000 35%, transparent 75%);
+  }
+
+  /* Tabular figures for stats and odds */
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 
   /* Hide scrollbar while keeping scroll behaviour */

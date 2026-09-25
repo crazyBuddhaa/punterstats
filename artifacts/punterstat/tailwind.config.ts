@@ -57,6 +57,13 @@ const config: Config = {
           medium: "#1e293b",
           blue: "#3D2DFF",
           light: "#f8fafc",
+          // Landing / "data terminal" palette
+          ink: "#0B1120",
+          panel: "#0F1830",
+          violet: "#7B70FF",
+          mint: "#34D399",
+          amber: "#FBBF24",
+          muted: "#8391AB",
         },
       },
       borderRadius: {
@@ -66,6 +73,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
+        mono: ["'JetBrains Mono'", "ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
       },
       keyframes: {
         "accordion-down": {

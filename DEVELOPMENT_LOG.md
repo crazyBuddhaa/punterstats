@@ -94,6 +94,28 @@ Added Stripe (global), Paystack (Nigeria), and Remita (Nigeria enterprise) payme
 
 ---
 
+### Design
+
+#### ✅ Landing Page & Shared Layout Redesign
+**Date:** 2026-09-25
+
+Redesigned the landing page, navbar, footer and shared `PageHeader` with a sharper "data terminal" look (same navy + indigo brand), plus custom SVG illustrations.
+
+**New assets (`public/`):**
+- `illustrations/hero-pitch.svg` — tactical board: pass network, xG shot map, implied-probability and Poisson goals cards
+- `illustrations/module-{university,academy,simulator,match}.svg` — one per core module (formation/press, odds→probability + overround, Monte Carlo bankroll paths, xG timeline)
+- `illustrations/pitch-pattern.svg` — background texture; `logo-mark.svg` — crisp vector of the logo; `og-image.png` — 1200×630 social share image
+- All numbers in the art are computed (e.g. 1/2.10 = 47.6%, 1X2 book 105.6%, Poisson λ=1.62, EV +5%)
+
+**Files changed:**
+- `components/sections/` — new `hero`, `stats-bar`, `how-it-works`, `cta-section`; new `modules-showcase`, `lesson-preview`, `ev-calculator` (interactive EV widget); removed `features-grid`
+- `components/layout/navbar.tsx` — new styling, active-link state, fixed mobile menu opening both dropdown groups at once, `w-screen` → `w-full`
+- `components/layout/footer.tsx`, `components/layout/page-shell.tsx` (`PageHeader` is now a dark band)
+- `app/layout.tsx` — `metadataBase` + default Open Graph / Twitter image; `app/(main)/page.tsx` — new section order + OG image
+- `tailwind.config.ts` — `brand.{ink,panel,violet,mint,amber,muted}` colours, `font-mono` (JetBrains Mono); `app/globals.css` — mono font import, `bg-grid-ink`, `mask-fade-radial`, `tabular` utilities
+
+---
+
 ### Content — Football Fundamentals
 
 #### ✅ HTML Seed Rewrite — Lesson Format Baseline (Migration 040)

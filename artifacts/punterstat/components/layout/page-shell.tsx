@@ -31,21 +31,23 @@ export function PageHeader({
   return (
     <section
       className={cn(
-        "border-b border-border/50 bg-white px-4 py-12 sm:px-6 sm:py-16",
+        "relative isolate mb-10 overflow-hidden border-b border-white/[0.06] bg-brand-ink px-4 py-14 sm:mb-14 sm:px-6 sm:py-20",
         className
       )}
     >
+      <div className="bg-grid-ink mask-fade-radial pointer-events-none absolute inset-0 -z-10" />
+      <div className="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[360px] w-[720px] -translate-x-1/2 rounded-full bg-brand-blue/25 blur-[100px]" />
       <div className="container mx-auto max-w-4xl">
         {badge && (
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#3D2DFF]/20 bg-[#3D2DFF]/10 px-3 py-1 text-sm font-medium text-[#3D2DFF]">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-brand-violet/30 bg-brand-blue/10 px-3 py-1 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-brand-violet">
             {badge}
           </div>
         )}
-        <h1 className="text-3xl font-bold tracking-tight text-[#0f172a] sm:text-4xl">
+        <h1 className="text-3xl font-bold tracking-[-0.03em] text-white sm:text-5xl">
           {title}
         </h1>
         {description && (
-          <p className="mt-4 max-w-2xl text-lg text-[#1e293b]/60 leading-relaxed">
+          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-slate-300/80">
             {description}
           </p>
         )}

@@ -1,7 +1,4 @@
----
-name: Payment integration
-description: Three-provider payment system (Stripe/Paystack/Remita) in PunterStat; env vars, plan prices, and webhook URLs.
----
+# Payments — Stripe, Paystack, Remita
 
 ## Providers
 - **Stripe** — GBP card payments (UK/International). Checkout Session → webhook → `subscriptions` table.

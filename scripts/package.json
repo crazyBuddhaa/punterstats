@@ -1,17 +1,17 @@
 {
-  "name": "@workspace/scripts",
+  "name": "punterstat-scripts",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "hello": "tsx ./src/hello.ts",
     "seed-r2": "tsx ./src/seed-r2.ts",
     "ingest-r2": "tsx ./src/ingest-r2-to-supabase.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@types/node": "catalog:",
-    "tsx": "catalog:"
+    "@types/node": "^25.3.3",
+    "tsx": "^4.21.0",
+    "typescript": "~5.9.3"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1080.0",

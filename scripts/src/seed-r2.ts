@@ -14,9 +14,9 @@
  *  2. FDCO        — 16 leagues, 1993/94→2025/26, includes bookmaker odds, no auth
  *
  * Usage:
- *   pnpm --filter @workspace/scripts run seed-r2
+ *   pnpm --filter punterstat-scripts run seed-r2
  *
- * Required env vars (set as Replit Secrets):
+ * Required env vars (set in your shell or a .env file):
  *   CLOUDFLARE_ACCOUNT_ID
  *   CLOUDFLARE_R2_ACCESS_KEY_ID
  *   CLOUDFLARE_R2_SECRET_ACCESS_KEY

@@ -6,13 +6,13 @@
  *
  * Prerequisites:
  *   1. Run all migrations in Supabase SQL editor first (scripts/all_migrations.sql)
- *   2. R2 bucket must be populated (pnpm --filter @workspace/scripts run seed-r2)
+ *   2. R2 bucket must be populated (pnpm --filter punterstat-scripts run seed-r2)
  *
  * Usage:
- *   pnpm --filter @workspace/scripts run ingest-r2
+ *   pnpm --filter punterstat-scripts run ingest-r2
  *
  *   # Ingest a single league only:
- *   LEAGUE=E0 pnpm --filter @workspace/scripts run ingest-r2
+ *   LEAGUE=E0 pnpm --filter punterstat-scripts run ingest-r2
  *
  * Required secrets:
  *   CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_R2_ACCESS_KEY_ID,

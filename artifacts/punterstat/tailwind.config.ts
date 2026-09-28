@@ -58,6 +58,12 @@ const config: Config = {
           blue: "#3D2DFF",
           light: "#f8fafc",
         },
+        pitch: {
+          ink: "#0b1713",
+          lime: "#d7f35f",
+          coral: "#ff7653",
+          paper: "#f4f5ef",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -65,7 +71,7 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["DM Sans", "Inter", "system-ui", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {

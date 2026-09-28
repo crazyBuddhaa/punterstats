@@ -42,10 +42,10 @@ function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D2DFF]">
+        <button className="flex items-center gap-2 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d7f35f]">
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.avatarUrl ?? undefined} alt={user?.displayName ?? "User"} />
-            <AvatarFallback className="bg-[#3D2DFF]/20 text-white text-xs font-bold">
+            <AvatarFallback className="bg-[#d7f35f]/20 text-white text-xs font-bold">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -84,7 +84,7 @@ export function Navbar() {
   const isLoading = useAuthStore((s) => s.isLoading);
 
   return (
-    <header className="sticky top-0 z-50 w-screen border-b border-white/10 bg-[#0f172a]">
+    <header className="sticky top-0 z-50 w-screen border-b border-white/10 bg-[#0b1713]">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
         {/* Logo — points to dashboard when authenticated, landing page otherwise */}
         <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-2 font-bold text-white">
@@ -104,7 +104,7 @@ export function Navbar() {
                       <ChevronDown className="h-3.5 w-3.5" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-72 bg-[#0f172a] border-white/10">
+                  <DropdownMenuContent align="start" className="w-72 border-white/10 bg-[#0b1713]">
                     {link.children.map((child) => (
                       <DropdownMenuItem key={child.href} asChild>
                         <Link
@@ -181,7 +181,7 @@ export function Navbar() {
       {/* Mobile menu */}
       <div
         className={cn(
-          "overflow-hidden border-t border-white/10 bg-[#0f172a] transition-all duration-200 lg:hidden",
+          "overflow-hidden border-t border-white/10 bg-[#0b1713] transition-all duration-200 lg:hidden",
           mobileOpen ? "max-h-[calc(100vh-4rem)] overflow-y-auto" : "max-h-0"
         )}
       >

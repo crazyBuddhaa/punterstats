@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -86,13 +86,13 @@
 
   /* Selection */
   ::selection {
-    background-color: #3D2DFF;
-    color: #fff;
+    background-color: #d7f35f;
+    color: #0b1713;
   }
 
   /* Focus ring */
   :focus-visible {
-    outline: 2px solid #3D2DFF;
+    outline: 2px solid #ff7653;
     outline-offset: 2px;
   }
 
@@ -147,5 +147,16 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  .landing-page {
+    font-family: "DM Sans", Inter, system-ui, sans-serif;
+  }
+
+  .landing-page h1,
+  .landing-page h2,
+  .landing-page h3,
+  .landing-page h4 {
+    font-family: "Space Grotesk", "DM Sans", system-ui, sans-serif;
   }
 }

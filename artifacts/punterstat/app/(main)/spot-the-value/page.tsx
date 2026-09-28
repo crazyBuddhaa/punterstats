@@ -86,8 +86,8 @@ export default async function SpotTheValuePage() {
           <div className="flex items-center gap-2 text-xs text-white/50">
             <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-teal-400" />
             <span>
-              Educational tool only — this is not financial advice, not a tipster service, and not
-              a real-money product. Probability comparisons are for learning purposes.
+              18+ only. PunterStat does not take bets. Probability comparisons are estimates, not
+              guarantees — see Bet Assist for model-based picks.
             </span>
           </div>
         </div>

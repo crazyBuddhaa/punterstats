@@ -104,9 +104,8 @@ export default async function OptionGlossaryPage() {
       <section className="border-t border-border/60 bg-white px-4 py-8">
         <div className="container mx-auto max-w-3xl text-center">
           <p className="text-xs text-[#1e293b]/40 leading-relaxed">
-            All content is for educational purposes only. PunterStat explains how
-            betting markets work — we do not provide betting tips, encourage
-            gambling, or process any real-money transactions.
+            18+ only. PunterStat explains how betting markets work and does not
+            take bets. Please gamble responsibly.
           </p>
         </div>
       </section>

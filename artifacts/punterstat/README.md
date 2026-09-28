@@ -1,12 +1,16 @@
 # PunterStat
 
-**Sports intelligence and education platform.**
+**Bet Analysis · Bet Learning · Bet Assist.**
 
 > Knowledge Before Decision
 
-PunterStat teaches users how sports systems work, how probability works, how betting mathematics works, and how analytical thinking helps decision making.
+PunterStat is organised into three pillars:
 
-**PunterStat is NOT a betting website.** It does not process real-money transactions, provide betting tips, or facilitate gambling of any kind.
+- **Bet Analysis** (`/bet-analysis`) — Match Breakdown, Spot The Value, Simulation Engine, Results Browser, Head-to-Head
+- **Bet Learning** (`/bet-learning`) — Betting Academy, Sports University, glossaries, blog
+- **Bet Assist** (`/bet-assist`) — data-driven picks, bet slip checker, betting calculators, bet tracker
+
+**PunterStat is not a bookmaker.** It never takes bets or holds betting funds. Picks are model estimates, the betting tools are 18+ only, and every tool page links to `/responsible-gambling`. The pillar structure lives in `lib/bet-assist/pillars.ts`.
 
 **Live site:** [punterstat.site](https://punterstat.site)
 **Support:** [support@punterstat.site](mailto:support@punterstat.site)
@@ -159,9 +163,10 @@ artifacts/punterstat/
 | 13 | Historical Stats & R2 Data Lake | ✅ Complete |
 | 14 | Live Odds & Spot the Value | ✅ Complete |
 | 15 | Fixes & Hardening (ongoing) | 🔄 In progress |
+| 16 | Three-pillar restage + Bet Assist (picks, slip checker, calculators, tracker) | ✅ Complete |
 
 ---
 
 ## Legal
 
-PunterStat is strictly an educational platform. All content is for informational and educational purposes only. We do not endorse, facilitate, or promote gambling.
+PunterStat provides sports betting analysis, education and tools for adults (18+). It is not a gambling operator and does not accept bets or deposits. Picks and probabilities are statistical estimates, not guarantees. Users are responsible for complying with the gambling laws where they live.

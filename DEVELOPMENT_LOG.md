@@ -17,6 +17,39 @@
 
 ## Completed Work
 
+### Positioning — Bet Analysis · Bet Learning · Bet Assist
+
+#### ✅ Restage Site Around Three Pillars + Bet Assist Tools (Migration 053)
+**Date:** 2026-09-28
+
+Repositioned PunterStat from "education only, no tips" to a bet analysis, bet learning and bet assist platform, and built the Bet Assist toolset.
+
+**Information architecture:**
+- `lib/bet-assist/pillars.ts` — single source of truth for the three pillars and their links
+- `components/layout/navbar.tsx` — nav is now Bet Analysis ▾ / Bet Learning ▾ / Bet Assist ▾ / Blog / Pricing (dropdowns with descriptions; mobile menu tracks open group per pillar)
+- New hub pages: `/bet-analysis`, `/bet-learning`, `/bet-assist`
+- Homepage hero, stats bar, how-it-works, features grid (now the three pillars) and CTA rewritten; footer regrouped by pillar
+- Dashboard sidebar gains an "Analysis & Assist" group (Bet Tracker, Picks, Match Analyses, Calibration, Simulation History, Spot The Value)
+
+**Bet Assist:**
+- `/bet-assist/picks` — data-driven picks. Model = weighted de-vigged bookmaker consensus (sharp books weighted up) blended 25% with a time-weighted Poisson attack/defence rating model from `historical_matches` when both teams match (`lib/bet-assist/ratings.ts`, team-name aliasing for Odds API ↔ football-data.co.uk). Value flagged when best price EV ≥ 2% with ≥ 3 bookmakers; quarter-Kelly stake capped at 2%. Free users see 3 value picks, premium/admin see all. Reuses the shared Odds API cache.
+- `/bet-assist/slip-checker` — combined odds, implied vs estimated true probability, compounded margin, EV (user probabilities if given), risk rating, warnings (long accas, sub-1.25 bankers, same-event legs, negative-EV legs)
+- `/bet-assist/calculators` — EV & Kelly, accumulator, margin & fair odds, odds converter, arbitrage
+- `/dashboard/bet-tracker` — bet journal with P/L, ROI, strike rate vs break-even, closing-line value, cumulative profit chart, by-market breakdown; picks can prefill it via query string
+- `supabase/migrations/053_bet_journal.sql` — `bet_journal` table, owner-only RLS
+
+**Responsible gambling / disclaimers:**
+- New `/responsible-gambling` page; `ResponsibleGamblingStrip` / `ResponsibleGamblingNote` components on tool pages
+- "Not a betting site / no betting tips" copy replaced with 18+ and "we don't take bets" messaging across hero, CTA, footer, about, FAQ, terms, privacy, pricing FAQ, contact, auth layout, match breakdown, spot the value, option glossary, register form and transactional emails
+- Root metadata, keywords and sitemap updated
+
+**Manual steps required:**
+1. Apply migration 053 in Supabase
+2. Odds API usage will rise (picks page covers 6 leagues incl. Ligue 1) — check quota on the Admin Data Health panel
+3. Review payment-provider terms for betting-related services now that the site publishes picks
+
+---
+
 ### Infrastructure & Auth
 
 #### ✅ Remove Replit Scaffolding
@@ -263,6 +296,8 @@ Infrastructure for embedding live-computed stats from the historical dataset ins
 
 The following stages are scoped and sequenced. Stages with no dependencies can be started immediately in parallel.
 
+> **Migration numbers shifted +2 (2026-09-28):** 052 is taken by `sportsapipro_season_cache` and 053 by `bet_journal`, so planned content migrations now start at 054.
+
 ---
 
 ### ✅ Stage 1 — Annotate Pilot Lesson with a Data Block
@@ -274,30 +309,30 @@ Inserted a live `home_win_rate` data block into the "Crowd Effect & Home Advanta
 
 ---
 
-### 📋 Stage 2 — Psychology Key Takeaways (Migration 052)
-**Effort:** Medium · **Migration:** 052 · **Depends on:** Nothing
+### 📋 Stage 2 — Psychology Key Takeaways (Migration 054)
+**Effort:** Medium · **Migration:** 054 · **Depends on:** Nothing
 
 Migrations 033 and 034 seeded 56 Betting Psychology lessons without Key Takeaway sections. The migration number slot (048) that would have carried this content was consumed by payment infrastructure.
 
 **Scope:** 56 lessons across Cognitive Biases in Betting, Emotional Control Under Pressure, Decision-Making Frameworks, Mental Models for Betting Uncertainty, Professional Bettor Mindset, Discipline and Record-Keeping.
 
-**What to build:** `supabase/migrations/052_betting_psychology_key_takeaways.sql`
+**What to build:** `supabase/migrations/054_betting_psychology_key_takeaways.sql`
 
 ---
 
-### 📋 Stage 3 — Statistical Thinking Key Takeaways (Migration 053)
-**Effort:** Medium · **Migration:** 053 · **Depends on:** Nothing
+### 📋 Stage 3 — Statistical Thinking Key Takeaways (Migration 055)
+**Effort:** Medium · **Migration:** 055 · **Depends on:** Nothing
 
 Migrations 035 and 036 seeded 56 Statistical Thinking lessons without Key Takeaway sections.
 
 **Scope:** 56 lessons across Sample Size & Variance, Regression to the Mean, Probability Distributions in Sport, Building Predictive Models, Model Evaluation & Calibration, Advanced Quantitative Methods.
 
-**What to build:** `supabase/migrations/053_statistical_thinking_key_takeaways.sql`
+**What to build:** `supabase/migrations/055_statistical_thinking_key_takeaways.sql`
 
 ---
 
-### 📋 Stage 4 — New Course: xG & Football Data Analytics (Migration 054)
-**Effort:** Large · **Migration:** 054 · **Depends on:** Nothing (Stage 5 infrastructure ready for data blocks)
+### 📋 Stage 4 — New Course: xG & Football Data Analytics (Migration 056)
+**Effort:** Large · **Migration:** 056 · **Depends on:** Nothing (Stage 5 infrastructure ready for data blocks)
 
 New course under Sports University / Football Fundamentals. 3 modules, ~15 lessons.
 
@@ -306,12 +341,12 @@ New course under Sports University / Football Fundamentals. 3 modules, ~15 lesso
 - Module 2 — Reading Football Data (~5 lessons)
 - Module 3 — Using the PunterStat Dataset (~5 lessons)
 
-**What to build:** `supabase/migrations/054_xg_football_analytics_course.sql`
+**What to build:** `supabase/migrations/056_xg_football_analytics_course.sql`
 
 ---
 
-### 📋 Stage 5 — New Course: Value Betting in Practice (Migration 055)
-**Effort:** Medium · **Migration:** 055 · **Depends on:** Nothing
+### 📋 Stage 5 — New Course: Value Betting in Practice (Migration 057)
+**Effort:** Medium · **Migration:** 057 · **Depends on:** Nothing
 
 New course under Betting Academy. 2 modules, ~12 lessons.
 
@@ -319,12 +354,12 @@ New course under Betting Academy. 2 modules, ~12 lessons.
 - Module 1 — The Value Betting Workflow (~6 lessons)
 - Module 2 — The Mathematics of Edge (~6 lessons)
 
-**What to build:** `supabase/migrations/055_value_betting_practice_course.sql`
+**What to build:** `supabase/migrations/057_value_betting_practice_course.sql`
 
 ---
 
-### 📋 Stage 6 — New Course: Reading Football Match Data (Migration 056)
-**Effort:** Medium · **Migration:** 056 · **Depends on:** Nothing
+### 📋 Stage 6 — New Course: Reading Football Match Data (Migration 058)
+**Effort:** Medium · **Migration:** 058 · **Depends on:** Nothing
 
 New course under Sports University / Football Fundamentals. 3 modules, ~12 lessons.
 
@@ -333,16 +368,16 @@ New course under Sports University / Football Fundamentals. 3 modules, ~12 lesso
 - Module 2 — Advanced Metrics (~4 lessons)
 - Module 3 — Worked Examples (~4 lessons)
 
-**What to build:** `supabase/migrations/056_reading_match_data_course.sql`
+**What to build:** `supabase/migrations/058_reading_match_data_course.sql`
 
 ---
 
-### 📋 Stage 7 — Lesson Content Format Normalisation (Migration 057)
-**Effort:** Small · **Migration:** 057 · **Depends on:** Nothing (clears the way for data-block adoption in older lessons)
+### 📋 Stage 7 — Lesson Content Format Normalisation (Migration 059)
+**Effort:** Small · **Migration:** 059 · **Depends on:** Nothing (clears the way for data-block adoption in older lessons)
 
 Migrations 016–024 seeded lessons in Markdown. Migrations 025+ use HTML. The `LessonContent` server component handles both correctly, but normalising format enables data-block markers to be embedded in the older lessons.
 
-**What to build:** `supabase/migrations/057_normalise_lesson_format.sql`
+**What to build:** `supabase/migrations/059_normalise_lesson_format.sql`
 
 ---
 
@@ -382,4 +417,4 @@ When on Supabase Pro:
 
 ---
 
-*Last updated: 2026-07-09 — Stages 4 and 5 of the feature plan complete (Learning Path Recommendations + Interactive Lesson Data Blocks infrastructure)*
+*Last updated: 2026-09-28 — Site restaged around Bet Analysis / Bet Learning / Bet Assist; Bet Assist tools shipped (migration 053)*

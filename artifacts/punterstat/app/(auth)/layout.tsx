@@ -19,8 +19,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="w-full max-w-md">{children}</div>
 
       <p className="mt-8 text-center text-xs text-[#1e293b]/40 max-w-sm leading-relaxed">
-        PunterStat is an educational platform. No real money is involved.
-        For learning purposes only.
+        18+ only. PunterStat provides betting analysis, education and tools —
+        we never take bets or deposits.
       </p>
     </div>
   );

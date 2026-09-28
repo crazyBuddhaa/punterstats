@@ -16,32 +16,19 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth";
 import { signOut } from "@/lib/auth/actions";
+import { PILLARS } from "@/lib/bet-assist/pillars";
 
-type NavChild = { href: string; label: string };
+type NavChild = { href: string; label: string; description?: string };
 type NavLink =
   | { href: string; label: string; children?: undefined }
   | { href?: undefined; label: string; children: NavChild[] };
 
+// Three pillars (Bet Analysis / Bet Learning / Bet Assist) — see lib/bet-assist/pillars.ts
 const navLinks: NavLink[] = [
-  { href: "/sports-university", label: "Sports University" },
-  { href: "/betting-academy", label: "Betting Academy" },
-  { href: "/simulation-engine", label: "Simulation" },
-  { href: "/match-breakdown", label: "Match Analysis" },
-  { href: "/spot-the-value", label: "Spot The Value" },
-  {
-    label: "Stats",
-    children: [
-      { href: "/stats/results", label: "Results Browser" },
-      { href: "/stats/head-to-head", label: "Head-to-Head" },
-    ],
-  },
-  {
-    label: "Glossary",
-    children: [
-      { href: "/league-glossary", label: "League Glossary" },
-      { href: "/betting-academy/option-glossary", label: "Option Glossary" },
-    ],
-  },
+  ...PILLARS.map((p) => ({
+    label: p.label,
+    children: [{ href: p.href, label: `All ${p.label}`, description: p.tagline }, ...p.links],
+  })),
   { href: "/blog", label: "Blog" },
   { href: "/pricing", label: "Pricing" },
 ];
@@ -92,7 +79,7 @@ function UserMenu() {
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [glossaryOpen, setGlossaryOpen] = useState(false);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
 
@@ -117,14 +104,17 @@ export function Navbar() {
                       <ChevronDown className="h-3.5 w-3.5" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-48 bg-[#0f172a] border-white/10">
+                  <DropdownMenuContent align="start" className="w-72 bg-[#0f172a] border-white/10">
                     {link.children.map((child) => (
                       <DropdownMenuItem key={child.href} asChild>
                         <Link
                           href={child.href}
-                          className="flex items-center gap-2 cursor-pointer text-white/70 hover:text-white focus:text-white"
+                          className="flex cursor-pointer flex-col items-start gap-0.5 text-white/80 hover:text-white focus:text-white"
                         >
-                          {child.label}
+                          <span className="text-sm font-medium">{child.label}</span>
+                          {child.description && (
+                            <span className="text-xs text-white/45">{child.description}</span>
+                          )}
                         </Link>
                       </DropdownMenuItem>
                     ))}
@@ -192,7 +182,7 @@ export function Navbar() {
       <div
         className={cn(
           "overflow-hidden border-t border-white/10 bg-[#0f172a] transition-all duration-200 lg:hidden",
-          mobileOpen ? "max-h-screen" : "max-h-0"
+          mobileOpen ? "max-h-[calc(100vh-4rem)] overflow-y-auto" : "max-h-0"
         )}
       >
         <nav className="flex flex-col gap-1 px-4 py-3">
@@ -202,20 +192,20 @@ export function Navbar() {
                 <div key={link.label}>
                   <button
                     className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white"
-                    onClick={() => setGlossaryOpen((o) => !o)}
+                    onClick={() => setOpenGroup((g) => (g === link.label ? null : link.label))}
                   >
                     {link.label}
                     <ChevronDown
                       className={cn(
                         "h-3.5 w-3.5 transition-transform duration-200",
-                        glossaryOpen && "rotate-180"
+                        openGroup === link.label && "rotate-180"
                       )}
                     />
                   </button>
                   <div
                     className={cn(
                       "overflow-hidden transition-all duration-200",
-                      glossaryOpen ? "max-h-40" : "max-h-0"
+                      openGroup === link.label ? "max-h-96" : "max-h-0"
                     )}
                   >
                     {link.children.map((child) => (
@@ -223,7 +213,7 @@ export function Navbar() {
                         key={child.href}
                         href={child.href}
                         className="block rounded-md py-2 pl-7 pr-3 text-sm font-medium text-white/50 hover:bg-white/10 hover:text-white"
-                        onClick={() => { setMobileOpen(false); setGlossaryOpen(false); }}
+                        onClick={() => { setMobileOpen(false); setOpenGroup(null); }}
                       >
                         {child.label}
                       </Link>

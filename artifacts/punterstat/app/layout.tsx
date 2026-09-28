@@ -38,18 +38,22 @@ const REDIRECT_LEFTOVER_AUTH_PARAMS = `
 
 export const metadata: Metadata = {
   title: {
-    default: "PunterStat — Sports Intelligence & Education Platform",
+    default: "PunterStat — Bet Analysis, Bet Learning & Bet Assist",
     template: "%s | PunterStat",
   },
   description:
-    "PunterStat is a sports intelligence and education platform. We teach sports systems, probability, and analytical thinking. Knowledge Before Decision.",
+    "PunterStat is a data-driven betting platform: match analysis, betting courses, value picks, a bet slip checker, calculators and a bet tracker. Knowledge Before Decision.",
   keywords: [
-    "sports education",
-    "sports intelligence",
-    "probability literacy",
-    "betting mathematics",
+    "bet analysis",
+    "betting tips",
+    "football predictions",
+    "value bets",
+    "bet slip checker",
+    "betting calculator",
+    "kelly criterion",
+    "bet tracker",
+    "betting academy",
     "sports analytics",
-    "sports university",
   ],
   authors: [{ name: "PunterStat" }],
   creator: "PunterStat",
@@ -57,16 +61,16 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: process.env.NEXT_PUBLIC_APP_URL ?? "https://punterstat.site",
-    title: "PunterStat — Sports Intelligence & Education Platform",
+    title: "PunterStat — Bet Analysis, Bet Learning & Bet Assist",
     description:
-      "Knowledge Before Decision. Learn how sports systems and probability work.",
+      "Knowledge Before Decision. Analyse matches, learn the maths of betting, and get data-driven picks and tools.",
     siteName: "PunterStat",
   },
   twitter: {
     card: "summary_large_image",
-    title: "PunterStat — Sports Intelligence & Education Platform",
+    title: "PunterStat — Bet Analysis, Bet Learning & Bet Assist",
     description:
-      "Knowledge Before Decision. Learn how sports systems and probability work.",
+      "Knowledge Before Decision. Analyse matches, learn the maths of betting, and get data-driven picks and tools.",
   },
   robots: { index: true, follow: true },
   other: {

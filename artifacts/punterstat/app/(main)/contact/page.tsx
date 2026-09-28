@@ -98,8 +98,8 @@ export default function ContactPage() {
                   Legal
                 </p>
                 <p className="text-xs leading-relaxed text-[#475569]">
-                  PunterStat is an educational platform. We do not provide
-                  betting advice, process transactions, or facilitate gambling.
+                  PunterStat provides betting analysis, education and tools. We
+                  are not a bookmaker and do not take bets or hold funds.
                   For legal matters:{" "}
                   <Link
                     href="mailto:legal@punterstat.site"

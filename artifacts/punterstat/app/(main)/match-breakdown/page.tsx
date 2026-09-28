@@ -15,7 +15,7 @@ import {
 export const metadata: Metadata = {
   title: "Match Breakdown Engine — PunterStat",
   description:
-    "Learn how analysts break down football matches using form, head-to-head records, xG, injury impact, and home advantage. Educational probability analysis — no tips, no tips.",
+    "Learn how analysts break down football matches using form, head-to-head records, xG, injury impact, and home advantage. Model-based probabilities for 1X2, goals and BTTS markets.",
 };
 
 const factors = [
@@ -129,8 +129,8 @@ export default function MatchBreakdownPage() {
           <div className="flex items-center gap-2 text-xs text-[#1e293b]/60">
             <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
             <span>
-              The Match Breakdown Engine is an educational tool. It produces illustrative probability
-              estimates — not predictions of actual match results. No tips. No recommendations.
+              18+ only. The Match Breakdown Engine produces model probability estimates — not guaranteed
+              results. PunterStat does not take bets.
             </span>
           </div>
         </div>

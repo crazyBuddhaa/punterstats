@@ -118,7 +118,7 @@ export async function submitContact(
           </p>
         </td></tr>
         <tr><td style="padding:16px 40px;border-top:1px solid #f1f5f9;">
-          <p style="margin:0;font-size:11px;color:#94a3b8;">&#169; ${new Date().getFullYear()} PunterStat &mdash; Educational platform only.</p>
+          <p style="margin:0;font-size:11px;color:#94a3b8;">&#169; ${new Date().getFullYear()} PunterStat &mdash; 18+. We do not take bets.</p>
         </td></tr>
       </table>
     </td></tr>

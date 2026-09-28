@@ -136,7 +136,7 @@ export function RegisterForm({ checkEmail }: Props) {
               required
             />
             <Label htmlFor="ageConfirmed" className="text-xs font-normal leading-relaxed text-[#1e293b]/70 cursor-pointer">
-              I confirm that I am <span className="font-semibold text-[#0f172a]">18 years of age or older</span>. PunterStat is an adult education platform and is not available to minors.
+              I confirm that I am <span className="font-semibold text-[#0f172a]">18 years of age or older</span>. PunterStat&apos;s betting analysis and tools are for adults only and are not available to minors.
             </Label>
           </div>
         </CardContent>

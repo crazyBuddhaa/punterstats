@@ -91,8 +91,8 @@ function shell(innerHtml: string): string {
         <tr>
           <td style="padding:16px 40px;border-top:1px solid ${BRAND.divider};">
             <p style="margin:0;font-size:11px;color:${BRAND.muted};line-height:1.6;">
-              &copy; ${year} PunterStat &mdash; Educational platform only. We do not offer
-              betting tips or facilitate gambling of any kind.
+              &copy; ${year} PunterStat &mdash; 18+. We do not take bets.
+              Please gamble responsibly.
               &nbsp;&middot;&nbsp;
               <a href="${appUrl()}/unsubscribe"
                  style="color:${BRAND.muted};text-decoration:underline;">Unsubscribe</a>
@@ -155,13 +155,14 @@ export function welcomeEmail(displayName: string): EmailTemplate {
                color:${BRAND.body};line-height:1.9;">
       <li>Take structured courses in Sports University</li>
       <li>Learn probability &amp; odds in Betting Academy</li>
-      <li>Practice risk management in the Simulation Engine</li>
-      <li>Analyse matches with the 6-factor Breakdown Engine</li>
+      <li>Analyse matches with the Breakdown Engine and Spot The Value</li>
+      <li>Get data-driven picks, check slips and size stakes in Bet Assist</li>
+      <li>Log every bet in the Bet Tracker to see your real ROI</li>
     </ul>
-    ${noticeBox(`<strong style="color:${BRAND.dark};">Educational platform notice:</strong>
-      PunterStat does not offer betting tips, process real-money transactions,
-      or facilitate gambling of any kind. All simulations use virtual currency
-      for educational purposes only.`)}
+    ${noticeBox(`<strong style="color:${BRAND.dark};">Bet responsibly:</strong>
+      PunterStat does not take bets. Picks and probabilities are estimates, not
+      guarantees — set a budget, never chase losses, and only bet what you can
+      afford to lose.`)}
   `);
 
   return {
@@ -180,13 +181,13 @@ export function welcomeEmail(displayName: string): EmailTemplate {
       "What you can do:",
       "• Structured courses in Sports University",
       "• Probability & odds in Betting Academy",
-      "• Risk management in the Simulation Engine",
-      "• Match analysis with the Breakdown Engine",
+      "• Match analysis with the Breakdown Engine and Spot The Value",
+      "• Data-driven picks, slip checker and calculators in Bet Assist",
+      "• Track every bet and your ROI in the Bet Tracker",
       "",
       "— The PunterStat Team",
       "",
-      "PunterStat is an educational platform. We teach how sports and probability",
-      "work — not betting tips.",
+      "18+. PunterStat does not take bets. Please gamble responsibly.",
     ].join("\n"),
   };
 }

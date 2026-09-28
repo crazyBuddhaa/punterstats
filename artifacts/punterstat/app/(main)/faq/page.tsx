@@ -16,19 +16,19 @@ const faqSections = [
     items: [
       {
         q: "What is PunterStat?",
-        a: "PunterStat is a sports intelligence and education platform. We teach how sports systems work, how probability and odds mathematics work, and how to think analytically about sports and risk. We are not a betting site.",
+        a: "PunterStat is a data-driven betting companion built on three pillars: Bet Analysis (match probabilities, value vs live odds, stats and simulations), Bet Learning (the Betting Academy and Sports University) and Bet Assist (data-driven picks, a bet slip checker, betting calculators and a bet tracker).",
       },
       {
-        q: "Is PunterStat a betting site or tipster service?",
-        a: "No. PunterStat does not facilitate gambling, accept stakes or deposits, process real-money transactions, or provide betting recommendations of any kind. We are an educational platform — comparable to Investopedia for sports and probability literacy.",
+        q: "Is PunterStat a bookmaker? Do you give tips?",
+        a: "PunterStat is not a bookmaker — we never take bets, stakes or deposits. Bet Assist does publish data-driven picks: model probabilities for upcoming fixtures, flagged as value when the best available price beats our fair odds. Every pick shows its probability, price, edge and a capped stake suggestion. They are estimates, not guarantees. You must be 18+ to use the betting tools.",
       },
       {
         q: "Who is PunterStat for?",
-        a: "PunterStat is for anyone who wants to understand sports and probability more deeply — sports enthusiasts, students of analytics, coaches, data hobbyists, or curious minds who want to understand how the mathematics of odds and risk actually works.",
+        a: "Adults (18+) who bet on sport and want to do it with more information and more discipline — from beginners learning what odds mean to experienced bettors who want model probabilities, line shopping and proper record-keeping.",
       },
       {
         q: "What is the core philosophy?",
-        a: "Knowledge Before Decision. We believe that understanding the system — sports, probability, risk — is more valuable than any single tip or prediction. We teach frameworks, not forecasts.",
+        a: "Knowledge Before Decision. Analyse the match, understand the maths, then bet with a plan — the right price, the right stake, and an honest record of the results.",
       },
     ],
   },
@@ -41,7 +41,7 @@ const faqSections = [
       },
       {
         q: "What is the Betting Literacy Academy?",
-        a: "The Betting Academy teaches the mathematics behind odds: decimal and fractional formats, implied probability, expected value (EV), variance, Kelly Criterion, and bankroll and risk management. It is educational — there are no tips or picks. All content is free to access.",
+        a: "The Betting Academy teaches the mathematics behind odds: decimal and fractional formats, implied probability, expected value (EV), variance, Kelly Criterion, and bankroll and risk management. For data-driven picks and staking tools, see Bet Assist. All Academy content is free to access.",
       },
       {
         q: "How does the Simulation Engine work?",
@@ -49,7 +49,7 @@ const faqSections = [
       },
       {
         q: "What is the Match Breakdown Engine?",
-        a: "The Match Breakdown Engine is a six-factor analytical framework that examines home advantage, recent form, head-to-head record, goal-scoring trends, injury availability, and match stakes. It produces probability estimates and educational analysis — not betting recommendations.",
+        a: "The Match Breakdown Engine is a six-factor analytical framework that examines home advantage, recent form, head-to-head record, goal-scoring trends, injury availability, and match stakes. It produces probability estimates for 1X2, goals and BTTS markets that you can compare against live odds.",
       },
       {
         q: "Are there certificates or qualifications?",

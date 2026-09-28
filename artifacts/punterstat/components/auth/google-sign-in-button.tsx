@@ -36,7 +36,7 @@ export function GoogleSignInButton({ label = "Continue with Google" }: Props) {
     <Button
       type="button"
       variant="outline"
-      className="w-full gap-2.5 font-medium"
+      className="w-full gap-2.5 border-[#0b1713]/15 bg-white font-medium text-[#0b1713] hover:bg-[#e8ede3]"
       onClick={handleGoogleSignIn}
       disabled={loading}
     >

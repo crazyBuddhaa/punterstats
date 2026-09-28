@@ -30,12 +30,12 @@ export function RegisterForm({ checkEmail }: Props) {
 
   if (checkEmail) {
     return (
-      <Card className="border-border/50 shadow-sm text-center">
+      <Card className="border-[#0b1713]/10 bg-white text-center shadow-[0_20px_60px_rgba(11,23,19,.08)]">
         <CardHeader className="space-y-3 pb-4">
           <div className="flex justify-center">
-            <CheckCircle2 className="h-12 w-12 text-[#3D2DFF]" />
+            <CheckCircle2 className="h-12 w-12 text-[#ff7653]" />
           </div>
-          <CardTitle className="text-2xl font-bold text-[#0f172a]">
+          <CardTitle className="text-3xl font-black tracking-[-0.04em] text-[#0b1713]">
             Check your email
           </CardTitle>
           <CardDescription>
@@ -44,7 +44,7 @@ export function RegisterForm({ checkEmail }: Props) {
           </CardDescription>
         </CardHeader>
         <CardFooter className="justify-center">
-          <Link href="/login" className="text-sm text-[#3D2DFF] hover:underline">
+          <Link href="/login" className="text-sm text-[#ff7653] hover:underline">
             Back to sign in
           </Link>
         </CardFooter>
@@ -53,9 +53,9 @@ export function RegisterForm({ checkEmail }: Props) {
   }
 
   return (
-    <Card className="border-border/50 shadow-sm">
+    <Card className="border-[#0b1713]/10 bg-white shadow-[0_20px_60px_rgba(11,23,19,.08)]">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-[#0f172a]">
+        <CardTitle className="text-3xl font-black tracking-[-0.04em] text-[#0b1713]">
           Create your account
         </CardTitle>
         <CardDescription>
@@ -70,9 +70,9 @@ export function RegisterForm({ checkEmail }: Props) {
 
           <p className="text-center text-xs text-[#1e293b]/40 -mt-1">
             By continuing with Google you confirm you are 18+ and agree to our{" "}
-            <Link href="/terms" className="text-[#3D2DFF] hover:underline">Terms</Link>
+            <Link href="/terms" className="text-[#ff7653] hover:underline">Terms</Link>
             {" "}and{" "}
-            <Link href="/privacy" className="text-[#3D2DFF] hover:underline">Privacy Policy</Link>.
+            <Link href="/privacy" className="text-[#ff7653] hover:underline">Privacy Policy</Link>.
           </p>
 
           <div className="relative">
@@ -132,7 +132,7 @@ export function RegisterForm({ checkEmail }: Props) {
               id="ageConfirmed"
               name="ageConfirmed"
               type="checkbox"
-              className="mt-0.5 h-4 w-4 shrink-0 accent-[#3D2DFF] cursor-pointer"
+              className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#ff7653]"
               required
             />
             <Label htmlFor="ageConfirmed" className="text-xs font-normal leading-relaxed text-[#1e293b]/70 cursor-pointer">
@@ -142,29 +142,22 @@ export function RegisterForm({ checkEmail }: Props) {
         </CardContent>
 
         <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full" disabled={isPending}>
+          <Button
+            type="submit"
+            className="w-full bg-[#0b1713] text-white hover:bg-[#1b3124]"
+            disabled={isPending}
+          >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Create free account
           </Button>
 
-          <div className="relative w-full">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-[#1e293b]/40">or</span>
-            </div>
-          </div>
-
-          <GoogleSignInButton label="Sign up with Google" />
-
           <p className="text-center text-xs text-[#1e293b]/50 leading-relaxed px-2">
             By creating an account you agree to our{" "}
-            <Link href="/terms" className="text-[#3D2DFF] hover:underline">
+            <Link href="/terms" className="text-[#ff7653] hover:underline">
               Terms
             </Link>{" "}
             and{" "}
-            <Link href="/privacy" className="text-[#3D2DFF] hover:underline">
+            <Link href="/privacy" className="text-[#ff7653] hover:underline">
               Privacy Policy
             </Link>
             , and confirm you are{" "}
@@ -174,7 +167,7 @@ export function RegisterForm({ checkEmail }: Props) {
             Already have an account?{" "}
             <Link
               href="/login"
-              className="font-medium text-[#3D2DFF] hover:underline"
+              className="font-medium text-[#ff7653] hover:underline"
             >
               Sign in
             </Link>

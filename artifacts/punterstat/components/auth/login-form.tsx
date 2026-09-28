@@ -34,9 +34,9 @@ export function LoginForm({ redirectTo: _redirectTo, serverError }: Props) {
     (serverError ? "Authentication error. Please try again." : null);
 
   return (
-    <Card className="border-border/50 shadow-sm">
+    <Card className="border-[#0b1713]/10 bg-white shadow-[0_20px_60px_rgba(11,23,19,.08)]">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-[#0f172a]">
+        <CardTitle className="text-3xl font-black tracking-[-0.04em] text-[#0b1713]">
           Welcome back
         </CardTitle>
         <CardDescription>
@@ -54,7 +54,7 @@ export function LoginForm({ redirectTo: _redirectTo, serverError }: Props) {
               <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-card px-2 text-[#1e293b]/40">or continue with email</span>
+              <span className="bg-white px-2 text-[#0b1713]/40">or continue with email</span>
             </div>
           </div>
 
@@ -79,10 +79,7 @@ export function LoginForm({ redirectTo: _redirectTo, serverError }: Props) {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
-              <Link
-                href="/forgot-password"
-                className="text-xs text-[#3D2DFF] hover:underline"
-              >
+              <Link href="/forgot-password" className="text-xs text-[#ff7653] hover:underline">
                 Forgot password?
               </Link>
             </div>
@@ -98,27 +95,20 @@ export function LoginForm({ redirectTo: _redirectTo, serverError }: Props) {
         </CardContent>
 
         <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full" disabled={isPending}>
+          <Button
+            type="submit"
+            className="w-full bg-[#0b1713] text-white hover:bg-[#1b3124]"
+            disabled={isPending}
+          >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Sign in
           </Button>
-
-          <div className="relative w-full">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-[#1e293b]/40">or</span>
-            </div>
-          </div>
-
-          <GoogleSignInButton />
 
           <p className="text-center text-sm text-[#1e293b]/60">
             Don&apos;t have an account?{" "}
             <Link
               href="/register"
-              className="font-medium text-[#3D2DFF] hover:underline"
+              className="font-medium text-[#ff7653] hover:underline"
             >
               Create one free
             </Link>

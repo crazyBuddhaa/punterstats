@@ -23,9 +23,9 @@ export function UpdatePasswordForm() {
   >(updatePassword, null);
 
   return (
-    <Card className="border-border/50 shadow-sm">
+    <Card className="border-[#0b1713]/10 bg-white shadow-[0_20px_60px_rgba(11,23,19,.08)]">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-[#0f172a]">
+        <CardTitle className="text-3xl font-black tracking-[-0.04em] text-[#0b1713]">
           Set new password
         </CardTitle>
         <CardDescription>
@@ -56,7 +56,11 @@ export function UpdatePasswordForm() {
         </CardContent>
 
         <CardFooter>
-          <Button type="submit" className="w-full" disabled={isPending}>
+          <Button
+            type="submit"
+            className="w-full bg-[#0b1713] text-white hover:bg-[#1b3124]"
+            disabled={isPending}
+          >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Update password
           </Button>

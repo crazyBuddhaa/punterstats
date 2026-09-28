@@ -25,12 +25,12 @@ export function ForgotPasswordForm() {
 
   if (state?.success) {
     return (
-      <Card className="border-border/50 shadow-sm text-center">
+      <Card className="border-[#0b1713]/10 bg-white text-center shadow-[0_20px_60px_rgba(11,23,19,.08)]">
         <CardHeader className="space-y-3 pb-4">
           <div className="flex justify-center">
-            <Mail className="h-12 w-12 text-[#3D2DFF]" />
+            <Mail className="h-12 w-12 text-[#ff7653]" />
           </div>
-          <CardTitle className="text-2xl font-bold text-[#0f172a]">
+          <CardTitle className="text-3xl font-black tracking-[-0.04em] text-[#0b1713]">
             Check your inbox
           </CardTitle>
           <CardDescription>
@@ -39,7 +39,7 @@ export function ForgotPasswordForm() {
           </CardDescription>
         </CardHeader>
         <CardFooter className="justify-center">
-          <Link href="/login" className="text-sm text-[#3D2DFF] hover:underline">
+          <Link href="/login" className="text-sm text-[#ff7653] hover:underline">
             Back to sign in
           </Link>
         </CardFooter>
@@ -48,9 +48,9 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <Card className="border-border/50 shadow-sm">
+    <Card className="border-[#0b1713]/10 bg-white shadow-[0_20px_60px_rgba(11,23,19,.08)]">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-[#0f172a]">
+        <CardTitle className="text-3xl font-black tracking-[-0.04em] text-[#0b1713]">
           Reset your password
         </CardTitle>
         <CardDescription>
@@ -80,13 +80,17 @@ export function ForgotPasswordForm() {
         </CardContent>
 
         <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full" disabled={isPending}>
+          <Button
+            type="submit"
+            className="w-full bg-[#0b1713] text-white hover:bg-[#1b3124]"
+            disabled={isPending}
+          >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Send reset link
           </Button>
           <Link
             href="/login"
-            className="text-center text-sm text-[#1e293b]/60 hover:text-[#3D2DFF]"
+            className="text-center text-sm text-[#1e293b]/60 hover:text-[#ff7653]"
           >
             ← Back to sign in
           </Link>

@@ -1,6 +1,6 @@
 # PunterStat
 
-Sports intelligence and education platform — [punterstat.site](https://punterstat.site).
+Bet analysis, bet learning and bet assist platform — [punterstat.site](https://punterstat.site).
 
 This is a small pnpm workspace:
 

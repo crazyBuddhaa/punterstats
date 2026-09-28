@@ -10,8 +10,8 @@ export function StatsBar({ className, courses, lessons }: StatsBarProps) {
   const stats = [
     { value: courses ? `${courses}+` : "12+", label: "Published courses" },
     { value: lessons ? `${lessons}+` : "50+", label: "In-depth lessons" },
-    { value: "4", label: "Core modules" },
-    { value: "100%", label: "Education focused" },
+    { value: "3", label: "Pillars: Analyse · Learn · Assist" },
+    { value: "Free", label: "To get started" },
   ];
 
   return (

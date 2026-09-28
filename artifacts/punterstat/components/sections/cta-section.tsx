@@ -16,8 +16,8 @@ interface CtaSectionProps {
 
 export function CtaSection({
   className,
-  title = "Start building your sports intelligence today.",
-  description = "Free to begin. No credit card required. No tips, no noise — just structured knowledge.",
+  title = "Make your next bet a better-informed one.",
+  description = "Free to begin. No credit card required. Analysis, learning and betting tools in one place.",
   primaryLabel,
   primaryHref,
   secondaryLabel = "View pricing",
@@ -63,8 +63,9 @@ export function CtaSection({
           </Button>
         </div>
         <p className="mt-8 text-xs text-white/25">
-          PunterStat is an educational platform. We do not process real-money
-          transactions, provide betting tips, or facilitate gambling of any kind.
+          18+ only. PunterStat provides analysis, education and tools — we do not
+          take bets or hold funds. Picks are model estimates, not guarantees.
+          Gamble responsibly.
         </p>
       </div>
     </section>

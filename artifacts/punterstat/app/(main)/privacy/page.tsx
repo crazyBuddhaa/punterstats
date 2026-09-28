@@ -4,7 +4,7 @@ import { PageShell, PageHeader } from "@/components/layout/page-shell";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "Privacy Policy for the PunterStat sports intelligence and education platform.",
+  description: "Privacy Policy for the PunterStat bet analysis, bet learning and bet assist platform.",
   robots: { index: true, follow: true },
 };
 

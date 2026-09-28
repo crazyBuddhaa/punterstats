@@ -8,7 +8,7 @@
  *
  * A positive delta means the model sees the outcome as more likely than the
  * market implies once the bookmaker's margin (overround) has been removed.
- * This gap is educational context, not a betting tip.
+ * The gap is an estimate of value, not a guarantee.
  */
 
 import { stripOverround } from "@/lib/odds/devig";

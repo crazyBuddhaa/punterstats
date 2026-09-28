@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "PunterStat — Sports Intelligence & Education Platform",
+  title: "PunterStat — Bet Analysis, Bet Learning & Bet Assist",
   description:
-    "Master how sports systems, probability, and betting mathematics work. Four structured learning modules: Sports University, Betting Academy, Simulation Engine, and Match Breakdown.",
+    "Analyse football matches with model probabilities, learn how odds and value work, and use data-driven picks, a bet slip checker, betting calculators and a bet tracker.",
   openGraph: {
     title: "PunterStat — Knowledge Before Decision",
     description:
-      "Learn sports analytics, probability theory, and analytical thinking through structured courses and interactive simulations.",
+      "Bet analysis, bet learning and bet assist in one place: data-driven picks, slip checker, calculators and tracker.",
   },
 };
 import { Hero } from "@/components/sections/hero";

@@ -15,16 +15,23 @@ import {
   CreditCard,
   Bell,
   ChevronRight,
+  NotebookPen,
+  Crosshair,
 } from "lucide-react";
+
+const assistItems = [
+  { href: "/dashboard/bet-tracker", label: "Bet Tracker", icon: NotebookPen },
+  { href: "/bet-assist/picks", label: "Data-Driven Picks", icon: Crosshair },
+  { href: "/dashboard/match-analyses", label: "Match Analyses", icon: BarChart2 },
+  { href: "/dashboard/calibration", label: "Calibration", icon: Target },
+  { href: "/dashboard/simulation-history", label: "Simulation History", icon: FlaskConical },
+  { href: "/spot-the-value", label: "Spot The Value", icon: Zap },
+];
 
 const topItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/continue-learning", label: "Continue Learning", icon: BookOpen },
   { href: "/dashboard/bookmarks", label: "Saved Lessons", icon: Bookmark },
-  { href: "/dashboard/simulation-history", label: "Simulation History", icon: FlaskConical },
-  { href: "/dashboard/match-analyses", label: "Match Analyses", icon: BarChart2 },
-  { href: "/dashboard/calibration", label: "Calibration", icon: Target },
-  { href: "/spot-the-value", label: "Spot The Value", icon: Zap },
   { href: "/dashboard/progress", label: "Learning Progress", icon: TrendingUp },
 ];
 
@@ -91,6 +98,15 @@ export function DashboardSidebar({ unreadCount = 0 }: DashboardSidebarProps) {
       <div className="my-3 border-t border-border" />
 
       <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-[#1e293b]/40">
+        Analysis &amp; Assist
+      </p>
+      {assistItems.map(({ href, label, icon }) => (
+        <NavItem key={href} href={href} label={label} icon={icon} />
+      ))}
+
+      <div className="my-3 border-t border-border" />
+
+      <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-[#1e293b]/40">
         Account
       </p>
       {bottomItems.map(({ href, label, icon }) => (
@@ -110,6 +126,7 @@ export function DashboardSidebar({ unreadCount = 0 }: DashboardSidebarProps) {
 export function DashboardMobileNav({ unreadCount = 0 }: DashboardSidebarProps) {
   const allItems = [
     ...topItems,
+    ...assistItems,
     ...bottomItems.map((item) => ({
       ...item,
       badge: item.href === "/dashboard/notifications" ? unreadCount : undefined,

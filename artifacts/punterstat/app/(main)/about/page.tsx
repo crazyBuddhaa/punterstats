@@ -15,11 +15,11 @@ import { Badge } from "@/components/ui/badge";
 export const metadata: Metadata = {
   title: "About PunterStat",
   description:
-    "PunterStat is a sports intelligence and education platform. We teach probability, sports systems, and analytical thinking — not betting tips.",
+    "PunterStat is a bet analysis, bet learning and bet assist platform: data-driven match analysis, betting courses and tools for smarter, more disciplined betting.",
   openGraph: {
     title: "About PunterStat — Knowledge Before Decision",
     description:
-      "We built PunterStat to change how people think about sports. Learn the maths, understand the systems, make better decisions.",
+      "We built PunterStat so bettors decide with data, not gut feeling. Analyse the match, learn the maths, bet with an assistant.",
   },
 };
 
@@ -36,7 +36,7 @@ const modules = [
     icon: BookOpen,
     title: "Betting Literacy Academy",
     description:
-      "Learn the mathematics behind odds, implied probability, expected value, variance, and bankroll theory. No tips — just the maths.",
+      "Learn the mathematics behind odds, implied probability, expected value, variance, and bankroll theory. The maths every bettor should know.",
     href: "/betting-academy",
     tag: "Free",
   },
@@ -61,15 +61,15 @@ const modules = [
 const values = [
   {
     icon: ShieldCheck,
-    title: "We are not a betting site",
+    title: "We don't take bets",
     description:
-      "PunterStat does not process transactions, accept deposits, or facilitate gambling of any kind. We are an education platform — full stop.",
+      "PunterStat is not a bookmaker. We never take stakes or hold your money — we give you analysis, education and tools, and you decide where and whether to bet.",
   },
   {
     icon: Target,
-    title: "Precision over noise",
+    title: "Data over hype",
     description:
-      "We don't publish picks, tips, or predictions. We teach frameworks that help you think clearly about probability and risk.",
+      "Our picks come from a transparent model, with the probability, the price and the edge shown every time. No guaranteed wins, no 'sure' accumulators.",
   },
   {
     icon: Lightbulb,
@@ -284,14 +284,18 @@ export default function AboutPage() {
           <div className="rounded-xl border border-border/50 bg-white p-6 text-center">
             <ShieldCheck className="mx-auto mb-3 h-6 w-6 text-[#3D2DFF]" />
             <h3 className="mb-2 text-sm font-semibold text-[#0f172a]">
-              Educational platform — not a gambling service
+              18+ · Analysis and tools — not a bookmaker
             </h3>
             <p className="text-sm leading-relaxed text-[#475569]">
-              PunterStat does not process real-money transactions, accept
-              deposits, facilitate wagering, or provide betting tips of any
-              kind. All simulation features use virtual currency exclusively for
-              educational purposes. Any decisions made outside this platform are
-              the sole responsibility of the individual.
+              PunterStat does not accept bets or deposits. Picks, probabilities
+              and staking suggestions are model estimates, not guarantees, and
+              simulators use virtual currency. Any bet you place with a
+              bookmaker is your own decision — only bet what you can afford to
+              lose, and see our{" "}
+              <Link href="/responsible-gambling" className="text-[#3D2DFF] underline underline-offset-2">
+                responsible gambling
+              </Link>{" "}
+              page for support.
             </p>
           </div>
         </div>

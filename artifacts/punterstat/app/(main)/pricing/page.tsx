@@ -14,8 +14,8 @@ export const metadata: Metadata = {
 
 const FAQ = [
   {
-    q: "Is PunterStat a betting site?",
-    a: "No. PunterStat is a sports intelligence and education platform. We do not facilitate gambling, accept stakes, or process betting transactions of any kind.",
+    q: "Is PunterStat a bookmaker?",
+    a: "No. PunterStat gives you analysis, courses, data-driven picks and betting tools, but we never take bets or hold betting funds. Your subscription pays for the platform, not for wagers.",
   },
   {
     q: "What does the Free plan include?",

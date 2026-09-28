@@ -1,26 +1,26 @@
-import { UserPlus, BookOpen, BarChart3 } from "lucide-react";
+import { BarChart3, GraduationCap, Target } from "lucide-react";
 
 const steps = [
   {
     number: "01",
-    icon: UserPlus,
-    title: "Create a free account",
+    icon: BarChart3,
+    title: "Analyse the match",
     description:
-      "Sign up in under a minute. No credit card, no trial period — full access to all educational content immediately.",
+      "Get model probabilities for win, draw, goals and BTTS, check head-to-head and form, and compare against live odds to see where the value is.",
   },
   {
     number: "02",
-    icon: BookOpen,
-    title: "Learn at your own pace",
+    icon: GraduationCap,
+    title: "Learn what the numbers mean",
     description:
-      "Work through Sports University and Betting Academy lessons in any order. Track your progress, bookmark lessons, and pick up where you left off.",
+      "Short, practical courses on odds, margins, expected value, bet types and bankroll management — so every decision has a reason behind it.",
   },
   {
     number: "03",
-    icon: BarChart3,
-    title: "Apply what you know",
+    icon: Target,
+    title: "Bet with an assistant",
     description:
-      "Use the Bet Simulator and Match Breakdown Engine to test your understanding with real-world scenarios — risk-free, always educational.",
+      "Use data-driven picks, check your slip before you place it, size your stake with Kelly, and track every bet to see your real ROI.",
   },
 ];
 
@@ -36,7 +36,7 @@ export function HowItWorks() {
             How PunterStat works
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-[#1e293b]/60">
-            Three steps from sign-up to thinking like a sports analyst.
+            Three pillars that take you from gut feeling to a repeatable betting process.
           </p>
         </div>
 

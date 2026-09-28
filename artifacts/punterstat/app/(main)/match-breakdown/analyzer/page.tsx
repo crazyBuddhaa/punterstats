@@ -37,8 +37,8 @@ export default async function MatchAnalyzerPage() {
           <div className="flex items-center gap-2 text-xs text-white/50">
             <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-teal-400" />
             <span>
-              Educational tool only — probabilities are illustrative, not match predictions. No tips.
-              No financial advice.
+              18+ only. Probabilities are model estimates, not guarantees. Compare them with live odds in
+              Spot The Value, or see Bet Assist for data-driven picks.
             </span>
           </div>
         </div>

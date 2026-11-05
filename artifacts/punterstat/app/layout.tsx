@@ -98,6 +98,12 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: REDIRECT_LEFTOVER_AUTH_PARAMS }}
         />
         <Providers>{children}</Providers>
+        <Script
+          src="https://getcustomcare.xyz/widget.js"
+          data-customcare-token="wgt_o7e8vvNQrxKGVSMorkk_daq0"
+          data-api-base="https://getcustomcare.xyz"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

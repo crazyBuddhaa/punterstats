@@ -10,8 +10,17 @@ export interface PillarLink {
   description: string;
 }
 
+export type PillarKey =
+  | "matches"
+  | "predictions"
+  | "analysis"
+  | "learning"
+  | "teams-players"
+  | "statistics"
+  | "assist";
+
 export interface Pillar {
-  key: "analysis" | "learning" | "assist";
+  key: PillarKey;
   label: string;
   href: string;
   tagline: string;
@@ -20,39 +29,77 @@ export interface Pillar {
 
 export const PILLARS: Pillar[] = [
   {
-    key: "analysis",
-    label: "Bet Analysis",
-    href: "/bet-analysis",
-    tagline: "Break down matches and markets with data before you bet.",
+    key: "matches",
+    label: "Matches",
+    href: "/match-breakdown",
+    tagline: "Dedicated 11-dimension Match Centre for every fixture.",
     links: [
-      { href: "/match-breakdown", label: "Match Analysis", description: "Model-based probabilities for any fixture" },
+      { href: "/match-breakdown", label: "Match Centre", description: "11-factor analytical breakdown" },
+      { href: "/stats/results", label: "Results Browser", description: "Recently completed fixtures" },
+      { href: "/stats/head-to-head", label: "Head-to-Head", description: "Historical meeting patterns" },
+    ],
+  },
+  {
+    key: "predictions",
+    label: "Predictions",
+    href: "/bet-assist/picks",
+    tagline: "Probabilistic forecasts with evidence and confidence ratings.",
+    links: [
+      { href: "/bet-assist/picks", label: "Model Predictions", description: "1X2, Goals, Corners, Player Props" },
+      { href: "/spot-the-value", label: "Value Edge Finder", description: "Model probabilities vs market lines" },
+    ],
+  },
+  {
+    key: "analysis",
+    label: "Analysis",
+    href: "/bet-analysis",
+    tagline: "Tactical patterns, team profilers and quantitative engines.",
+    links: [
+      { href: "/match-breakdown", label: "Interactive Analyzer", description: "6-factor weighting tool" },
       { href: "/spot-the-value", label: "Spot The Value", description: "Your probabilities vs live market odds" },
-      { href: "/simulation-engine", label: "Simulation Engine", description: "Monte Carlo bet and probability simulators" },
-      { href: "/stats/results", label: "Results Browser", description: "Historical results across top leagues" },
-      { href: "/stats/head-to-head", label: "Head-to-Head", description: "Full meeting history between two teams" },
+      { href: "/simulation-engine", label: "Simulation Engine", description: "Monte Carlo & Poisson simulators" },
     ],
   },
   {
     key: "learning",
-    label: "Bet Learning",
+    label: "Learning",
     href: "/bet-learning",
-    tagline: "Learn the maths, markets and mindset behind winning bettors.",
+    tagline: "10-category football analytics university & knowledge quizzes.",
     links: [
-      { href: "/betting-academy", label: "Betting Academy", description: "Odds, value, bet types and bankroll" },
-      { href: "/sports-university", label: "Sports University", description: "How football, basketball and tennis work" },
-      { href: "/betting-academy/option-glossary", label: "Betting Markets Glossary", description: "Every bet type explained" },
-      { href: "/league-glossary", label: "League Glossary", description: "Leagues, teams and competition formats" },
-      { href: "/blog", label: "Blog", description: "Analysis, guides and news" },
+      { href: "/betting-academy", label: "Betting Academy", description: "Odds, value, and probability" },
+      { href: "/sports-university", label: "Sports University", description: "Formations, tactics, and statistics" },
+      { href: "/betting-academy/option-glossary", label: "Markets Glossary", description: "Every bet type explained" },
+      { href: "/league-glossary", label: "League Profiles", description: "Leagues and competition formats" },
+      { href: "/blog", label: "Case Studies & Blog", description: "Tactical and statistical guides" },
+    ],
+  },
+  {
+    key: "teams-players",
+    label: "Teams & Players",
+    href: "/stats/head-to-head",
+    tagline: "Club profiles, athlete dossiers and comparative radar matrices.",
+    links: [
+      { href: "/stats/head-to-head", label: "Club Dossiers", description: "Tactical styles and squad metrics" },
+      { href: "/stats/results", label: "Player Profiles", description: "Shooting efficiency and radar data" },
+    ],
+  },
+  {
+    key: "statistics",
+    label: "Statistics",
+    href: "/stats",
+    tagline: "Independent statistical explorer across top European leagues.",
+    links: [
+      { href: "/stats", label: "Statistical Explorer", description: "Scoring, defense and corner leaderboards" },
+      { href: "/stats/results", label: "League Comparisons", description: "Cross-league statistical averages" },
     ],
   },
   {
     key: "assist",
     label: "Bet Assist",
     href: "/bet-assist",
-    tagline: "Tools that help you pick, price, stake and track every bet.",
+    tagline: "Tools that help you price, stake and track every bet.",
     links: [
-      { href: "/bet-assist/picks", label: "Data-Driven Picks", description: "Model probabilities and value flags" },
-      { href: "/bet-assist/slip-checker", label: "Bet Slip Checker", description: "See what your slip really implies" },
+      { href: "/bet-assist/slip-checker", label: "Bet Slip Checker", description: "See what your slip implies" },
       { href: "/bet-assist/calculators", label: "Betting Calculators", description: "Kelly, accas, margin, arbitrage" },
       { href: "/dashboard/bet-tracker", label: "Bet Tracker", description: "Log bets, track ROI and bankroll" },
     ],

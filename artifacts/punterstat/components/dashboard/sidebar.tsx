@@ -21,11 +21,11 @@ import {
 
 const assistItems = [
   { href: "/dashboard/bet-tracker", label: "Bet Tracker", icon: NotebookPen },
-  { href: "/bet-assist/picks", label: "Data-Driven Picks", icon: Crosshair },
+  { href: "/dashboard/picks", label: "Data-Driven Picks", icon: Crosshair },
   { href: "/dashboard/match-analyses", label: "Match Analyses", icon: BarChart2 },
   { href: "/dashboard/calibration", label: "Calibration", icon: Target },
   { href: "/dashboard/simulation-history", label: "Simulation History", icon: FlaskConical },
-  { href: "/spot-the-value", label: "Spot The Value", icon: Zap },
+  { href: "/dashboard/spot-the-value", label: "Spot The Value", icon: Zap },
 ];
 
 const topItems = [

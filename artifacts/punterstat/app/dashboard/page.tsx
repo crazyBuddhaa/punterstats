@@ -8,6 +8,7 @@ import {
   TrendingUp,
   Bell,
   Target,
+  Zap,
 } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
 import {
@@ -159,7 +160,7 @@ export default async function DashboardPage() {
             {inProgress.length === 0 && (
               <div className="px-5 py-8 text-center text-sm text-[#1e293b]/50">
                 No lessons in progress yet.{" "}
-                <Link href="/sports-university" className="text-teal-600 hover:underline">
+                <Link href="/dashboard/continue-learning" className="text-teal-600 hover:underline">
                   Start learning →
                 </Link>
               </div>
@@ -212,7 +213,7 @@ export default async function DashboardPage() {
             {simSessions.length === 0 && (
               <div className="px-5 py-8 text-center text-sm text-[#1e293b]/50">
                 No simulations yet.{" "}
-                <Link href="/simulation-engine" className="text-teal-600 hover:underline">
+                <Link href="/dashboard/simulation-history" className="text-teal-600 hover:underline">
                   Try the simulator →
                 </Link>
               </div>
@@ -228,10 +229,10 @@ export default async function DashboardPage() {
         </h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            { href: "/sports-university", label: "Sports University", icon: BookOpen, desc: "Courses & lessons" },
-            { href: "/betting-academy", label: "Betting Academy", icon: TrendingUp, desc: "Literacy modules" },
-            { href: "/simulation-engine", label: "Simulation Engine", icon: FlaskConical, desc: "Practice & explore" },
-            { href: "/match-breakdown", label: "Match Breakdown", icon: BarChart2, desc: "Probability analyzer" },
+            { href: "/dashboard/picks", label: "Data-Driven Picks", icon: Target, desc: "Value edge forecasts" },
+            { href: "/dashboard/spot-the-value", label: "Spot The Value", icon: Zap, desc: "Odds vs true probability" },
+            { href: "/dashboard/match-analyses", label: "Match Analyses", icon: BarChart2, desc: "Probability analyzer" },
+            { href: "/dashboard/continue-learning", label: "Continue Learning", icon: BookOpen, desc: "Courses & lessons" },
             { href: "/dashboard/progress", label: "Learning Progress", icon: TrendingUp, desc: "Your course progress" },
             { href: "/dashboard/bookmarks", label: "Saved Lessons", icon: Bookmark, desc: "Your saved content" },
           ].map(({ href, label, icon: Icon, desc }) => (

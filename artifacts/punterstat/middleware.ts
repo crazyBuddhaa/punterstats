@@ -133,13 +133,44 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect authenticated users away from auth pages AND the landing page.
-  const isLandingPage = pathname === "/";
-  if ((isAuthPage || isLandingPage) && user) {
-    const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = "/dashboard";
-    dashboardUrl.search = "";
-    return NextResponse.redirect(dashboardUrl);
+  // Redirect authenticated users away from public pages into their dashboard workspace
+  if (user) {
+    if (isAuthPage || isLandingPage) {
+      const dashboardUrl = request.nextUrl.clone();
+      dashboardUrl.pathname = "/dashboard";
+      dashboardUrl.search = "";
+      return NextResponse.redirect(dashboardUrl);
+    }
+
+    if (pathname === "/bet-assist/picks" || pathname.startsWith("/bet-assist/picks/")) {
+      const picksUrl = request.nextUrl.clone();
+      picksUrl.pathname = "/dashboard/picks";
+      return NextResponse.redirect(picksUrl);
+    }
+
+    if (pathname === "/spot-the-value" || pathname.startsWith("/spot-the-value/")) {
+      const stvUrl = request.nextUrl.clone();
+      stvUrl.pathname = "/dashboard/spot-the-value";
+      return NextResponse.redirect(stvUrl);
+    }
+
+    if (pathname === "/bet-assist" || pathname === "/bet-assist/slip-checker" || pathname === "/bet-assist/calculators") {
+      const assistUrl = request.nextUrl.clone();
+      assistUrl.pathname = "/dashboard/bet-tracker";
+      return NextResponse.redirect(assistUrl);
+    }
+
+    if (pathname === "/match-breakdown" || pathname.startsWith("/match-breakdown/")) {
+      const matchUrl = request.nextUrl.clone();
+      matchUrl.pathname = "/dashboard/match-analyses";
+      return NextResponse.redirect(matchUrl);
+    }
+
+    if (pathname === "/simulation-engine" || pathname.startsWith("/simulation-engine/")) {
+      const simUrl = request.nextUrl.clone();
+      simUrl.pathname = "/dashboard/simulation-history";
+      return NextResponse.redirect(simUrl);
+    }
   }
 
   return supabaseResponse;

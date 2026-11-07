@@ -22,19 +22,12 @@ export default async function DashboardLayout({
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-border bg-white">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2 font-bold text-[#0f172a]">
+          <Link href="/dashboard" className="flex items-center gap-2 font-bold text-[#0f172a]">
             <Image src="/logo.png" alt="PunterStat" width={28} height={28} className="rounded-md" />
             <span className="text-base tracking-tight">PunterStat</span>
           </Link>
 
           <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="hidden items-center gap-1.5 text-sm text-[#1e293b]/60 transition hover:text-[#0f172a] sm:flex"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              Back to site
-            </Link>
 
             <Link
               href="/dashboard/profile"

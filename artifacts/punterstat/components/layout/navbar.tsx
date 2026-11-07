@@ -168,14 +168,25 @@ export function Navbar() {
           )}
         </div>
 
-        {/* Mobile toggle */}
-        <button
-          className="flex items-center justify-center rounded-lg p-2 text-white/70 hover:bg-white/10 hover:text-white lg:hidden"
-          onClick={() => setMobileOpen((o) => !o)}
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        {/* Mobile controls */}
+        <div className="flex items-center gap-2 lg:hidden">
+          {isAuthenticated && (
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-1.5 rounded-full bg-[#3D2DFF] px-2.5 py-1 text-xs font-semibold text-white shadow-sm"
+            >
+              <LayoutDashboard className="h-3.5 w-3.5" />
+              <span>Dashboard</span>
+            </Link>
+          )}
+          <button
+            className="flex items-center justify-center rounded-lg p-2 text-white/70 hover:bg-white/10 hover:text-white"
+            onClick={() => setMobileOpen((o) => !o)}
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu */}

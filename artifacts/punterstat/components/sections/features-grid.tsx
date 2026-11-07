@@ -1,15 +1,32 @@
 import Link from "next/link";
-import { ArrowRight, BarChart3, GraduationCap, Target } from "lucide-react";
+import {
+  ArrowRight,
+  BarChart3,
+  Compass,
+  GraduationCap,
+  Shield,
+  Target,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PILLARS } from "@/lib/bet-assist/pillars";
+import { PILLARS, type PillarKey } from "@/lib/bet-assist/pillars";
 
-const ICONS = { analysis: BarChart3, learning: GraduationCap, assist: Target } as const;
+const ICONS: Record<PillarKey, React.ComponentType<{ className?: string }>> = {
+  matches: Shield,
+  predictions: TrendingUp,
+  analysis: BarChart3,
+  learning: GraduationCap,
+  "teams-players": Users,
+  statistics: Compass,
+  assist: Target,
+};
 
 interface FeaturesGridProps {
   className?: string;
 }
 
-/** Homepage: the three pillars, each with its tools. */
+/** Homepage: the pillars, each with its tools. */
 export function FeaturesGrid({ className }: FeaturesGridProps) {
   return (
     <section className={cn("bg-[#f8fafc] py-20 sm:py-28", className)}>
@@ -19,18 +36,17 @@ export function FeaturesGrid({ className }: FeaturesGridProps) {
             Everything in one place
           </p>
           <h2 className="text-3xl font-bold tracking-tight text-[#0f172a] sm:text-4xl">
-            Bet Analysis. Bet Learning. Bet Assist.
+            Discover. Analyse. Predict. Learn.
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-[#1e293b]/60">
-            Three pillars built around one idea: better bets come from better information, better
-            understanding and better discipline.
+            Comprehensive football intelligence, statistical modeling, prediction analysis and interactive analytics education.
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {PILLARS.map((pillar) => {
-            const Icon = ICONS[pillar.key];
-            const accent = pillar.key === "assist";
+            const Icon = ICONS[pillar.key] ?? BarChart3;
+            const accent = pillar.key === "assist" || pillar.key === "matches";
             return (
               <div
                 key={pillar.key}

@@ -36,7 +36,11 @@ export default async function DashboardSpotTheValuePage() {
         </div>
       </div>
 
-      <ValueAnalyzer initialMatches={initialMatches} fromCache={fromCache} />
+      <ValueAnalyzer
+        initialMatches={initialMatches}
+        initialSport="soccer_epl"
+        fromCache={fromCache}
+      />
 
       {/* Educational context */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

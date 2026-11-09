@@ -34,7 +34,7 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="border-t border-white/10 bg-[#0b1713] text-white/70">
+    <footer className="border-t border-white/10 bg-[#080c1d] text-white/70">
       <div className="container mx-auto px-4 py-12 sm:px-6">
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-6">
           {/* Brand */}
@@ -53,7 +53,7 @@ export function Footer() {
               Bet analysis, bet learning and bet assist — data-driven tools and
               courses for smarter, more disciplined betting.
             </p>
-            <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-[#d7f35f]">
+            <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-[#7C70FF]">
               Knowledge Before Decision
             </p>
           </div>

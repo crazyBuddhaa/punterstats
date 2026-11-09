@@ -5,11 +5,11 @@ import { LandingPage } from "@/components/sections/landing-page";
 export const metadata: Metadata = {
   title: "PunterStat — Bet Analysis, Bet Learning & Bet Assist",
   description:
-    "Analyse football matches with model probabilities, learn how odds and value work, and use data-driven picks, a bet slip checker, betting calculators and a bet tracker.",
+    "Learn the maths of betting, analyse matches with transparent probabilities, and check your slips with calculators and a tracker. We don't take bets and we don't give tips.",
   openGraph: {
     title: "PunterStat — Knowledge Before Decision",
     description:
-      "Bet analysis, bet learning and bet assist in one place: data-driven picks, slip checker, calculators and tracker.",
+      "Learn the maths of betting, analyse matches with transparent probabilities, and check your slips with calculators and a tracker. We don't take bets and we don't give tips.",
   },
 };
 async function getHomepageData() {

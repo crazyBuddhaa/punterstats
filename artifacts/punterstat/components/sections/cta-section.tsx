@@ -64,8 +64,8 @@ export function CtaSection({
         </div>
         <p className="mt-8 text-xs text-white/25">
           18+ only. PunterStat provides analysis, education and tools — we do not
-          take bets or hold funds. Picks are model estimates, not guarantees.
-          Gamble responsibly.
+          take bets, hold funds or give tips. Probabilities are model estimates,
+          not guarantees. Gamble responsibly.
         </p>
       </div>
     </section>

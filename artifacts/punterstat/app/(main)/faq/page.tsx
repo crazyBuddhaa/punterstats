@@ -16,19 +16,19 @@ const faqSections = [
     items: [
       {
         q: "What is PunterStat?",
-        a: "PunterStat is a data-driven betting companion built on three pillars: Bet Analysis (match probabilities, value vs live odds, stats and simulations), Bet Learning (the Betting Academy and Sports University) and Bet Assist (data-driven picks, a bet slip checker, betting calculators and a bet tracker).",
+        a: "Learn the maths of betting, analyse matches with transparent probabilities, and check your slips with calculators and a tracker. We don't take bets and we don't give tips. PunterStat is built on three pillars: Bet Analysis (match probabilities, value vs live odds, stats and simulations), Bet Learning (the Betting Academy and Sports University) and Bet Assist (bet slip checker, betting calculators and a bet tracker).",
       },
       {
         q: "Is PunterStat a bookmaker? Do you give tips?",
-        a: "PunterStat is not a bookmaker — we never take bets, stakes or deposits. Bet Assist does publish data-driven picks: model probabilities for upcoming fixtures, flagged as value when the best available price beats our fair odds. Every pick shows its probability, price, edge and a capped stake suggestion. They are estimates, not guarantees. You must be 18+ to use the betting tools.",
+        a: "No to both. PunterStat is not a bookmaker — we never take bets, stakes or deposits — and we do not give tips or recommend bets. Our tools show transparent model probabilities, bookmaker margins, and illustrative calculator outputs (not advice) so you can understand the maths behind every market. You must be 18+ to use the betting tools.",
       },
       {
         q: "Who is PunterStat for?",
-        a: "Adults (18+) who bet on sport and want to do it with more information and more discipline — from beginners learning what odds mean to experienced bettors who want model probabilities, line shopping and proper record-keeping.",
+        a: "Adults (18+) who want to understand sports and betting markets with more information and discipline — from beginners learning what odds mean to experienced analysts who want transparent model probabilities, slip analysis and proper record-keeping.",
       },
       {
         q: "What is the core philosophy?",
-        a: "Knowledge Before Decision. Analyse the match, understand the maths, then bet with a plan — the right price, the right stake, and an honest record of the results.",
+        a: "Knowledge Before Decision. Learn the maths of betting, analyse matches with transparent probabilities, and keep an honest record of your decisions over time.",
       },
     ],
   },
@@ -41,7 +41,7 @@ const faqSections = [
       },
       {
         q: "What is the Betting Literacy Academy?",
-        a: "The Betting Academy teaches the mathematics behind odds: decimal and fractional formats, implied probability, expected value (EV), variance, Kelly Criterion, and bankroll and risk management. For data-driven picks and staking tools, see Bet Assist. All Academy content is free to access.",
+        a: "The Betting Academy teaches the mathematics behind odds: decimal and fractional formats, implied probability, expected value (EV), variance, Kelly Criterion, and bankroll and risk management. To check slips, run illustrative calculators or track your bets, see Bet Assist. All Academy content is free to access.",
       },
       {
         q: "How does the Simulation Engine work?",

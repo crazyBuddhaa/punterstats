@@ -19,6 +19,28 @@
 
 ### Positioning — Bet Analysis · Bet Learning · Bet Assist
 
+#### ✅ Remove Data-Driven Picks & Reposition as Education, Analysis & Tools Only
+**Date:** 2026-11-09
+
+Removed the "Data-Driven Picks" feature and repositioned PunterStat around Bet Learning, Bet Analysis probabilities, and Bet Assist tools (slip checker, calculators, bet tracker) — with no tips or bet recommendations.
+
+**Deleted:**
+- `app/(main)/bet-assist/picks/page.tsx` and `app/dashboard/picks/page.tsx`
+- `components/bet-assist/picks-board.tsx`
+- `lib/bet-assist/picks.ts`, `lib/bet-assist/picks-server.ts`, `lib/bet-assist/ratings.ts`
+- Orphaned mock UI and data: `components/football/*`, `data/footballIntelligenceData.ts`, `types/football.ts`
+
+**Redirects & Navigation:**
+- `middleware.ts` — permanent `301` redirect from `/bet-assist/picks`, `/bet-assist/picks/*`, `/dashboard/picks`, and `/dashboard/picks/*` to `/bet-assist` (before auth guards)
+- Removed picks links/cards from `app/sitemap.ts`, `components/layout/footer.tsx`, `components/dashboard/sidebar.tsx`, `app/dashboard/page.tsx`, `lib/bet-assist/pillars.ts`, `components/sections/features-grid.tsx`, `app/(main)/bet-analysis/page.tsx`, `app/(main)/bet-assist/page.tsx`, `components/sections/landing-page.tsx`, `app/dashboard/bet-tracker/page.tsx`, and `components/sections/hero.tsx` (CTA updated to "Try the slip checker" → `/bet-assist/slip-checker`)
+
+**Copy & Positioning:**
+- Replaced picks/predictions/tips copy across `app/layout.tsx`, `app/(main)/page.tsx`, `app/(main)/faq/page.tsx`, `app/(main)/pricing/page.tsx`, `app/(main)/about/page.tsx`, `app/(main)/terms/page.tsx`, `app/(main)/spot-the-value/page.tsx`, `app/(main)/match-breakdown/analyzer/page.tsx`, `app/(main)/responsible-gambling/page.tsx`, `components/sections/how-it-works.tsx`, `components/sections/cta-section.tsx`, `lib/email/templates.ts`, and READMEs.
+- Labelled Expected Value and Kelly calculator/slip-checker outputs as "illustrative, not advice".
+- Kept `prediction_records`, migrations, and the calibration engine (`lib/calibration`, `lib/predictions/resolver.ts`) untouched.
+
+---
+
 #### ✅ Restage Site Around Three Pillars + Bet Assist Tools (Migration 053)
 **Date:** 2026-09-28
 

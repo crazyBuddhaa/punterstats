@@ -55,6 +55,17 @@ function getIp(request: NextRequest): string {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // ── Permanent 301 redirects for removed Picks routes (before auth guards) ──
+  if (
+    matchesPrefix(pathname, "/bet-assist/picks") ||
+    matchesPrefix(pathname, "/dashboard/picks")
+  ) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/bet-assist";
+    redirectUrl.search = "";
+    return NextResponse.redirect(redirectUrl, 301);
+  }
+
   // ── Rate limiting ──────────────────────────────────────────────────────────
   const rateLimitedRoute = RATE_LIMITED_API_ROUTES.find((r) =>
     matchesPrefix(pathname, r.prefix)
@@ -141,12 +152,6 @@ export async function middleware(request: NextRequest) {
       dashboardUrl.pathname = "/dashboard";
       dashboardUrl.search = "";
       return NextResponse.redirect(dashboardUrl);
-    }
-
-    if (pathname === "/bet-assist/picks" || pathname.startsWith("/bet-assist/picks/")) {
-      const picksUrl = request.nextUrl.clone();
-      picksUrl.pathname = "/dashboard/picks";
-      return NextResponse.redirect(picksUrl);
     }
 
     if (pathname === "/spot-the-value" || pathname.startsWith("/spot-the-value/")) {

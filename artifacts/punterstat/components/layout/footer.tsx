@@ -16,7 +16,6 @@ const footerLinks = {
     { href: "/blog", label: "Blog" },
   ],
   "Bet Assist": [
-    { href: "/bet-assist/picks", label: "Data-Driven Picks" },
     { href: "/bet-assist/slip-checker", label: "Bet Slip Checker" },
     { href: "/bet-assist/calculators", label: "Calculators" },
     { href: "/dashboard/bet-tracker", label: "Bet Tracker" },
@@ -50,8 +49,8 @@ export function Footer() {
               <span className="text-lg tracking-tight">PunterStat</span>
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/50">
-              Bet analysis, bet learning and bet assist — data-driven tools and
-              courses for smarter, more disciplined betting.
+              Learn the maths of betting, analyse matches with transparent
+              probabilities, and check your slips with calculators and a tracker.
             </p>
             <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-[#7C70FF]">
               Knowledge Before Decision
@@ -92,8 +91,8 @@ export function Footer() {
             </span>
             <span>
               PunterStat provides sports betting analysis, education and tools. We do
-              not take bets or hold customer funds. Picks and probabilities are
-              estimates, not guarantees — only bet what you can afford to lose.{" "}
+              not take bets, hold customer funds or give tips. Probabilities are
+              model estimates, not guarantees — only bet what you can afford to lose.{" "}
               <Link href="/responsible-gambling" className="underline underline-offset-2 hover:text-white">
                 Gamble responsibly
               </Link>

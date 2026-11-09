@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { requireAuth } from "@/lib/auth/helpers";
 import { getJournal } from "@/lib/bet-assist/journal-actions";
 import { BetTracker, type TrackerPrefill } from "@/components/bet-assist/bet-tracker";
@@ -24,11 +23,7 @@ export default async function BetTrackerPage({ searchParams }: { searchParams: P
         <h1 className="text-2xl font-bold text-[#0f172a]">Bet Tracker</h1>
         <p className="mt-1 text-sm text-[#1e293b]/60">
           Log the bets you place and see what&apos;s really working — profit, ROI, strike rate and whether you&apos;re
-          beating the closing line. Private to you. Need a pick?{" "}
-          <Link href="/bet-assist/picks" className="font-medium text-[#3D2DFF] hover:underline">
-            See today&apos;s data-driven picks
-          </Link>
-          .
+          beating the closing line. Private to you.
         </p>
       </div>
       <BetTracker bets={bets} prefill={prefill} />

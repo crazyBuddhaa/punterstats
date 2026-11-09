@@ -1,6 +1,6 @@
 # PunterStat
 
-Bet analysis, bet learning and bet assist platform — [punterstat.site](https://punterstat.site).
+Learn the maths of betting, analyse matches with transparent probabilities, and check your slips with calculators and a tracker. We don't take bets and we don't give tips — [punterstat.site](https://punterstat.site).
 
 This is a small pnpm workspace:
 

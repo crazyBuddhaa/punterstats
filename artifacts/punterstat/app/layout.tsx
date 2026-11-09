@@ -42,12 +42,12 @@ export const metadata: Metadata = {
     template: "%s | PunterStat",
   },
   description:
-    "PunterStat is a data-driven betting platform: match analysis, betting courses, value picks, a bet slip checker, calculators and a bet tracker. Knowledge Before Decision.",
+    "Learn the maths of betting, analyse matches with transparent probabilities, and check your slips with calculators and a tracker. We don't take bets and we don't give tips.",
   keywords: [
     "bet analysis",
-    "betting tips",
-    "football predictions",
-    "value bets",
+    "betting probability",
+    "bookmaker margin",
+    "expected value",
     "bet slip checker",
     "betting calculator",
     "kelly criterion",
@@ -63,14 +63,14 @@ export const metadata: Metadata = {
     url: process.env.NEXT_PUBLIC_APP_URL ?? "https://punterstat.site",
     title: "PunterStat — Bet Analysis, Bet Learning & Bet Assist",
     description:
-      "Knowledge Before Decision. Analyse matches, learn the maths of betting, and get data-driven picks and tools.",
+      "Learn the maths of betting, analyse matches with transparent probabilities, and check your slips with calculators and a tracker. We don't take bets and we don't give tips.",
     siteName: "PunterStat",
   },
   twitter: {
     card: "summary_large_image",
     title: "PunterStat — Bet Analysis, Bet Learning & Bet Assist",
     description:
-      "Knowledge Before Decision. Analyse matches, learn the maths of betting, and get data-driven picks and tools.",
+      "Learn the maths of betting, analyse matches with transparent probabilities, and check your slips with calculators and a tracker. We don't take bets and we don't give tips.",
   },
   robots: { index: true, follow: true },
   other: {

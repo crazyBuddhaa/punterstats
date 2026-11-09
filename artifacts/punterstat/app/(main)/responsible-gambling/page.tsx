@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 const RULES = [
   { t: "Set a bankroll", d: "Decide on an amount you can afford to lose completely, separate from money for bills and savings. Never top it up to chase losses." },
-  { t: "Fix your stake size", d: "Stake a small, fixed percentage of your bankroll (1–2% is common). Our Kelly calculator and picks never suggest more than 2%." },
+  { t: "Fix your stake size", d: "Keep any stake to a small, fixed percentage of a dedicated bankroll (1–2% is a common rule of thumb in bankroll literature)." },
   { t: "Expect losing runs", d: "Even bettors with a real edge lose most bets at longer odds, and runs of 10+ losses are normal. Losing runs are not a sign you are 'due' a win." },
   { t: "Keep records", d: "Log every bet in the Bet Tracker. Honest numbers stop you remembering the wins and forgetting the losses." },
   { t: "Set limits with your bookmaker", d: "Licensed bookmakers offer deposit limits, time-outs and self-exclusion. Set them before you need them." },

@@ -16,13 +16,11 @@ import {
   Bell,
   ChevronRight,
   NotebookPen,
-  Crosshair,
   GraduationCap,
 } from "lucide-react";
 
 const assistItems = [
   { href: "/dashboard/bet-tracker", label: "Bet Tracker", icon: NotebookPen },
-  { href: "/dashboard/picks", label: "Data-Driven Picks", icon: Crosshair },
   { href: "/dashboard/match-analyses", label: "Match Analyses", icon: BarChart2 },
   { href: "/dashboard/calibration", label: "Calibration", icon: Target },
   { href: "/dashboard/simulation-history", label: "Simulation History", icon: FlaskConical },

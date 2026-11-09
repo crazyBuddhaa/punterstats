@@ -51,9 +51,9 @@ export function Hero({ className, isAuthenticated = false }: HeroProps) {
         </h1>
 
         <p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-relaxed text-white/60">
-          PunterStat is your data-driven betting companion. Break down fixtures
-          with model probabilities, learn how odds and value really work, and use
-          smart tools to pick, price, stake and track every bet.
+          Learn the maths of betting, analyse matches with transparent
+          probabilities, and check your slips with calculators and a tracker.
+          We don&apos;t take bets and we don&apos;t give tips.
         </p>
 
         {/* CTAs */}
@@ -70,7 +70,7 @@ export function Hero({ className, isAuthenticated = false }: HeroProps) {
             asChild
             className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
           >
-            <Link href="/bet-assist/picks">See today&apos;s picks</Link>
+            <Link href="/bet-assist/slip-checker">Try the slip checker</Link>
           </Button>
         </div>
 

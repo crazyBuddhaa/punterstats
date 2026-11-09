@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 const FAQ = [
   {
     q: "Is PunterStat a bookmaker?",
-    a: "No. PunterStat gives you analysis, courses, data-driven picks and betting tools, but we never take bets or hold betting funds. Your subscription pays for the platform, not for wagers.",
+    a: "No. Learn the maths of betting, analyse matches with transparent probabilities, and check your slips with calculators and a tracker. We don't take bets, hold betting funds or give tips. Your subscription pays for the platform, not for wagers.",
   },
   {
     q: "What does the Free plan include?",

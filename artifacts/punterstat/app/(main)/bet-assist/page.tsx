@@ -5,20 +5,12 @@ import { ResponsibleGamblingNote, ResponsibleGamblingStrip } from "@/components/
 import { PillarGrid } from "@/components/bet-assist/pillar-grid";
 
 export const metadata: Metadata = {
-  title: "Bet Assist — Picks, Slip Checker, Calculators & Tracker — PunterStat",
+  title: "Bet Assist — Slip Checker, Calculators & Tracker — PunterStat",
   description:
-    "Data-driven football picks with model probabilities, a bet slip checker, Kelly and accumulator calculators, and a personal bet tracker for ROI and bankroll.",
+    "Check your slips with a bet slip checker, run illustrative expected value and Kelly calculators, and log your bets in a personal bet tracker. We don't take bets and we don't give tips.",
 };
 
 const TOOLS = [
-  {
-    href: "/bet-assist/picks",
-    title: "Data-Driven Picks",
-    description:
-      "Model probabilities for upcoming fixtures from bookmaker consensus and team form, with value flags where the best price beats fair odds.",
-    icon: Target,
-    badge: "New",
-  },
   {
     href: "/bet-assist/slip-checker",
     title: "Bet Slip Checker",
@@ -29,7 +21,7 @@ const TOOLS = [
   {
     href: "/bet-assist/calculators",
     title: "Betting Calculators",
-    description: "Kelly stake, expected value, accumulator returns, bookmaker margin, fair odds, odds converter and arbitrage.",
+    description: "Illustrative Kelly and expected value calculators (not advice), accumulator returns, bookmaker margin, fair odds, odds converter and arbitrage.",
     icon: Calculator,
   },
   {
@@ -53,7 +45,7 @@ export default function BetAssistPage() {
         icon={Target}
         eyebrow="Pillar 3"
         title="Bet Assist"
-        description="Tools that sit beside you when you bet: what to back, what it's really worth, how much to stake, and whether your approach is actually working."
+        description="Check your slips with calculators and a tracker: see what a price implies, how much bookmaker margin is built in, and whether your approach holds up over time. We don't take bets and we don't give tips."
         backHref="/"
         backLabel="Home"
       />

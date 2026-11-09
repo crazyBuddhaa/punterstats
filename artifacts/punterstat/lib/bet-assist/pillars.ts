@@ -12,7 +12,6 @@ export interface PillarLink {
 
 export type PillarKey =
   | "matches"
-  | "predictions"
   | "analysis"
   | "learning"
   | "teams-players"
@@ -37,16 +36,6 @@ export const PILLARS: Pillar[] = [
       { href: "/match-breakdown", label: "Match Centre", description: "11-factor analytical breakdown" },
       { href: "/stats/results", label: "Results Browser", description: "Recently completed fixtures" },
       { href: "/stats/head-to-head", label: "Head-to-Head", description: "Historical meeting patterns" },
-    ],
-  },
-  {
-    key: "predictions",
-    label: "Predictions",
-    href: "/bet-assist/picks",
-    tagline: "Probabilistic forecasts with evidence and confidence ratings.",
-    links: [
-      { href: "/bet-assist/picks", label: "Model Predictions", description: "1X2, Goals, Corners, Player Props" },
-      { href: "/spot-the-value", label: "Value Edge Finder", description: "Model probabilities vs market lines" },
     ],
   },
   {
@@ -97,10 +86,10 @@ export const PILLARS: Pillar[] = [
     key: "assist",
     label: "Bet Assist",
     href: "/bet-assist",
-    tagline: "Tools that help you price, stake and track every bet.",
+    tagline: "Tools to check your slips, run calculators and track every bet.",
     links: [
       { href: "/bet-assist/slip-checker", label: "Bet Slip Checker", description: "See what your slip implies" },
-      { href: "/bet-assist/calculators", label: "Betting Calculators", description: "Kelly, accas, margin, arbitrage" },
+      { href: "/bet-assist/calculators", label: "Betting Calculators", description: "Illustrative Kelly, accas, margin, arbitrage" },
       { href: "/dashboard/bet-tracker", label: "Bet Tracker", description: "Log bets, track ROI and bankroll" },
     ],
   },

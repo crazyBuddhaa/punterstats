@@ -190,9 +190,9 @@ export function SlipChecker() {
                 sub={result.evSource === "yours" ? "From your leg probabilities" : "After removing ~5% margin per leg"}
               />
               <Metric
-                label="Expected value"
+                label="Expected value (illustrative)"
                 value={`${result.ev >= 0 ? "+" : ""}${pct(result.ev)}`}
-                sub={`≈ ${result.expectedReturnOnStake.toLocaleString()} per slip on average`}
+                sub={`≈ ${result.expectedReturnOnStake.toLocaleString()} per slip (illustrative, not advice)`}
                 tone={result.ev >= 0 ? "good" : "bad"}
               />
               <Metric label="Margin you're paying" value={pct(result.compoundedMargin)} sub={`${result.legs.length} leg${result.legs.length > 1 ? "s" : ""} compounded`} tone={result.compoundedMargin > 0.15 ? "bad" : undefined} />
@@ -226,7 +226,7 @@ export function SlipChecker() {
                     <th className="pb-2">Leg</th>
                     <th className="pb-2 text-right">Odds</th>
                     <th className="pb-2 text-right">Implied</th>
-                    <th className="pb-2 text-right">Your EV</th>
+                    <th className="pb-2 text-right">EV (illustrative, not advice)</th>
                   </tr>
                 </thead>
                 <tbody className="tabular-nums">

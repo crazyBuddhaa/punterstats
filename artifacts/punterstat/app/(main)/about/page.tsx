@@ -52,7 +52,7 @@ const modules = [
     icon: Search,
     title: "Match Breakdown Engine",
     description:
-      "A six-factor analytical framework covering form, head-to-head record, xG, injury impact, and match stakes. Educational breakdowns, not predictions.",
+      "A six-factor analytical framework covering form, head-to-head record, xG, injury impact, and match stakes. Educational probability breakdowns, not tips.",
     href: "/match-breakdown",
     tag: "Premium",
   },
@@ -63,13 +63,13 @@ const values = [
     icon: ShieldCheck,
     title: "We don't take bets",
     description:
-      "PunterStat is not a bookmaker. We never take stakes or hold your money — we give you analysis, education and tools, and you decide where and whether to bet.",
+      "PunterStat is not a bookmaker and does not give tips. We never take stakes or hold your money — we give you probability analysis, education and tools.",
   },
   {
     icon: Target,
     title: "Data over hype",
     description:
-      "Our picks come from a transparent model, with the probability, the price and the edge shown every time. No guaranteed wins, no 'sure' accumulators.",
+      "Learn the maths of betting, analyse matches with transparent probabilities, and check your slips with calculators and a tracker. No tips, no guaranteed wins, no 'sure' accumulators.",
   },
   {
     icon: Lightbulb,
@@ -284,14 +284,14 @@ export default function AboutPage() {
           <div className="rounded-xl border border-border/50 bg-white p-6 text-center">
             <ShieldCheck className="mx-auto mb-3 h-6 w-6 text-[#3D2DFF]" />
             <h3 className="mb-2 text-sm font-semibold text-[#0f172a]">
-              18+ · Analysis and tools — not a bookmaker
+              18+ · Analysis and tools — not a bookmaker or tipster
             </h3>
             <p className="text-sm leading-relaxed text-[#475569]">
-              PunterStat does not accept bets or deposits. Picks, probabilities
-              and staking suggestions are model estimates, not guarantees, and
-              simulators use virtual currency. Any bet you place with a
-              bookmaker is your own decision — only bet what you can afford to
-              lose, and see our{" "}
+              PunterStat does not accept bets, hold deposits or give tips.
+              Probabilities and calculator outputs are illustrative model
+              estimates, not advice or guarantees, and simulators use virtual
+              currency. Any bet you place with a bookmaker is your own decision
+              — only bet what you can afford to lose, and see our{" "}
               <Link href="/responsible-gambling" className="text-[#3D2DFF] underline underline-offset-2">
                 responsible gambling
               </Link>{" "}

@@ -7,7 +7,7 @@ import { BetCalculators } from "@/components/bet-assist/calculators";
 export const metadata: Metadata = {
   title: "Betting Calculators — Kelly, Accumulator, Margin, Arbitrage — PunterStat",
   description:
-    "Free betting calculators: Kelly criterion stake, expected value, accumulator returns, bookmaker margin and fair odds, odds converter and arbitrage.",
+    "Free educational betting calculators: illustrative Kelly criterion and expected value (not advice), accumulator returns, bookmaker margin and fair odds, odds converter and arbitrage.",
 };
 
 export default function CalculatorsPage() {
@@ -16,7 +16,7 @@ export default function CalculatorsPage() {
       <ToolHero
         icon={Calculator}
         title="Betting Calculators"
-        description="Work out your edge, the right stake, what an accumulator really pays and how much margin the bookmaker is taking."
+        description="Explore the maths of expected value, illustrative Kelly fractions (not advice), what an accumulator really implies and how much margin the bookmaker is taking."
       />
       <ResponsibleGamblingStrip />
       <div className="container mx-auto max-w-5xl space-y-10 px-4 py-10">

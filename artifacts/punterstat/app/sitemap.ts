@@ -18,7 +18,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url("/bet-analysis", 0.9, "weekly"),
     url("/bet-learning", 0.9, "weekly"),
     url("/bet-assist", 0.95, "weekly"),
-    url("/bet-assist/picks", 0.95, "daily"),
     url("/bet-assist/slip-checker", 0.85, "monthly"),
     url("/bet-assist/calculators", 0.85, "monthly"),
     url("/spot-the-value", 0.8, "daily"),

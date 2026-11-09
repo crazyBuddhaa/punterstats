@@ -8,7 +8,7 @@ import { ValueAnalyzer } from "@/components/spot-the-value/value-analyzer";
 export const metadata: Metadata = {
   title: "Spot The Value — PunterStat",
   description:
-    "Compare your model's predicted probabilities against market-implied probabilities for upcoming football fixtures. An educational tool for understanding bookmaker margins and value gaps.",
+    "Compare your model's estimated probabilities against market-implied probabilities for upcoming football fixtures. An educational tool for understanding bookmaker margins and value gaps.",
   openGraph: {
     title: "Spot The Value — PunterStat",
     description:
@@ -86,8 +86,8 @@ export default async function SpotTheValuePage() {
           <div className="flex items-center gap-2 text-xs text-white/50">
             <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-teal-400" />
             <span>
-              18+ only. PunterStat does not take bets. Probability comparisons are estimates, not
-              guarantees — see Bet Assist for model-based picks.
+              18+ only. PunterStat does not take bets and does not give tips. Probability comparisons are
+              illustrative estimates, not guarantees.
             </span>
           </div>
         </div>

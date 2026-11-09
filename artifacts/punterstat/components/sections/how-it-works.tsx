@@ -18,9 +18,9 @@ const steps = [
   {
     number: "03",
     icon: Target,
-    title: "Bet with an assistant",
+    title: "Check with Bet Assist",
     description:
-      "Use data-driven picks, check your slip before you place it, size your stake with Kelly, and track every bet to see your real ROI.",
+      "Check your slip before you place it, explore expected value and Kelly maths with illustrative calculators, and track every bet to see your real ROI.",
   },
 ];
 

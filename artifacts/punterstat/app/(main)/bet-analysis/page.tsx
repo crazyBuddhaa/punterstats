@@ -41,13 +41,6 @@ const ITEMS: PillarItem[] = [
     description: "Every past meeting between two teams, with goals, results and trends.",
     icon: Swords,
   },
-  {
-    href: "/bet-assist/picks",
-    title: "Data-Driven Picks",
-    description: "Our model's probabilities for upcoming fixtures and where the best price beats them.",
-    icon: BarChart3,
-    badge: "New",
-  },
 ];
 
 export default function BetAnalysisPage() {

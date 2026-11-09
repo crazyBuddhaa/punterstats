@@ -156,13 +156,13 @@ export function welcomeEmail(displayName: string): EmailTemplate {
       <li>Take structured courses in Sports University</li>
       <li>Learn probability &amp; odds in Betting Academy</li>
       <li>Analyse matches with the Breakdown Engine and Spot The Value</li>
-      <li>Get data-driven picks, check slips and size stakes in Bet Assist</li>
+      <li>Check your slips and run illustrative calculators in Bet Assist</li>
       <li>Log every bet in the Bet Tracker to see your real ROI</li>
     </ul>
     ${noticeBox(`<strong style="color:${BRAND.dark};">Bet responsibly:</strong>
-      PunterStat does not take bets. Picks and probabilities are estimates, not
-      guarantees — set a budget, never chase losses, and only bet what you can
-      afford to lose.`)}
+      PunterStat does not take bets and does not give tips. Probabilities and
+      calculator outputs are illustrative estimates, not guarantees — set a
+      budget, never chase losses, and only bet what you can afford to lose.`)}
   `);
 
   return {
@@ -182,12 +182,12 @@ export function welcomeEmail(displayName: string): EmailTemplate {
       "• Structured courses in Sports University",
       "• Probability & odds in Betting Academy",
       "• Match analysis with the Breakdown Engine and Spot The Value",
-      "• Data-driven picks, slip checker and calculators in Bet Assist",
+      "• Slip checker, calculators and bet tracker in Bet Assist",
       "• Track every bet and your ROI in the Bet Tracker",
       "",
       "— The PunterStat Team",
       "",
-      "18+. PunterStat does not take bets. Please gamble responsibly.",
+      "18+. PunterStat does not take bets and does not give tips. Please gamble responsibly.",
     ].join("\n"),
   };
 }

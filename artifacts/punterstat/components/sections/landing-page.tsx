@@ -54,7 +54,7 @@ const pillars = [
     eyebrow: "BET ASSIST",
     title: "Make the process repeatable.",
     description:
-      "Scan picks, check slips, size stakes and keep a record of what actually works for you.",
+      "Check slips, run calculators and keep an honest record of what actually works for you.",
     href: "/bet-assist",
     accent: "text-[#3D2DFF]",
   },
@@ -85,9 +85,9 @@ export function LandingPage({ courses, lessons, isAuthenticated }: LandingPagePr
             </h1>
 
             <p className="mt-8 max-w-xl text-base leading-7 text-white/65 sm:text-lg">
-              PunterStat brings match analysis, football education and practical betting
-              tools into one focused workflow. Less noise. Better questions. Smarter
-              decisions.
+              Learn the maths of betting, analyse matches with transparent probabilities,
+              and check your slips with calculators and a tracker. We don&apos;t take bets
+              and we don&apos;t give tips.
             </p>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
@@ -99,7 +99,7 @@ export function LandingPage({ courses, lessons, isAuthenticated }: LandingPagePr
                 <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
               </Link>
               <Link
-                href="/bet-assist/picks"
+                href="/bet-assist/slip-checker"
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 px-6 py-3.5 text-sm font-bold text-white transition hover:border-[#6B5FFF]/70 hover:text-[#7C70FF]"
               >
                 Explore the tools
@@ -211,7 +211,7 @@ export function LandingPage({ courses, lessons, isAuthenticated }: LandingPagePr
           </div>
           <div className="max-w-xl lg:justify-self-end">
             <p className="text-lg leading-8 text-[#080c1d]/60">
-              No hot takes. No magic picks. PunterStat gives you a clean way to
+              No hot takes. No tips. PunterStat gives you a clean way to
               understand a fixture, interrogate a price and keep score over time.
             </p>
             <Link href="/match-breakdown" className="group mt-6 inline-flex items-center gap-2 text-sm font-black text-[#3D2DFF]">

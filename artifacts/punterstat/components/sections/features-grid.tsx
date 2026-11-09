@@ -6,7 +6,6 @@ import {
   GraduationCap,
   Shield,
   Target,
-  TrendingUp,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,7 +13,6 @@ import { PILLARS, type PillarKey } from "@/lib/bet-assist/pillars";
 
 const ICONS: Record<PillarKey, React.ComponentType<{ className?: string }>> = {
   matches: Shield,
-  predictions: TrendingUp,
   analysis: BarChart3,
   learning: GraduationCap,
   "teams-players": Users,
@@ -36,10 +34,10 @@ export function FeaturesGrid({ className }: FeaturesGridProps) {
             Everything in one place
           </p>
           <h2 className="text-3xl font-bold tracking-tight text-[#0f172a] sm:text-4xl">
-            Discover. Analyse. Predict. Learn.
+            Discover. Analyse. Learn. Assist.
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-[#1e293b]/60">
-            Comprehensive football intelligence, statistical modeling, prediction analysis and interactive analytics education.
+            Learn the maths of betting, analyse matches with transparent probabilities, and check your slips with calculators and a tracker.
           </p>
         </div>
 

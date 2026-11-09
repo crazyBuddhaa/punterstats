@@ -217,11 +217,11 @@ function KellyCalc() {
     <Panel
       explainer={
         <>
-          <p className="font-semibold text-[#0f172a]">Kelly staking</p>
+          <p className="font-semibold text-[#0f172a]">Kelly maths (illustrative, not advice)</p>
           <p className="mt-1">
-            Kelly sizes a bet in proportion to your edge. Full Kelly is very aggressive and assumes your probability
-            is exactly right — most professionals use <strong>quarter or half Kelly</strong> to survive estimation
-            error. No edge means no bet.
+            The Kelly formula calculates a theoretical bankroll fraction proportional to an estimated edge. Full Kelly
+            is aggressive and assumes your probability is exact — in theory, <strong>quarter or half Kelly</strong>{" "}
+            reduces variance from estimation error. All outputs are illustrative, not advice.
           </p>
         </>
       }
@@ -251,19 +251,24 @@ function KellyCalc() {
         ))}
       </div>
       {valid && k ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Edge (EV per unit)" value={`${ev >= 0 ? "+" : ""}${pct(ev)}`} tone={ev > 0 ? "good" : "bad"} />
-          <Stat label="Break-even chance" value={pct(1 / o)} />
-          <Stat label="Stake % of bankroll" value={pct(k.fraction, 2)} />
-          <Stat label="Suggested stake" value={k.stake.toLocaleString()} tone={k.stake > 0 ? "good" : "neutral"} />
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat label="Edge (EV, illustrative)" value={`${ev >= 0 ? "+" : ""}${pct(ev)}`} tone={ev > 0 ? "good" : "bad"} />
+            <Stat label="Break-even chance" value={pct(1 / o)} />
+            <Stat label="Illustrative Kelly %" value={pct(k.fraction, 2)} />
+            <Stat label="Illustrative Kelly (not advice)" value={k.stake.toLocaleString()} tone={k.stake > 0 ? "good" : "neutral"} />
+          </div>
+          <p className="text-[11px] text-[#1e293b]/50">
+            Educational formula output — illustrative, not advice.
+          </p>
         </div>
       ) : (
         <p className="text-sm text-rose-600">Enter odds &gt; 1, a probability between 0 and 100, and a bankroll.</p>
       )}
       {valid && ev <= 0 && (
         <p className="rounded-lg bg-slate-100 p-3 text-sm text-[#1e293b]/70">
-          At these numbers there is no edge — Kelly says don&apos;t bet. You&apos;d need at least {pct(1 / o)} win
-          probability just to break even.
+          At these numbers expected value is non-positive, so the Kelly formula outputs 0 (illustrative, not advice).
+          A win probability of at least {pct(1 / o)} is needed to break even at these odds.
         </p>
       )}
     </Panel>
@@ -344,8 +349,8 @@ function ArbCalc() {
           <p className="font-semibold text-[#0f172a]">Arbitrage</p>
           <p className="mt-1">
             When the <strong>best</strong> price for every outcome — usually from different bookmakers — adds up to
-            less than 100% implied, backing all outcomes locks in a profit. Arbs are rare, small and short-lived, and
-            bookmakers may limit accounts that take them.
+            less than 100% implied, the combined book is below 100%. Arbs are rare, small and short-lived, and
+            bookmakers may limit accounts that take them. Outputs are illustrative, not advice.
           </p>
         </>
       }
@@ -365,30 +370,30 @@ function ArbCalc() {
           {odds.length === 3 ? "Switch to 2-way market" : "Switch to 3-way market"}
         </Button>
       </div>
-      <Field label="Total stake" value={total} onChange={(e) => setTotal(e.target.value)} />
+      <Field label="Total amount (illustrative)" value={total} onChange={(e) => setTotal(e.target.value)} />
       {res ? (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Stat label="Combined implied" value={pct(res.book, 2)} tone={res.isArb ? "good" : "bad"} />
-            <Stat label="Guaranteed return" value={`${res.profitPct >= 0 ? "+" : ""}${pct(res.profitPct, 2)}`} tone={res.isArb ? "good" : "bad"} />
+            <Stat label="Theoretical margin" value={`${res.profitPct >= 0 ? "+" : ""}${pct(res.profitPct, 2)}`} tone={res.isArb ? "good" : "bad"} />
             <Stat label="Payout (any result)" value={res.payout.toLocaleString()} />
           </div>
           <div className="grid gap-2 sm:grid-cols-3">
             {res.stakes.map((s, i) => (
               <p key={i} className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
-                Stake on outcome {i + 1}: <strong className="tabular-nums">{s.toLocaleString()}</strong>
+                Illustrative split {i + 1}: <strong className="tabular-nums">{s.toLocaleString()}</strong>
               </p>
             ))}
           </div>
           {!res.isArb && (
             <p className="text-sm text-[#1e293b]/60">
-              No arbitrage — these prices sum to more than 100%. Staking this way would lose{" "}
+              No arbitrage — these prices sum to more than 100%. Splitting across all outcomes would lose{" "}
               {pct(-res.profitPct, 2)} whatever happens.
             </p>
           )}
         </>
       ) : (
-        <p className="text-sm text-rose-600">Enter odds greater than 1.00 and a stake.</p>
+        <p className="text-sm text-rose-600">Enter odds greater than 1.00 and an amount.</p>
       )}
     </Panel>
   );
@@ -398,7 +403,7 @@ export function BetCalculators() {
   return (
     <Tabs defaultValue="kelly" className="w-full">
       <TabsList className="mb-6 flex h-auto flex-wrap justify-start gap-1">
-        <TabsTrigger value="kelly">EV &amp; Kelly stake</TabsTrigger>
+        <TabsTrigger value="kelly">EV &amp; Kelly (illustrative)</TabsTrigger>
         <TabsTrigger value="acca">Accumulator</TabsTrigger>
         <TabsTrigger value="margin">Margin &amp; fair odds</TabsTrigger>
         <TabsTrigger value="convert">Odds converter</TabsTrigger>

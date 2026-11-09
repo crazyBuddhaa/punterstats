@@ -37,8 +37,8 @@ export default async function MatchAnalyzerPage() {
           <div className="flex items-center gap-2 text-xs text-white/50">
             <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-teal-400" />
             <span>
-              18+ only. Probabilities are model estimates, not guarantees. Compare them with live odds in
-              Spot The Value, or see Bet Assist for data-driven picks.
+              18+ only. Probabilities are model estimates, not guarantees or tips. Compare them with live odds in
+              Spot The Value, or check your slips in Bet Assist.
             </span>
           </div>
         </div>

@@ -17,6 +17,7 @@ import {
   ChevronRight,
   NotebookPen,
   Crosshair,
+  GraduationCap,
 } from "lucide-react";
 
 const assistItems = [
@@ -31,6 +32,7 @@ const assistItems = [
 const topItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/continue-learning", label: "Continue Learning", icon: BookOpen },
+  { href: "/sports-university", label: "Sports University", icon: GraduationCap },
   { href: "/dashboard/bookmarks", label: "Saved Lessons", icon: Bookmark },
   { href: "/dashboard/progress", label: "Learning Progress", icon: TrendingUp },
 ];

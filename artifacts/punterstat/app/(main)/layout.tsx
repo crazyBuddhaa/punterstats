@@ -1,7 +1,87 @@
+// Dynamic layout: checks user session to maintain dashboard workspace for signed-in users.
+export const dynamic = "force-dynamic";
+
+import Link from "next/link";
+import Image from "next/image";
+import { getUserProfile } from "@/lib/auth/helpers";
+import { getDashboardStats } from "@/lib/dashboard/queries";
+import { DashboardSidebar, DashboardMobileNav } from "@/components/dashboard/sidebar";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
+import { signOut } from "@/lib/auth/actions";
+import { LayoutDashboard, LogOut } from "lucide-react";
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+export default async function MainLayout({ children }: { children: React.ReactNode }) {
+  const profile = await getUserProfile();
+
+  if (profile) {
+    let unreadCount = 0;
+    try {
+      const stats = await getDashboardStats(profile.userId);
+      unreadCount = stats.unreadNotifications;
+    } catch {
+      // Gracefully continue with 0 if stats fail to load
+    }
+
+    return (
+      <div className="min-h-screen bg-[#f8fafc]">
+        {/* Top bar — consistent dashboard header */}
+        <header className="sticky top-0 z-40 border-b border-border bg-white">
+          <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
+            <Link href="/dashboard" className="flex items-center gap-2 font-bold text-[#0f172a]">
+              <Image src="/logo.png" alt="PunterStat" width={28} height={28} className="rounded-md" />
+              <span className="text-base tracking-tight">PunterStat</span>
+            </Link>
+
+            <div className="flex items-center gap-3">
+              <Link
+                href="/dashboard/profile"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white hover:bg-teal-700 transition-colors"
+                title={profile.displayName ?? "Profile"}
+              >
+                {(profile.displayName ?? "U").slice(0, 1).toUpperCase()}
+              </Link>
+
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-[#1e293b]/50 transition hover:bg-slate-100 hover:text-[#0f172a]"
+                  title="Sign out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </form>
+            </div>
+          </div>
+        </header>
+
+        {/* Mobile nav strip — horizontal scroll above content */}
+        <div className="sticky top-14 z-30 border-b border-border bg-white lg:hidden">
+          <div className="mx-auto max-w-7xl overflow-x-auto scrollbar-hide px-4 sm:px-6">
+            <DashboardMobileNav unreadCount={unreadCount} />
+          </div>
+        </div>
+
+        <div className="mx-auto flex max-w-7xl gap-8 px-4 py-6 sm:px-6">
+          {/* Sidebar — desktop only */}
+          <aside className="hidden w-56 shrink-0 lg:block">
+            <div className="sticky top-20 rounded-2xl border border-border bg-white p-3 shadow-sm">
+              <div className="mb-3 flex items-center gap-2 border-b border-border pb-3">
+                <LayoutDashboard className="h-4 w-4 text-[#3D2DFF]" />
+                <span className="text-sm font-semibold text-[#0f172a]">Dashboard</span>
+              </div>
+              <DashboardSidebar unreadCount={unreadCount} />
+            </div>
+          </aside>
+
+          {/* Main content inside dashboard workspace */}
+          <main className="min-w-0 w-full lg:flex-1">{children}</main>
+        </div>
+      </div>
+    );
+  }
+
+  // When not signed in: public marketing layout with Navbar & Footer
   return (
     <>
       <Navbar />

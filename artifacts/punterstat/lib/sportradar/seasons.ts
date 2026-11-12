@@ -54,7 +54,6 @@ async function fetchAllPages<T extends { summaries?: unknown[]; schedules?: unkn
   let first: T | null = null;
   let items: unknown[] = [];
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const page = await fetcher(offset);
     if (!first) first = page;

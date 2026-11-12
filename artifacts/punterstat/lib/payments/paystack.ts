@@ -139,11 +139,17 @@ export async function verifyPaystackTransaction(
 // ── Webhook signature verification ────────────────────────────────────────
 
 export function verifyPaystackWebhook(rawBody: string, signature: string): boolean {
+  if (!signature) return false;
   const hash = crypto
     .createHmac("sha512", getSecretKey())
     .update(rawBody)
     .digest("hex");
-  return hash === signature;
+  const expectedBuf = Buffer.from(hash, "utf8");
+  const receivedBuf = Buffer.from(signature, "utf8");
+  if (expectedBuf.length !== receivedBuf.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(expectedBuf, receivedBuf);
 }
 
 // ── Webhook event types ────────────────────────────────────────────────────
@@ -154,6 +160,7 @@ export interface PaystackWebhookEvent<T = unknown> {
 }
 
 export interface PaystackSubscriptionData {
+  id?: number | string;
   subscription_code: string;
   status: "active" | "non-renewing" | "cancelled" | "completed" | "attention";
   plan: { plan_code: string; name: string; interval: string };
@@ -164,6 +171,7 @@ export interface PaystackSubscriptionData {
 }
 
 export interface PaystackChargeData {
+  id?: number | string;
   reference: string;
   amount: number;
   currency: string;

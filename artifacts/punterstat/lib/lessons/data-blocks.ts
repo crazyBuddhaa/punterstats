@@ -147,12 +147,6 @@ export async function getBlockStat({ factor, league }: BlockParams): Promise<Blo
         if (!total) return null;
 
         if (total > FETCH_LIMIT) {
-          // Dataset too large for in-app aggregation — convert to a Postgres
-          // aggregate function (RPC) when this warning appears in production logs.
-          console.warn(
-            `[data-blocks] ${factor}: ${total} rows exceeds fetch limit ${FETCH_LIMIT}; ` +
-              `returning null to avoid inaccurate stat. Migrate to a DB-side aggregate.`,
-          );
           return null;
         }
 
@@ -169,10 +163,6 @@ export async function getBlockStat({ factor, league }: BlockParams): Promise<Blo
 
         // Sanity check: detect unexpected row-count discrepancy
         if (data.length < total) {
-          console.warn(
-            `[data-blocks] ${factor}: expected ${total} rows but received ${data.length}; ` +
-              `returning null to avoid inaccurate stat.`,
-          );
           return null;
         }
 

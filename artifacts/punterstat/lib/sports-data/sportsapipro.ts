@@ -172,7 +172,7 @@ async function resolveSeasonId(tournamentId: number, apiKey: string): Promise<nu
 
     return current.id;
   } catch (err) {
-    console.warn(`[sports-data/sportsapipro] season resolution failed for tournament ${tournamentId}:`, err);
+    console.error(`[sports-data/sportsapipro] season resolution failed for tournament ${tournamentId}:`, err);
     return cached?.season_id ?? null;
   }
 }
@@ -200,7 +200,7 @@ async function fetchLeagueUpcoming(
     if (!json.success || !json.data?.events) return [];
     return json.data.events;
   } catch (err) {
-    console.warn(`[sports-data/sportsapipro] events fetch failed for ${league}:`, err);
+    console.error(`[sports-data/sportsapipro] events fetch failed for ${league}:`, err);
     return [];
   }
 }
@@ -231,9 +231,6 @@ export async function getSportsApiProFixtures(options?: {
 
   const apiKey = process.env.SPORTSAPIPRO_API_KEY;
   if (!apiKey) {
-    console.warn(
-      "[sports-data/sportsapipro] SPORTSAPIPRO_API_KEY is not set — cannot fetch fixtures."
-    );
     await releaseFixturesLock(SOURCE);
     return { success: false, error: "Match data is not configured yet" };
   }

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { CourseCategory, Course, Lesson, LessonProgress, Bookmark } from "@/types";
+import type { CourseCategory, Course, Lesson, LessonProgress } from "@/types";
 
 // ── Mappers ────────────────────────────────────────────────
 
@@ -56,15 +56,6 @@ function mapProgress(row: Record<string, unknown>): LessonProgress {
     completed: row.completed as boolean,
     completedAt: row.completed_at as string | null,
     progressPct: row.progress_pct as number,
-  };
-}
-
-function mapBookmark(row: Record<string, unknown>): Bookmark {
-  return {
-    id: row.id as string,
-    userId: row.user_id as string,
-    lessonId: row.lesson_id as string,
-    createdAt: row.created_at as string,
   };
 }
 

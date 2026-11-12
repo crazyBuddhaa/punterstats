@@ -22,7 +22,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth/helpers";
+import { requireAdminApi } from "@/lib/auth/helpers";
 import { isR2Configured } from "@/lib/r2/client";
 import { isKaggleConfigured, downloadInternationalDataset } from "@/lib/r2/kaggle";
 import { putObject, getObject } from "@/lib/r2/dataset";
@@ -35,7 +35,8 @@ const R2_SHOOTOUTS   = "international/shootouts.csv";
 const R2_META        = "international/meta.json";
 
 export async function POST(req: NextRequest) {
-  await requireAdmin();
+  const auth = await requireAdminApi();
+  if (!auth.authorized) return auth.response;
 
   if (!isR2Configured()) {
     return NextResponse.json(
@@ -134,7 +135,8 @@ export async function POST(req: NextRequest) {
 
 /** GET — check R2 archive status without triggering a download */
 export async function GET() {
-  await requireAdmin();
+  const auth = await requireAdminApi();
+  if (!auth.authorized) return auth.response;
 
   if (!isR2Configured()) {
     return NextResponse.json({ success: false, error: "R2 not configured." }, { status: 503 });

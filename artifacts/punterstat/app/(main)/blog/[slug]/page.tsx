@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Calendar, ChevronLeft, ArrowRight } from "lucide-react";
+import { Calendar, ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PostCard } from "@/components/blog/post-card";
 import { getPostBySlug, getRelatedPosts, getAllPostSlugs } from "@/lib/blog/queries";
+import { sanitizeContentHtml } from "@/lib/sanitize-html";
 
 // ISR: revalidate each blog post page every hour.
 // When an admin updates a post, the stale page is replaced on next request.
@@ -42,6 +43,17 @@ function formatDate(iso: string | null): string {
 }
 
 function ContentRenderer({ content }: { content: string }) {
+  const trimmedContent = content.trim();
+  if (trimmedContent.startsWith("<") || /<\/(p|h[1-6]|ul|ol|li|table|blockquote|div|strong|em)>/i.test(trimmedContent)) {
+    const safeHtml = sanitizeContentHtml(trimmedContent);
+    return (
+      <div
+        className="prose max-w-none space-y-5 text-[#1e293b]"
+        dangerouslySetInnerHTML={{ __html: safeHtml }}
+      />
+    );
+  }
+
   const blocks = content.split(/\n{2,}/);
   return (
     <div className="space-y-5 text-[#1e293b]">

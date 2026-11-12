@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "pnpm --filter punterstat run dev",
     "build": "pnpm --filter punterstat run build",
+    "lint": "pnpm --filter punterstat run lint",
+    "test": "pnpm --filter punterstat run test",
     "typecheck": "pnpm -r --if-present run typecheck"
   },
   "devDependencies": {

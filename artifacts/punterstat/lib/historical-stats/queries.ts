@@ -97,9 +97,11 @@ export async function getH2H(
     }
 
     if (m.result === "H") {
-      t1IsHome ? team1Wins++ : team2Wins++;
+      if (t1IsHome) team1Wins++;
+      else team2Wins++;
     } else if (m.result === "A") {
-      t1IsHome ? team2Wins++ : team1Wins++;
+      if (t1IsHome) team2Wins++;
+      else team1Wins++;
     } else if (m.result === "D") {
       draws++;
     }

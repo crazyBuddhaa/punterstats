@@ -41,6 +41,8 @@ export interface JournalBet {
   cashoutAmount: number | null;
   notes: string | null;
   settledAt: string | null;
+  /** Number of legs in the bet (1 = single, >=2 = accumulator, >=4 = long accumulator). Defaults to 1 when omitted. */
+  legCount?: number;
 }
 
 /** Total amount returned to the bettor (stake included) for a settled bet. */

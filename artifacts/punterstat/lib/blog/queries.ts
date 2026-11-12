@@ -76,6 +76,9 @@ export async function getAllTags(): Promise<string[]> {
 export async function getAllPostSlugs(): Promise<string[]> {
   // Uses admin client (no cookies) because this is called from generateStaticParams
   // which runs at build time outside any request scope.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return [];
+  }
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("blog_posts")

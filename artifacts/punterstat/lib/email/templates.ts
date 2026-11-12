@@ -39,7 +39,8 @@ function appUrl(): string {
 }
 
 // ── Layout shell ─────────────────────────────────────────────
-function shell(innerHtml: string): string {
+function shell(innerHtml: string, unsubscribeUrl?: string): string {
+  const unsubHref = unsubscribeUrl ?? `${appUrl()}/unsubscribe`;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -94,7 +95,7 @@ function shell(innerHtml: string): string {
               &copy; ${year} PunterStat &mdash; 18+. We do not take bets.
               Please gamble responsibly.
               &nbsp;&middot;&nbsp;
-              <a href="${appUrl()}/unsubscribe"
+              <a href="${unsubHref}"
                  style="color:${BRAND.muted};text-decoration:underline;">Unsubscribe</a>
             </p>
           </td>
@@ -330,3 +331,145 @@ export function magicLinkEmail(magicUrl: string): EmailTemplate {
     ].join("\n"),
   };
 }
+
+// ─────────────────────────────────────────────────────────────
+// 5. Weekly Betting Report Card ("Your week in numbers")
+// ─────────────────────────────────────────────────────────────
+export interface WeeklyReportEmailInput {
+  displayName: string;
+  /** Settled non-void bets in the last 7 days. */
+  settledLast7: number;
+  /** ROI in the last 7 days as a fraction (e.g. -0.042 for -4.2%). */
+  roiLast7: number;
+  /** Net P/L in the last 7 days. */
+  profitLast7: number;
+  /** Strike rate in the last 7 days as a fraction. */
+  strikeRateLast7: number;
+  /** Settled non-void bets in the previous 7 days (days 8–14). */
+  settledPrev7: number;
+  /** ROI in the previous 7 days as a fraction. */
+  roiPrev7: number;
+  /** Optional top leak detected on the user's journal. */
+  topLeak?: {
+    message: string;
+    lessonTitle: string;
+    lessonHref: string;
+  } | null;
+  unsubscribeToken: string;
+}
+
+export function weeklyReportEmail(input: WeeklyReportEmailInput): EmailTemplate {
+  const name = escHtml(input.displayName || "there");
+  const url = appUrl();
+  const unsubUrl = `${url}/unsubscribe/${encodeURIComponent(input.unsubscribeToken)}`;
+  const reportCardUrl = `${url}/dashboard/report-card`;
+
+  const fmtPct = (v: number) => `${v >= 0 ? "+" : ""}${(v * 100).toFixed(1)}%`;
+  const roiStr = fmtPct(input.roiLast7);
+  const strikeStr = `${(input.strikeRateLast7 * 100).toFixed(1)}%`;
+  const profitStr = `${input.profitLast7 >= 0 ? "+" : ""}${input.profitLast7.toFixed(2)}`;
+
+  let headlineChange = `You settled ${input.settledLast7} bet${input.settledLast7 === 1 ? "" : "s"} in the last 7 days (${roiStr} ROI, ${strikeStr} strike rate).`;
+  if (input.settledPrev7 > 0) {
+    const roiDeltaPts = (input.roiLast7 - input.roiPrev7) * 100;
+    const deltaStr = `${roiDeltaPts >= 0 ? "+" : ""}${roiDeltaPts.toFixed(1)} pp`;
+    headlineChange += ` Compared with the prior 7 days (${input.settledPrev7} settled at ${fmtPct(input.roiPrev7)} ROI), your weekly ROI shifted by ${deltaStr}.`;
+  } else {
+    headlineChange += " You had no settled bets in the prior 7-day window for week-over-week comparison.";
+  }
+
+  const leakSectionHtml = input.topLeak
+    ? `<div style="margin:0 0 24px;padding:16px;border-radius:10px;border:1px solid ${BRAND.border};background:${BRAND.surface};">
+         <p style="margin:0 0 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:${BRAND.dark};">
+           Top leak to review
+         </p>
+         <p style="margin:0 0 10px;font-size:13px;color:${BRAND.body};line-height:1.5;">
+           ${escHtml(input.topLeak.message)}
+         </p>
+         <a href="${url}${escHtml(input.topLeak.lessonHref)}"
+            style="font-size:13px;font-weight:600;color:${BRAND.accent};text-decoration:underline;">
+           Read lesson: ${escHtml(input.topLeak.lessonTitle)} &rarr;
+         </a>
+       </div>`
+    : `<div style="margin:0 0 24px;padding:16px;border-radius:10px;border:1px solid ${BRAND.border};background:${BRAND.surface};">
+         <p style="margin:0 0 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:${BRAND.dark};">
+           Recommended lesson
+         </p>
+         <p style="margin:0 0 10px;font-size:13px;color:${BRAND.body};line-height:1.5;">
+           No segment leaks were flagged above the 15-bet threshold yet. Keep logging kick-off closing odds to measure price quality.
+         </p>
+         <a href="${url}/betting-academy/market-dynamics/sharp-vs-recreational-money/the-closing-line-and-why-it-matters"
+            style="font-size:13px;font-weight:600;color:${BRAND.accent};text-decoration:underline;">
+           Read lesson: The Closing Line &amp; Why It Matters &rarr;
+         </a>
+       </div>`;
+
+  const html = shell(
+    `
+    <h1 style="margin:0 0 10px;font-size:22px;font-weight:700;color:${BRAND.dark};">
+      Your week in numbers, ${name}
+    </h1>
+    <p style="margin:0 0 20px;font-size:14px;color:${BRAND.body};line-height:1.6;">
+      ${escHtml(headlineChange)}
+    </p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr>
+        <td style="padding:12px;border:1px solid ${BRAND.border};border-radius:10px;text-align:center;width:33%;">
+          <p style="margin:0;font-size:11px;color:${BRAND.muted};">7-Day Settled</p>
+          <p style="margin:4px 0 0;font-size:18px;font-weight:700;color:${BRAND.dark};">${input.settledLast7}</p>
+        </td>
+        <td style="width:8px;"></td>
+        <td style="padding:12px;border:1px solid ${BRAND.border};border-radius:10px;text-align:center;width:33%;">
+          <p style="margin:0;font-size:11px;color:${BRAND.muted};">7-Day ROI</p>
+          <p style="margin:4px 0 0;font-size:18px;font-weight:700;color:${BRAND.dark};">${roiStr}</p>
+        </td>
+        <td style="width:8px;"></td>
+        <td style="padding:12px;border:1px solid ${BRAND.border};border-radius:10px;text-align:center;width:33%;">
+          <p style="margin:0;font-size:11px;color:${BRAND.muted};">7-Day Net P/L</p>
+          <p style="margin:4px 0 0;font-size:18px;font-weight:700;color:${BRAND.dark};">${profitStr}</p>
+        </td>
+      </tr>
+    </table>
+
+    ${leakSectionHtml}
+
+    ${ctaButton("Open your Report Card →", reportCardUrl)}
+
+    ${noticeBox(`<strong style="color:${BRAND.dark};">Bet with a plan, not a feeling:</strong>
+      Set a bankroll you can afford to lose and a stake size before you start. Even a genuine edge loses often — losing runs of 10+ bets are normal. Never chase losses, and take breaks. If betting stops being fun, stop.
+      <a href="${url}/responsible-gambling" style="color:${BRAND.dark};text-decoration:underline;">Responsible gambling support</a>.`)}
+
+    <p style="margin:18px 0 0;font-size:11px;color:${BRAND.muted};">
+      Don&apos;t want weekly report card emails?
+      <a href="${unsubUrl}" style="color:${BRAND.muted};text-decoration:underline;">One-click unsubscribe</a>.
+    </p>
+    `,
+    unsubUrl,
+  );
+
+  const leakText = input.topLeak
+    ? `Top leak: ${input.topLeak.message}\nLesson: ${input.topLeak.lessonTitle} (${url}${input.topLeak.lessonHref})`
+    : `Lesson: The Closing Line & Why It Matters (${url}/betting-academy/market-dynamics/sharp-vs-recreational-money/the-closing-line-and-why-it-matters)`;
+
+  return {
+    subject: "Your week in numbers — PunterStat Betting Report Card",
+    html,
+    text: [
+      `Your week in numbers, ${input.displayName || "there"}`,
+      "",
+      headlineChange,
+      "",
+      `7-day settled: ${input.settledLast7} | 7-day ROI: ${roiStr} | 7-day Net P/L: ${profitStr}`,
+      "",
+      leakText,
+      "",
+      `Open your Report Card: ${reportCardUrl}`,
+      "",
+      "Bet with a plan, not a feeling: Set a bankroll you can afford to lose and a stake size before you start. Never chase losses, and take breaks. If betting stops being fun, stop.",
+      "",
+      `Unsubscribe: ${unsubUrl}`,
+    ].join("\n"),
+  };
+}
+

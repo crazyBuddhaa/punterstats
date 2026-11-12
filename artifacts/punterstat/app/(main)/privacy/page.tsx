@@ -35,14 +35,17 @@ export default function PrivacyPage() {
           <p><strong>Account information:</strong> When you register, we collect your name and email address.</p>
           <p><strong>Profile information:</strong> You may optionally add a display name, bio, and profile photo.</p>
           <p><strong>Usage data:</strong> We collect information about how you interact with the Platform — pages visited, courses started, lessons completed, and simulation sessions — to improve your learning experience.</p>
-          <p><strong>Device & log data:</strong> We automatically collect IP address, browser type, device type, and referral URLs when you access the Platform.</p>
+          <p><strong>Bet journal &amp; Report Card data:</strong> When you voluntarily log bets in the Bet Tracker or Betting Report Card, we store the event, market, selection, bookmaker name, decimal odds, stake, optional probability estimate, closing odds, settlement outcome, and notes in your private journal. This data is isolated to your account via database row-level security and is used solely to compute your personal analytics (such as ROI confidence intervals, closing-line value, calibration, and leak detection).</p>
+          <p><strong>Device &amp; log data:</strong> We automatically collect IP address, browser type, device type, and referral URLs when you access the Platform.</p>
           <p><strong>Payment data:</strong> If you subscribe to a paid plan, payment processing is handled by a third-party provider. We store only your subscription plan, status, and a payment reference — never your full card details.</p>
 
           <h2>2. How We Use Your Information</h2>
           <ul>
             <li>To create and manage your account.</li>
             <li>To personalise your learning experience and track your progress.</li>
+            <li>To compute your personal Betting Report Card and Bet Tracker statistics.</li>
             <li>To send you transactional emails (account confirmation, password reset).</li>
+            <li>To send your weekly &ldquo;Your week in numbers&rdquo; Betting Report Card summary email if you have logged at least one bet in the past 14 days and have weekly reports enabled — you can turn this off at any time in <Link href="/dashboard/profile">Profile Settings</Link> or via the one-click unsubscribe link in the email.</li>
             <li>To send educational updates and product news — you can opt out at any time.</li>
             <li>To detect, prevent, and address technical issues and abuse.</li>
             <li>To comply with legal obligations.</li>
@@ -59,19 +62,22 @@ export default function PrivacyPage() {
           <h2>4. Data Sharing</h2>
           <p>We do not sell your personal data. We share data only:</p>
           <ul>
-            <li><strong>With service providers:</strong> Supabase (database & auth), Cloudinary (media hosting), Resend (transactional email). Each is bound by appropriate data processing agreements.</li>
+            <li><strong>With service providers:</strong> Supabase (database &amp; auth), Cloudinary (media hosting), Resend (transactional email). Each is bound by appropriate data processing agreements.</li>
             <li><strong>With law enforcement:</strong> When required by law or to protect rights and safety.</li>
             <li><strong>In a business transfer:</strong> In connection with a merger, acquisition, or sale of assets, with notice to affected users.</li>
           </ul>
 
-          <h2>5. Data Retention</h2>
+          <h2>5. Data Retention &amp; Self-Service Bet Journal Controls</h2>
           <p>
-            We retain your account data for as long as your account is active. If you request
-            deletion, we will delete or anonymise your personal data within 30 days, subject to
-            retention obligations required by law.
+            We retain your account data for as long as your account is active. You can download a complete
+            CSV export of your logged bets (&ldquo;Export my bets (CSV)&rdquo;) or permanently erase your entire bet
+            journal (&ldquo;Delete all my bets&rdquo;) at any time directly from your{" "}
+            <Link href="/dashboard/report-card">Betting Report Card</Link> page. If you request full account
+            deletion, we will delete or anonymise your personal data within 30 days, subject to retention
+            obligations required by law.
           </p>
 
-          <h2>6. Cookies & Tracking</h2>
+          <h2>6. Cookies &amp; Tracking</h2>
           <p>
             We use strictly necessary cookies to maintain your authenticated session. We do not
             use advertising cookies or third-party tracking. You can control cookies through
@@ -84,10 +90,10 @@ export default function PrivacyPage() {
           <ul>
             <li>Access the personal data we hold about you.</li>
             <li>Correct inaccurate data.</li>
-            <li>Request deletion of your data (&quot;right to be forgotten&quot;).</li>
+            <li>Request deletion of your data (&quot;right to be forgotten&quot;), or delete all logged bets immediately from your Betting Report Card.</li>
             <li>Object to or restrict certain processing.</li>
-            <li>Receive your data in a portable format.</li>
-            <li>Withdraw consent for marketing at any time (unsubscribe link in every email).</li>
+            <li>Receive your data in a portable format (including instant CSV export of your bet journal).</li>
+            <li>Withdraw consent for weekly report or marketing emails at any time (via Profile Settings or the one-click unsubscribe link in every email).</li>
           </ul>
           <p>
             To exercise any of these rights, contact us at{" "}

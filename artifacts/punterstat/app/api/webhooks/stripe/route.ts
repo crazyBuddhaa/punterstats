@@ -21,6 +21,8 @@ import {
   upsertSubscription,
   getSubscriptionByStripeId,
   getSubscriptionByStripeCustomer,
+  claimWebhookEvent,
+  releaseWebhookEvent,
 } from "@/lib/payments/subscriptions";
 import type { PlanId } from "@/lib/payments/types";
 
@@ -41,6 +43,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 
+  // ── Idempotency by Stripe event.id ─────────────────────────────────────────
+  if (event.id) {
+    const claimed = await claimWebhookEvent("stripe", event.id);
+    if (!claimed) {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+  }
+
   // ── Handle events ──────────────────────────────────────────────────────────
   try {
     switch (event.type) {
@@ -51,10 +61,7 @@ export async function POST(req: Request) {
         if (session.mode !== "subscription") break;
 
         const meta = extractStripeMetadata(session.metadata);
-        if (!meta) {
-          console.warn("[webhook/stripe] checkout.session.completed: missing metadata");
-          break;
-        }
+        if (!meta) break;
 
         const sub = await fetchStripeSub(session.subscription as string);
         if (!sub) break;
@@ -82,10 +89,7 @@ export async function POST(req: Request) {
 
         // Fall back to DB look-up if metadata is missing (e.g. manual update)
         const userId = meta?.userId ?? (await getSubscriptionByStripeId(sub.id))?.userId;
-        if (!userId) {
-          console.warn("[webhook/stripe] customer.subscription.updated: no userId for sub", sub.id);
-          break;
-        }
+        if (!userId) break;
 
         const plan = (meta?.plan ??
           (await getSubscriptionByStripeId(sub.id))?.plan) as PlanId | undefined;
@@ -119,10 +123,7 @@ export async function POST(req: Request) {
         const row = await getSubscriptionByStripeId(sub.id)
           ?? await getSubscriptionByStripeCustomer(sub.customer as string);
 
-        if (!row) {
-          console.warn("[webhook/stripe] customer.subscription.deleted: unknown sub", sub.id);
-          break;
-        }
+        if (!row) break;
 
         const { start, end } = getSubPeriod(sub);
 
@@ -146,10 +147,12 @@ export async function POST(req: Request) {
         const invoice = event.data.object as Stripe.Invoice;
         // In Stripe API 2026-06-24.dahlia, Invoice.subscription was removed.
         // The subscription ID now lives at invoice.parent.subscription_details.subscription.
-        // We cast through `any` to handle both old and new shapes at runtime.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const inv = invoice as any;
-        const subId = (inv.subscription ?? inv.parent?.subscription_details?.subscription) as string | null;
+        type StripeInvoiceCompat = Stripe.Invoice & {
+          subscription?: string | null;
+          parent?: { subscription_details?: { subscription?: string | null } | null } | null;
+        };
+        const inv = invoice as StripeInvoiceCompat;
+        const subId = inv.subscription ?? inv.parent?.subscription_details?.subscription ?? null;
         if (!subId) break;
 
         const row = await getSubscriptionByStripeId(subId);
@@ -179,6 +182,9 @@ export async function POST(req: Request) {
         break;
     }
   } catch (err) {
+    if (event.id) {
+      await releaseWebhookEvent("stripe", event.id);
+    }
     const msg = err instanceof Error ? err.message : "Handler error";
     console.error(`[webhook/stripe] error handling ${event.type}:`, msg);
     return NextResponse.json({ error: msg }, { status: 500 });

@@ -8,7 +8,6 @@ import {
   getCoursesByCategory,
   getLessonCount,
 } from "@/lib/sports-university/queries";
-import { getUser } from "@/lib/auth/helpers";
 
 interface Props {
   params: Promise<{ category: string }>;
@@ -26,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CategoryPage({ params }: Props) {
   const { category: slug } = await params;
-  const [category, user] = await Promise.all([getCategoryBySlug(slug), getUser()]);
+  const category = await getCategoryBySlug(slug);
   if (!category) notFound();
 
   const courses = await getCoursesByCategory(category.id);

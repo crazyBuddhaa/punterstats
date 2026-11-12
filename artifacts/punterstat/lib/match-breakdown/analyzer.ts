@@ -16,13 +16,6 @@ function poissonPmf(lambda: number, k: number): number {
   return Math.exp(logP);
 }
 
-/** P(X ≤ max) cumulative Poisson */
-function poissonCdf(lambda: number, max: number): number {
-  let p = 0;
-  for (let k = 0; k <= max; k++) p += poissonPmf(lambda, k);
-  return Math.min(1, p);
-}
-
 // ─── Dixon-Coles low-score correction ────────────────────────────────────────
 //
 // Raw Poisson independence under-estimates 0-0 and 1-1 outcomes and

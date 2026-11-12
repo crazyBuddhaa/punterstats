@@ -229,6 +229,7 @@ export default async function DashboardPage() {
         </h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
+            { href: "/dashboard/report-card", label: "Report Card", icon: Target, desc: "ROI, CLV & leak diagnostics" },
             { href: "/dashboard/spot-the-value", label: "Spot The Value", icon: Zap, desc: "Odds vs true probability" },
             { href: "/dashboard/match-analyses", label: "Match Analyses", icon: BarChart2, desc: "Probability analyzer" },
             { href: "/dashboard/continue-learning", label: "Continue Learning", icon: BookOpen, desc: "Courses & lessons" },

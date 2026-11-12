@@ -23,7 +23,7 @@ interface Props {
   serverError?: string;
 }
 
-export function LoginForm({ redirectTo: _redirectTo, serverError }: Props) {
+export function LoginForm({ serverError }: Props) {
   const [state, action, isPending] = useActionState<
     ApiResponse<void> | null,
     FormData

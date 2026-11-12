@@ -1,7 +1,9 @@
 "use server";
 
+import { headers } from "next/headers";
 import { z } from "zod";
 import { sendEmail } from "@/lib/email/resend";
+import { checkActionRateLimit } from "@/lib/rate-limit";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -33,6 +35,18 @@ export async function submitContact(
   _prev: ContactFormState,
   formData: FormData
 ): Promise<ContactFormState> {
+  const reqHeaders = await headers();
+  const rl = await checkActionRateLimit(
+    "contact-action",
+    { limit: 5, windowMs: 60_000 },
+    reqHeaders
+  );
+  if (!rl.success) {
+    return {
+      error: "Too many messages sent recently. Please wait a minute before trying again.",
+    };
+  }
+
   const raw = {
     name: formData.get("name") as string,
     email: formData.get("email") as string,

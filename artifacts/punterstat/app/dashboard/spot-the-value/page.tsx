@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Zap, BookOpen, TrendingUp, BarChart2 } from "lucide-react";
 import { getOdds } from "@/lib/odds/client";
 import { computeValueFromOddsEvent } from "@/lib/spot-the-value/calculator";

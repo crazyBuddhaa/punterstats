@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -8,6 +9,7 @@ import type { ApiResponse } from "@/types";
 import { audit, AuditAction } from "@/lib/audit/logger";
 import { sendEmail } from "@/lib/email/resend";
 import { welcomeEmail } from "@/lib/email/templates";
+import { checkActionRateLimit } from "@/lib/rate-limit";
 
 // ── Schemas ────────────────────────────────────────────────
 const signInSchema = z.object({
@@ -38,6 +40,19 @@ export async function signIn(
   _prevState: ApiResponse<void> | null,
   formData: FormData
 ): Promise<ApiResponse<void>> {
+  const reqHeaders = await headers();
+  const rl = await checkActionRateLimit(
+    "auth-signin",
+    { limit: 10, windowMs: 60_000 },
+    reqHeaders
+  );
+  if (!rl.success) {
+    return {
+      success: false,
+      error: "Too many sign-in attempts. Please wait a minute before trying again.",
+    };
+  }
+
   const parsed = signInSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -66,6 +81,19 @@ export async function signUp(
   _prevState: ApiResponse<void> | null,
   formData: FormData
 ): Promise<ApiResponse<void>> {
+  const reqHeaders = await headers();
+  const rl = await checkActionRateLimit(
+    "auth-signup",
+    { limit: 5, windowMs: 60_000 },
+    reqHeaders
+  );
+  if (!rl.success) {
+    return {
+      success: false,
+      error: "Too many registration attempts. Please wait a minute before trying again.",
+    };
+  }
+
   const parsed = signUpSchema.safeParse({
     displayName: formData.get("displayName"),
     email: formData.get("email"),
@@ -139,6 +167,19 @@ export async function resetPassword(
   _prevState: ApiResponse<void> | null,
   formData: FormData
 ): Promise<ApiResponse<void>> {
+  const reqHeaders = await headers();
+  const rl = await checkActionRateLimit(
+    "auth-reset-password",
+    { limit: 5, windowMs: 60_000 },
+    reqHeaders
+  );
+  if (!rl.success) {
+    return {
+      success: false,
+      error: "Too many password reset requests. Please wait a minute before trying again.",
+    };
+  }
+
   const parsed = resetPasswordSchema.safeParse({
     email: formData.get("email"),
   });
@@ -156,10 +197,6 @@ export async function resetPassword(
     return { success: false, error: error.message };
   }
 
-  // Note: password-reset is initiated while the user is logged out, so no
-  // userId is available here without an expensive admin lookup. The actual
-  // password change is audited in updatePassword() where a session exists.
-
   return { success: true, data: undefined };
 }
 
@@ -167,6 +204,19 @@ export async function updatePassword(
   _prevState: ApiResponse<void> | null,
   formData: FormData
 ): Promise<ApiResponse<void>> {
+  const reqHeaders = await headers();
+  const rl = await checkActionRateLimit(
+    "auth-update-password",
+    { limit: 5, windowMs: 60_000 },
+    reqHeaders
+  );
+  if (!rl.success) {
+    return {
+      success: false,
+      error: "Too many password update attempts. Please wait a minute before trying again.",
+    };
+  }
+
   const parsed = updatePasswordSchema.safeParse({
     password: formData.get("password"),
   });

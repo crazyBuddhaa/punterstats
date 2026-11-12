@@ -22,6 +22,7 @@ import { isR2Configured } from "@/lib/r2/client";
 import { putFootballCsv, getManifest, putManifest, syncLogKey, putObject } from "@/lib/r2/dataset";
 import { LEAGUE_MAP } from "@/lib/historical-stats/league-map";
 import type { R2SyncLogEntry, R2SyncResult, R2IngestResult } from "@/lib/r2/types";
+import { runWeeklyReportJob, type WeeklyReportJobResult } from "@/lib/report-card/weekly-report";
 
 const FDCO_BASE = "https://www.football-data.co.uk/mmz4281";
 
@@ -195,6 +196,26 @@ export async function GET(req: Request) {
     }
   }
 
+  // ── Dispatch Weekly Betting Report Card emails (consolidated Monday cron) ───
+  let weeklyReport: (WeeklyReportJobResult & { ok: boolean; error?: string }) | undefined;
+  try {
+    const reportRes = await runWeeklyReportJob();
+    weeklyReport = { ok: true, ...reportRes };
+  } catch (reportErr) {
+    const msg = reportErr instanceof Error ? reportErr.message : String(reportErr);
+    console.error("[cron/sync-season -> weekly-report]", msg);
+    weeklyReport = {
+      ok: false,
+      error: msg,
+      startedAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+      eligibleUsers: 0,
+      sent: 0,
+      failed: 0,
+      timedOut: false,
+    };
+  }
+
   return NextResponse.json({
     ok: true,
     runId,
@@ -203,6 +224,7 @@ export async function GET(req: Request) {
     totalMatchesUpserted,
     totalOddsUpserted,
     errors: errors.length ? errors : undefined,
+    weeklyReport,
     at: completedAt,
   });
 }

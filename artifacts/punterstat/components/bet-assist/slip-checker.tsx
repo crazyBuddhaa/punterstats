@@ -247,13 +247,38 @@ export function SlipChecker() {
               </table>
             </div>
 
-            <p className="text-xs text-[#1e293b]/50">
-              Placing this bet?{" "}
-              <Link href="/dashboard/bet-tracker" className="font-medium text-[#3D2DFF] hover:underline">
-                Log it in your Bet Tracker
-              </Link>{" "}
-              to measure your real results over time.
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-white p-4">
+              <p className="text-xs text-[#1e293b]/65">
+                Placing this slip? Log it in your Bet Tracker in one click to measure your real results over time.
+              </p>
+              <Button variant="teal" size="sm" asChild>
+                <Link
+                  href={`/dashboard/bet-tracker?${new URLSearchParams({
+                    event:
+                      result.legs.length === 1
+                        ? result.legs[0].event || "Match"
+                        : result.legs
+                            .map((l) => l.event)
+                            .filter(Boolean)
+                            .join(" / ")
+                            .slice(0, 180) || `${result.legs.length}-leg accumulator`,
+                    selection: result.legs
+                      .map((l) => l.selection)
+                      .join(" + ")
+                      .slice(0, 180),
+                    odds: result.combinedOdds.toFixed(2),
+                    market: result.legs.length > 1 ? "Accumulator" : "1X2",
+                    legs: String(result.legs.length),
+                    stake: stake.trim() || "1000",
+                    ...(result.yourProb !== null
+                      ? { prob: String(Math.round(result.yourProb * 1000) / 10) }
+                      : {}),
+                  }).toString()}`}
+                >
+                  Log this slip →
+                </Link>
+              </Button>
+            </div>
           </>
         )}
       </div>

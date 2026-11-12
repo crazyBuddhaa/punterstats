@@ -9,10 +9,14 @@
  */
 
 import { NextResponse } from "next/server";
+import { requireAdminApi } from "@/lib/auth/helpers";
 import { getManifest } from "@/lib/r2/dataset";
 import { isR2Configured } from "@/lib/r2/client";
 
 export async function GET() {
+  const auth = await requireAdminApi();
+  if (!auth.authorized) return auth.response;
+
   if (!isR2Configured()) {
     return NextResponse.json(
       { success: false, configured: false, leagues: [] },

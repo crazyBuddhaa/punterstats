@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { sendEmail } from "@/lib/email/resend";
@@ -52,13 +53,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Send welcome email exactly once per user using an atomic conditional
-    // UPDATE. The UPDATE targets only rows where welcome_sent IS false, so
-    // only the first concurrent callback wins and returns a row. Subsequent
-    // calls (link re-clicks, parallel requests, returning logins) affect 0
-    // rows and skip email — this is expected, not a bug.
+    // UPDATE via the service-role client (welcome_sent is locked against
+    // user-session modification by the protect_profile_columns trigger).
     if (data?.user?.email) {
       try {
-        const { data: updated, error: updateError } = await supabase
+        const admin = createAdminClient();
+        const { data: updated, error: updateError } = await admin
           .from("profiles")
           .update({ welcome_sent: true })
           .eq("user_id", data.user.id)

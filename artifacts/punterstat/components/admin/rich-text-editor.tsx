@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { uploadToCloudinary } from "@/lib/cloudinary/upload";
 import type { UploadSignature } from "@/lib/cloudinary/types";
+import { sanitizeContentHtml } from "@/lib/sanitize-html";
 
 interface RichTextEditorProps {
   name: string;
@@ -27,15 +28,16 @@ export function RichTextEditor({
   const [isEmpty, setIsEmpty] = useState(!defaultValue.trim());
   const [uploading, setUploading] = useState(false);
 
-  // Initialise editor with existing HTML on mount (runs once)
+  // Initialise editor with sanitized HTML on mount (runs once)
   useEffect(() => {
+    const safeHtml = sanitizeContentHtml(defaultValue);
     if (editorRef.current) {
-      editorRef.current.innerHTML = defaultValue;
+      editorRef.current.innerHTML = safeHtml;
     }
     if (hiddenRef.current) {
-      hiddenRef.current.value = defaultValue;
+      hiddenRef.current.value = safeHtml;
     }
-    setIsEmpty(!defaultValue.trim());
+    setIsEmpty(!safeHtml.trim());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -52,7 +54,6 @@ export function RichTextEditor({
   const exec = useCallback(
     (command: string, value?: string) => {
       editorRef.current?.focus();
-      // eslint-disable-next-line @typescript-eslint/no-deprecated
       document.execCommand(command, false, value);
       sync();
     },

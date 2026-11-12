@@ -12,18 +12,15 @@
  */
 
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth/helpers";
+import { requireAdminApi } from "@/lib/auth/helpers";
 import { listObjects, deleteObject } from "@/lib/r2/dataset";
 import { isR2Configured } from "@/lib/r2/client";
 
 const LOG_PREFIX = "sync-log/";
 
 export async function POST(req: Request) {
-  try {
-    await requireAdmin();
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireAdminApi();
+  if (!auth.authorized) return auth.response;
 
   if (!isR2Configured()) {
     return NextResponse.json({ error: "R2 not configured" }, { status: 503 });

@@ -140,13 +140,11 @@ function calibrationCurve(predictions: ResolvedPrediction[]): CalibrationBucket[
  */
 function validateAndNormalize(predictions: ResolvedPrediction[]): ResolvedPrediction[] {
   const valid: ResolvedPrediction[] = [];
-  let skipped = 0;
 
   for (const p of predictions) {
     const sum = p.predictedHomeWinProb + p.predictedDrawProb + p.predictedAwayWinProb;
 
     if (sum <= 0 || !isFinite(sum)) {
-      skipped++;
       continue;
     }
 
@@ -166,15 +164,6 @@ function validateAndNormalize(predictions: ResolvedPrediction[]): ResolvedPredic
       });
       continue;
     }
-
-    skipped++;
-  }
-
-  if (skipped > 0) {
-    console.warn(
-      `[calibration/scorer] Skipped ${skipped} of ${predictions.length} predictions ` +
-      `— probabilities were zero, negative, or non-finite.`
-    );
   }
 
   return valid;

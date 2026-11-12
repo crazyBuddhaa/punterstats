@@ -3,6 +3,8 @@ import { User } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
 import { ProfileForm } from "@/components/dashboard/profile-form";
 import { AvatarUpload } from "@/components/dashboard/avatar-upload";
+import { WeeklyReportToggle } from "@/components/dashboard/weekly-report-toggle";
+import { getWeeklyReportPreference } from "@/lib/report-card/actions";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Profile Settings — Dashboard — PunterStat" };
@@ -10,13 +12,16 @@ export const metadata: Metadata = { title: "Profile Settings — Dashboard — P
 export default async function ProfilePage() {
   const profile = await requireAuth();
 
-  // Fetch avatar_url from users table
+  // Fetch avatar_url from users table and weekly report email preference
   const supabase = await createClient();
-  const { data: userData } = await supabase
-    .from("users")
-    .select("avatar_url")
-    .eq("id", profile.userId)
-    .single();
+  const [{ data: userData }, weeklyReportEnabled] = await Promise.all([
+    supabase
+      .from("users")
+      .select("avatar_url")
+      .eq("id", profile.userId)
+      .single(),
+    getWeeklyReportPreference(),
+  ]);
   const avatarUrl = userData?.avatar_url ?? null;
 
   return (
@@ -24,7 +29,7 @@ export default async function ProfilePage() {
       <div>
         <h1 className="text-2xl font-bold text-[#0f172a]">Profile Settings</h1>
         <p className="mt-1 text-sm text-[#1e293b]/60">
-          Update your display name, bio, and profile photo.
+          Update your display name, bio, profile photo, and email preferences.
         </p>
       </div>
 
@@ -45,6 +50,9 @@ export default async function ProfilePage() {
 
         <ProfileForm profile={profile} />
       </div>
+
+      {/* Email preferences */}
+      <WeeklyReportToggle initialEnabled={weeklyReportEnabled} />
 
       {/* Danger zone */}
       <div className="max-w-xl rounded-2xl border border-rose-200 bg-rose-50 p-6">

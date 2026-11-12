@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth/helpers";
 import { revalidatePath } from "next/cache";
+import { sanitizeContentHtml } from "@/lib/sanitize-html";
 
 type ActionResult<T = undefined> =
   | { success: true; data?: T }
@@ -200,7 +201,8 @@ export async function createLesson(courseId: string, formData: FormData): Promis
 
   const title = (formData.get("title") as string)?.trim() ?? "";
   const slug = (formData.get("slug") as string)?.trim() || slugify(title);
-  const content = (formData.get("content") as string)?.trim() || null;
+  const rawContent = (formData.get("content") as string)?.trim() || null;
+  const content = rawContent ? sanitizeContentHtml(rawContent) : null;
   const videoUrl = (formData.get("video_url") as string)?.trim() || null;
   const durationSeconds = parseInt((formData.get("duration_seconds") as string) ?? "0", 10) || null;
   const sortOrder = parseInt((formData.get("sort_order") as string) ?? "0", 10) || 0;
@@ -231,7 +233,8 @@ export async function updateLesson(id: string, courseId: string, formData: FormD
 
   const title = (formData.get("title") as string)?.trim() ?? "";
   const slug = (formData.get("slug") as string)?.trim() ?? "";
-  const content = (formData.get("content") as string)?.trim() || null;
+  const rawContent = (formData.get("content") as string)?.trim() || null;
+  const content = rawContent ? sanitizeContentHtml(rawContent) : null;
   const videoUrl = (formData.get("video_url") as string)?.trim() || null;
   const durationSeconds = parseInt((formData.get("duration_seconds") as string) ?? "0", 10) || null;
   const sortOrder = parseInt((formData.get("sort_order") as string) ?? "0", 10) || 0;
@@ -282,8 +285,10 @@ export async function createBlogPost(formData: FormData): Promise<ActionResult<{
 
   const title = (formData.get("title") as string)?.trim() ?? "";
   const slug = (formData.get("slug") as string)?.trim() ?? "";
-  const excerpt = (formData.get("excerpt") as string)?.trim() || null;
-  const content = (formData.get("content") as string)?.trim() ?? "";
+  const rawExcerpt = (formData.get("excerpt") as string)?.trim() || null;
+  const excerpt = rawExcerpt ? sanitizeContentHtml(rawExcerpt) : null;
+  const rawContent = (formData.get("content") as string)?.trim() ?? "";
+  const content = sanitizeContentHtml(rawContent);
   const thumbnailUrl = (formData.get("thumbnail_url") as string)?.trim() || null;
   const tags = parseTags((formData.get("tags") as string) ?? "");
   const isPublished = formData.get("is_published") === "true";
@@ -329,8 +334,10 @@ export async function updateBlogPost(
 
   const title = (formData.get("title") as string)?.trim() ?? "";
   const slug = (formData.get("slug") as string)?.trim() ?? "";
-  const excerpt = (formData.get("excerpt") as string)?.trim() || null;
-  const content = (formData.get("content") as string)?.trim() ?? "";
+  const rawExcerpt = (formData.get("excerpt") as string)?.trim() || null;
+  const excerpt = rawExcerpt ? sanitizeContentHtml(rawExcerpt) : null;
+  const rawContent = (formData.get("content") as string)?.trim() ?? "";
+  const content = sanitizeContentHtml(rawContent);
   const thumbnailUrl = (formData.get("thumbnail_url") as string)?.trim() || null;
   const tags = parseTags((formData.get("tags") as string) ?? "");
   const isPublished = formData.get("is_published") === "true";

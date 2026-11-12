@@ -11,6 +11,7 @@ export interface ActionResult {
 }
 
 const TRACKER_PATH = "/dashboard/bet-tracker";
+const REPORT_CARD_PATH = "/dashboard/report-card";
 
 const optionalNumber = z
   .union([z.number(), z.nan(), z.null(), z.undefined()])
@@ -26,6 +27,7 @@ const betSchema = z.object({
   stake: z.number().gt(0, "Stake must be greater than 0").lt(100_000_000),
   yourProb: optionalNumber.refine((v) => v === null || (v > 0 && v < 1), "Probability must be between 0 and 100%"),
   closingOdds: optionalNumber.refine((v) => v === null || v > 1, "Closing odds must be greater than 1"),
+  legCount: z.number().int().min(1, "Legs must be at least 1").max(50, "Legs cannot exceed 50").optional(),
   placedAt: z.string().optional(),
   notes: z.string().trim().max(1000).optional().nullable(),
 });
@@ -34,6 +36,7 @@ export type NewBetInput = z.input<typeof betSchema>;
 
 function rowToBet(r: Record<string, unknown>): JournalBet {
   const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+  const rawLegs = num(r.leg_count);
   return {
     id: r.id as string,
     placedAt: r.placed_at as string,
@@ -50,6 +53,7 @@ function rowToBet(r: Record<string, unknown>): JournalBet {
     cashoutAmount: num(r.cashout_amount),
     notes: (r.notes as string | null) ?? null,
     settledAt: (r.settled_at as string | null) ?? null,
+    legCount: rawLegs !== null && rawLegs >= 1 ? Math.round(rawLegs) : 1,
   };
 }
 
@@ -86,6 +90,7 @@ export async function addBet(input: NewBetInput): Promise<ActionResult> {
 
   const b = parsed.data;
   const placedAt = b.placedAt && !Number.isNaN(Date.parse(b.placedAt)) ? new Date(b.placedAt).toISOString() : undefined;
+  const legCount = b.legCount ?? (b.market.toLowerCase() === "accumulator" ? 2 : 1);
 
   const { error } = await supabase.from("bet_journal").insert({
     user_id: user.id,
@@ -98,12 +103,14 @@ export async function addBet(input: NewBetInput): Promise<ActionResult> {
     stake: b.stake,
     your_prob: b.yourProb,
     closing_odds: b.closingOdds,
+    leg_count: legCount,
     notes: b.notes || null,
     ...(placedAt ? { placed_at: placedAt } : {}),
   });
 
   if (error) return { success: false, error: error.message };
   revalidatePath(TRACKER_PATH);
+  revalidatePath(REPORT_CARD_PATH);
   return { success: true };
 }
 
@@ -139,6 +146,7 @@ export async function settleBet(input: z.input<typeof settleSchema>): Promise<Ac
   const { error } = await supabase.from("bet_journal").update(update).eq("id", id).eq("user_id", user.id);
   if (error) return { success: false, error: error.message };
   revalidatePath(TRACKER_PATH);
+  revalidatePath(REPORT_CARD_PATH);
   return { success: true };
 }
 
@@ -153,5 +161,6 @@ export async function deleteBet(id: string): Promise<ActionResult> {
   const { error } = await supabase.from("bet_journal").delete().eq("id", id).eq("user_id", user.id);
   if (error) return { success: false, error: error.message };
   revalidatePath(TRACKER_PATH);
+  revalidatePath(REPORT_CARD_PATH);
   return { success: true };
 }

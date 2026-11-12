@@ -160,7 +160,7 @@ export function LandingPage({ courses, lessons, isAuthenticated }: LandingPagePr
             <div className="absolute -bottom-8 -left-5 hidden h-28 w-28 overflow-hidden rounded-2xl border-4 border-[#080c1d] shadow-2xl sm:block">
               <Image
                 src="/football-sketch.jpg"
-                alt=""
+                alt="Football tactical sketch"
                 fill
                 sizes="112px"
                 className="object-cover grayscale"
@@ -169,7 +169,7 @@ export function LandingPage({ courses, lessons, isAuthenticated }: LandingPagePr
             <div className="absolute -left-8 top-16 hidden h-20 w-20 overflow-hidden rounded-2xl border-4 border-[#080c1d] shadow-2xl md:block">
               <Image
                 src="/hero-stadium.jpg"
-                alt=""
+                alt="Illuminated football stadium"
                 fill
                 sizes="80px"
                 className="object-cover"
@@ -223,7 +223,7 @@ export function LandingPage({ courses, lessons, isAuthenticated }: LandingPagePr
         <div className="mt-16 grid gap-5 lg:grid-cols-[1.25fr_.75fr]">
           <div className="relative min-h-[420px] overflow-hidden rounded-[2rem] bg-[#080c1d] p-6 text-white sm:p-9">
             <div className="absolute right-0 top-0 h-full w-1/2 opacity-50">
-              <Image src="/football-action.jpg" alt="" fill sizes="40vw" className="object-cover object-center mix-blend-screen" />
+              <Image src="/football-action.jpg" alt="Footballer striking the ball during match action" fill sizes="40vw" className="object-cover object-center mix-blend-screen" />
               <div className="absolute inset-0 bg-gradient-to-r from-[#080c1d] via-[#080c1d]/50 to-transparent" />
             </div>
             <div className="relative z-10 max-w-md">

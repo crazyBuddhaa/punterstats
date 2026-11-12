@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState } from "react";
 import { BookOpen, Plus, Pencil, ChevronRight, FolderOpen } from "lucide-react";
 import Link from "next/link";
 import { CourseFormModal } from "@/components/admin/course-form-modal";
@@ -76,7 +76,7 @@ export function CoursesClientPage({ courses, categories }: CoursesClientPageProp
           <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-white py-16 text-center shadow-sm">
             <BookOpen className="mb-3 h-8 w-8 text-[#1e293b]/20" />
             <p className="font-semibold text-[#0f172a]">No courses yet</p>
-            <p className="mt-1 text-sm text-[#1e293b]/50">Click "New Course" to add your first one.</p>
+            <p className="mt-1 text-sm text-[#1e293b]/50">Click &ldquo;New Course&rdquo; to add your first one.</p>
           </div>
         ) : (
           <div className="space-y-5">

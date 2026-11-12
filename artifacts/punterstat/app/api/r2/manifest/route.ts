@@ -8,12 +8,13 @@
  */
 
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth/helpers";
+import { requireAdminApi } from "@/lib/auth/helpers";
 import { getManifest } from "@/lib/r2/dataset";
 import { isR2Configured } from "@/lib/r2/client";
 
 export async function GET() {
-  await requireAdmin();
+  const auth = await requireAdminApi();
+  if (!auth.authorized) return auth.response;
 
   if (!isR2Configured()) {
     return NextResponse.json(

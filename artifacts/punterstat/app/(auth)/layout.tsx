@@ -12,7 +12,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <aside className="relative hidden min-h-screen overflow-hidden bg-[#0b1713] text-[#f4f5ef] lg:block">
         <Image
           src="/hero-pitch.jpg"
-          alt=""
+          alt="Illuminated football pitch background"
           fill
           priority
           sizes="42vw"

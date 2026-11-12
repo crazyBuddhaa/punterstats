@@ -33,7 +33,7 @@ interface RemitaResult {
   paymentUrl: string;
 }
 
-export function CheckoutClient({ planId, planName, displayGbp, displayNgn }: Props) {
+export function CheckoutClient({ planId, displayGbp, displayNgn }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -138,7 +138,7 @@ export function CheckoutClient({ planId, planName, displayGbp, displayNgn }: Pro
           <ol className="list-decimal list-inside space-y-1">
             <li>Copy the RRR above</li>
             <li>Visit any bank branch, internet banking portal, or use USSD *322#</li>
-            <li>Select "Remita" or "RRR payment" and enter the reference</li>
+            <li>Select &ldquo;Remita&rdquo; or &ldquo;RRR payment&rdquo; and enter the reference</li>
             <li>Your subscription will activate automatically within minutes of payment</li>
           </ol>
         </div>

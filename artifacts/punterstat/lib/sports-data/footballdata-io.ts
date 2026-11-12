@@ -104,9 +104,6 @@ export async function getFootballDataIoFixtures(options?: {
 
   const apiKey = process.env.FOOTBALLDATA_IO_API_KEY;
   if (!apiKey) {
-    console.warn(
-      "[sports-data/footballdata-io] FOOTBALLDATA_IO_API_KEY is not set — cannot fetch live fixtures."
-    );
     await releaseFixturesLock(SOURCE);
     return { success: false, error: "Match data is not configured yet" };
   }
@@ -123,7 +120,7 @@ export async function getFootballDataIoFixtures(options?: {
         })
           .then((r) => r.json() as Promise<RawResponse>)
           .catch((err) => {
-            console.warn(`[sports-data/footballdata-io] league ${id} fetch error:`, err);
+            console.error(`[sports-data/footballdata-io] league ${id} fetch error:`, err);
             return null;
           })
       )

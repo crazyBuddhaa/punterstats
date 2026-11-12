@@ -130,15 +130,15 @@ export async function downloadInternationalDataset(): Promise<{
     );
   }
 
-  // Secondary files are optional — warn but allow partial ingest.
+  // Secondary files are optional — log error but allow partial ingest.
   if (goalscorers.status === "rejected") {
-    console.warn(
+    console.error(
       "[kaggle] goalscorers.csv download failed — goalscorer rows will be skipped:",
       goalscorers.reason instanceof Error ? goalscorers.reason.message : goalscorers.reason
     );
   }
   if (shootouts.status === "rejected") {
-    console.warn(
+    console.error(
       "[kaggle] shootouts.csv download failed — shootout rows will be skipped:",
       shootouts.reason instanceof Error ? shootouts.reason.message : shootouts.reason
     );

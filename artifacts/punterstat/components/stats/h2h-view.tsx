@@ -27,21 +27,6 @@ function StatBox({
   );
 }
 
-function ResultBadge({ result }: { result: string | null }) {
-  if (!result) return null;
-  const cls =
-    result === "H"
-      ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-      : result === "A"
-      ? "bg-red-500/15 text-red-400 border-red-500/30"
-      : "bg-white/10 text-white/60 border-white/20";
-  return (
-    <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-semibold ${cls}`}>
-      {result}
-    </span>
-  );
-}
-
 function matchOutcome(m: HistoricalMatch, team1: string): "win" | "draw" | "loss" | null {
   if (!m.result) return null;
   const t1Home = m.home_team.toLowerCase() === team1.toLowerCase();

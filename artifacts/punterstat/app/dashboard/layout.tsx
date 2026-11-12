@@ -7,7 +7,7 @@ import { requireAuth } from "@/lib/auth/helpers";
 import { getDashboardStats } from "@/lib/dashboard/queries";
 import { DashboardSidebar, DashboardMobileNav } from "@/components/dashboard/sidebar";
 import { signOut } from "@/lib/auth/actions";
-import { LayoutDashboard, LogOut, ExternalLink } from "lucide-react";
+import { LayoutDashboard, LogOut } from "lucide-react";
 
 export default async function DashboardLayout({
   children,

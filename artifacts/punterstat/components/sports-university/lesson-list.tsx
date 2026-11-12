@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, Circle, PlayCircle, Lock } from "lucide-react";
+import { CheckCircle2, Circle, PlayCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Lesson, LessonProgress } from "@/types";
 

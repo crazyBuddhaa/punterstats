@@ -1,6 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { NextResponse } from "next/server";
 import type { UserProfile } from "@/types";
+
+export type AdminApiAuthResult =
+  | { authorized: true; profile: UserProfile; response?: undefined }
+  | { authorized: false; profile?: undefined; response: NextResponse };
 
 export async function getUser() {
   const supabase = await createClient();
@@ -54,4 +59,56 @@ export async function requireAdmin(): Promise<UserProfile> {
   const profile = await requireAuth();
   if (profile.role !== "admin") redirect("/dashboard");
   return profile;
+}
+
+/**
+ * Verify admin privileges inside API Route Handlers without calling redirect().
+ * Returns 401 JSON when unauthenticated, 403 JSON when signed in without admin role.
+ */
+export async function requireAdminApi(): Promise<AdminApiAuthResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return {
+      authorized: false,
+      response: NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      ),
+    };
+  }
+
+  const { data, error: profileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("user_id", user.id)
+    .single();
+
+  if (profileError || !data || data.role !== "admin") {
+    return {
+      authorized: false,
+      response: NextResponse.json(
+        { success: false, error: "Forbidden: admin role required" },
+        { status: 403 }
+      ),
+    };
+  }
+
+  return {
+    authorized: true,
+    profile: {
+      id: data.id,
+      userId: data.user_id,
+      displayName: data.display_name,
+      avatarUrl: data.avatar_url,
+      bio: data.bio,
+      role: data.role,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    },
+  };
 }

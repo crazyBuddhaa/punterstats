@@ -85,7 +85,7 @@ async function fetchTeamForm(teamId: number, teamName: string, apiKey: string): 
       goalsConceded: Math.round((conceded / last5.length) * 10) / 10,
     };
   } catch (err) {
-    console.warn(`[sports-data/sportsapipro-enrich] team form fetch failed for team ${teamId}:`, err);
+    console.error(`[sports-data/sportsapipro-enrich] team form fetch failed for team ${teamId}:`, err);
     return undefined;
   }
 }
@@ -118,7 +118,7 @@ async function fetchHeadToHead(
     // homeWins = home team's wins and awayWins = away team's wins.
     return { homeWins: duel.awayWins, draws: duel.draws, awayWins: duel.homeWins };
   } catch (err) {
-    console.warn(`[sports-data/sportsapipro-enrich] h2h fetch failed for match ${matchId}:`, err);
+    console.error(`[sports-data/sportsapipro-enrich] h2h fetch failed for match ${matchId}:`, err);
     return undefined;
   }
 }

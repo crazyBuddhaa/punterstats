@@ -95,7 +95,7 @@ export function OddsPicker({ onSelect, onAddLeg, accumMode = false }: OddsPicker
   }
 
   // Auto-load on mount
-  useEffect(() => { load(SPORTS[0].key); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(SPORTS[0].key); }, []);
 
   return (
     <div className="rounded-xl border border-border bg-white overflow-hidden">

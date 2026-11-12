@@ -85,7 +85,6 @@ export async function getOdds(
 
   const apiKey = process.env.ODDS_API_KEY;
   if (!apiKey) {
-    console.warn("[odds/client] ODDS_API_KEY is not set — cannot fetch live odds.");
     await releaseOddsLock(sportKey);
     if (staleEvents.length > 0) {
       return { success: true, events: staleEvents, fromCache: true };
@@ -102,20 +101,10 @@ export async function getOdds(
 
     const res = await fetch(url.toString());
 
-    // Log quota headers on every live call so we can track exhaustion risk.
+    // Track quota headers on every live call so the Admin Data Health Panel can show real quota status.
     const remaining = res.headers.get("x-requests-remaining");
-    const used      = res.headers.get("x-requests-used");
     if (remaining !== null) {
       const rem = parseInt(remaining, 10);
-      if (rem < 50) {
-        console.warn(
-          `[odds/client] ⚠ Odds API quota critically low: ${rem} requests remaining (used: ${used ?? "?"}).`
-        );
-      } else if (rem < 150) {
-        console.warn(
-          `[odds/client] Odds API quota getting low: ${rem} remaining (used: ${used ?? "?"}).`
-        );
-      }
 
       // Persist the provider-reported remaining count so the Admin Data
       // Health Panel can show real quota status. Best-effort — never let a

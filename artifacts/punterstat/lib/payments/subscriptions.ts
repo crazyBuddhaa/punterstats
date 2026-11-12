@@ -1,18 +1,120 @@
 // ============================================================
-// PunterStat — Subscription Upsert Helper
+// PunterStat — Subscription Upsert & Webhook Idempotency Helpers
 // Writes payment provider data into the public.subscriptions
 // table using the Supabase admin client (service-role key).
 // ============================================================
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { SubscriptionUpsertPayload } from "./types";
+import type { PaymentProvider, SubscriptionUpsertPayload } from "./types";
+
+// In-memory fast-path cache for webhook event deduplication within the same worker
+const processedWebhookEvents = new Set<string>();
+const MAX_MEMORY_WEBHOOK_EVENTS = 2_000;
+
+function rememberWebhookKey(key: string): void {
+  if (processedWebhookEvents.size >= MAX_MEMORY_WEBHOOK_EVENTS) {
+    const oldest = processedWebhookEvents.values().next().value;
+    if (oldest) processedWebhookEvents.delete(oldest);
+  }
+  processedWebhookEvents.add(key);
+}
+
+/**
+ * Claim a webhook event for processing (idempotent across retries).
+ *
+ * Returns `true` if this is the first time `(provider, eventId)` has been seen,
+ * or `false` if the event was already processed.
+ *
+ * Uses `public.webhook_events` (from migration 054) as the primary persistent
+ * store, falling back to `public.audit_logs` if migration 054 has not been
+ * applied yet, plus an in-memory Set.
+ */
+export async function claimWebhookEvent(
+  provider: PaymentProvider,
+  eventId: string
+): Promise<boolean> {
+  const cleanId = eventId.trim();
+  if (!cleanId) return true;
+
+  const memKey = `${provider}:${cleanId}`;
+  if (processedWebhookEvents.has(memKey)) {
+    return false;
+  }
+
+  const admin = createAdminClient();
+
+  // Primary path: atomic insert into public.webhook_events
+  const { error } = await admin
+    .from("webhook_events")
+    .insert({ provider, event_id: cleanId });
+
+  if (!error) {
+    rememberWebhookKey(memKey);
+    return true;
+  }
+
+  // 23505 = unique_violation → event already processed
+  if (error.code === "23505") {
+    rememberWebhookKey(memKey);
+    return false;
+  }
+
+  // Fallback if migration 054 (webhook_events table) hasn't been applied yet
+  const { data: existingAudit } = await admin
+    .from("audit_logs")
+    .select("id")
+    .eq("action", "webhook_processed")
+    .eq("entity_type", provider)
+    .contains("metadata", { event_id: cleanId })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingAudit) {
+    rememberWebhookKey(memKey);
+    return false;
+  }
+
+  await admin.from("audit_logs").insert({
+    action: "webhook_processed",
+    entity_type: provider,
+    metadata: { event_id: cleanId },
+  });
+
+  rememberWebhookKey(memKey);
+  return true;
+}
+
+/**
+ * Release a previously claimed webhook event if the handler threw an error,
+ * allowing the payment provider's retry to run cleanly.
+ */
+export async function releaseWebhookEvent(
+  provider: PaymentProvider,
+  eventId: string
+): Promise<void> {
+  const cleanId = eventId.trim();
+  if (!cleanId) return;
+
+  processedWebhookEvents.delete(`${provider}:${cleanId}`);
+
+  try {
+    const admin = createAdminClient();
+    await admin
+      .from("webhook_events")
+      .delete()
+      .eq("provider", provider)
+      .eq("event_id", cleanId);
+  } catch {
+    // Ignore cleanup errors
+  }
+}
 
 /**
  * Upsert (insert or update) a user's subscription row with idempotency guard.
  *
- * The update is skipped if the row's current_period_end is already later than
- * the incoming period_end — this prevents out-of-order or replayed webhook
- * events from rolling back a more recent renewal or upgrade.
+ * The update is skipped if the row's current_period_end is already equal to or
+ * later than the incoming period_end — this prevents out-of-order or replayed
+ * webhook events from rolling back or double-extending a period.
  *
  * Exception: "cancelled" and "expired" status changes always win (they are
  * terminal states and must not be suppressed by a stale active event).
@@ -21,7 +123,7 @@ export async function upsertSubscription(payload: SubscriptionUpsertPayload): Pr
   const admin = createAdminClient();
   const isTerminal = payload.status === "cancelled" || payload.status === "expired";
 
-  // ── Idempotency: skip stale active/trialing updates ────────────────────────
+  // ── Idempotency: skip stale or duplicate active/trialing updates ───────────
   if (!isTerminal) {
     const { data: existing } = await admin
       .from("subscriptions")
@@ -34,10 +136,14 @@ export async function upsertSubscription(payload: SubscriptionUpsertPayload): Pr
       const incomingEnd  = payload.currentPeriodEnd.getTime();
       const existingIsTerminal =
         existing.status === "cancelled" || existing.status === "expired";
+      const existingIsActive = existing.status === "active";
 
-      // Skip if existing period ends later (newer renewal already recorded)
-      // and existing status is not terminal (terminal → active upgrades allowed)
-      if (!existingIsTerminal && incomingEnd < existingEnd) {
+      // Skip if existing active subscription period ends at or after incoming period
+      if (!existingIsTerminal && existingIsActive && incomingEnd <= existingEnd) {
+        return;
+      }
+      // For trialing rows, skip if incoming period is strictly older
+      if (!existingIsTerminal && !existingIsActive && incomingEnd < existingEnd) {
         return;
       }
     }
@@ -127,19 +233,34 @@ export async function getSubscriptionByPaystackCode(
 }
 
 /**
- * Fetch a subscription row by Remita RRR.
+ * Fetch a subscription row by Remita RRR, including status and stored RRR/orderId
+ * so the webhook can verify ownership and idempotency.
  */
 export async function getSubscriptionByRemitaRrr(
   rrr: string
-): Promise<{ userId: string; plan: string } | null> {
+): Promise<{
+  userId: string;
+  plan: string;
+  status: string;
+  remitaRrr: string | null;
+  remitaOrderId: string | null;
+  currentPeriodEnd: string;
+} | null> {
   const admin = createAdminClient();
   const { data } = await admin
     .from("subscriptions")
-    .select("user_id, plan")
+    .select("user_id, plan, status, remita_rrr, remita_order_id, current_period_end")
     .eq("remita_rrr", rrr)
     .single();
   if (!data) return null;
-  return { userId: data.user_id, plan: data.plan };
+  return {
+    userId: data.user_id,
+    plan: data.plan,
+    status: data.status,
+    remitaRrr: data.remita_rrr ?? null,
+    remitaOrderId: data.remita_order_id ?? null,
+    currentPeriodEnd: data.current_period_end,
+  };
 }
 
 /**

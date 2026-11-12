@@ -1,24 +1,17 @@
 /**
- * Two-bucket weighted sliding-window rate limiter.
+ * Rate limiter with automatic Upstash Redis support + two-bucket weighted
+ * sliding-window in-memory fallback.
  *
- * Uses two fixed-width buckets (current + previous) per key and computes a
- * weighted estimate of requests in the trailing `windowMs` period:
+ * When `UPSTASH_REDIS_REST_URL` (and `UPSTASH_REDIS_REST_TOKEN`) are set,
+ * uses `@upstash/ratelimit` (`Ratelimit.slidingWindow`) backed by Upstash
+ * Redis for global cross-instance enforcement.
  *
- *   estimate = previousCount × (1 − elapsedFraction) + currentCount
- *
- * This is O(1) per check (no timestamp queues), prevents boundary bursts
- * (unlike a plain fixed-window counter), and is the same algorithm used
- * internally by Redis + Cloudflare rate-limit implementations.
- *
- * State lives in a module-level Map and is per edge-worker instance on
- * Vercel. Not globally shared across all instances, but significantly
- * reduces the blast radius. Upgrade to Upstash Redis for strict global
- * enforcement if needed.
- *
- * Keys are `ip:routeLabel` strings. Entries are pruned on a write-count
- * cadence (not store.size, which is stable at multiples of 50) so the Map
- * does not grow unbounded.
+ * Otherwise (or if Upstash is unreachable), falls back to the O(1) two-bucket
+ * weighted sliding-window in-memory limiter.
  */
+
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
 interface Bucket {
   count: number;
@@ -36,8 +29,6 @@ let writeCount = 0;
 function prune(windowMs: number): void {
   const cutoff = Date.now() - windowMs * 2;
   for (const [key, entry] of store) {
-    // Remove entries whose previous bucket is older than two full windows
-    // (both buckets have definitely expired).
     if (entry.previous.windowStart < cutoff) {
       store.delete(key);
     }
@@ -56,11 +47,42 @@ export interface RateLimitResult {
   success: boolean;
   /** Approximate remaining capacity (floor). */
   remaining: number;
-  /** Epoch ms when the current fixed-window slot resets. */
+  /** Epoch ms when the current window resets. */
   resetAt: number;
 }
 
-export function checkRateLimit(
+// ── Upstash Redis client & limiter cache ───────────────────────────────────
+
+let redisClient: Redis | null = null;
+const upstashLimiters = new Map<string, Ratelimit>();
+
+function getUpstashLimiter(limit: number, windowMs: number): Ratelimit | null {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+
+  const cacheKey = `${limit}:${windowMs}`;
+  const cached = upstashLimiters.get(cacheKey);
+  if (cached) return cached;
+
+  if (!redisClient) {
+    redisClient = new Redis({ url, token });
+  }
+
+  const windowSec = Math.max(1, Math.round(windowMs / 1_000));
+  const limiter = new Ratelimit({
+    redis: redisClient,
+    limiter: Ratelimit.slidingWindow(limit, `${windowSec} s`),
+    prefix: "punterstat:rl",
+  });
+
+  upstashLimiters.set(cacheKey, limiter);
+  return limiter;
+}
+
+// ── In-memory fallback ─────────────────────────────────────────────────────
+
+export function checkMemoryRateLimit(
   key: string,
   { limit, windowMs }: RateLimitConfig,
 ): RateLimitResult {
@@ -68,7 +90,6 @@ export function checkRateLimit(
   const slotStart = Math.floor(now / windowMs) * windowMs;
   const resetAt = slotStart + windowMs;
 
-  // Prune stale entries every 50 writes (write-count, not store.size).
   writeCount += 1;
   if (writeCount % 50 === 0) prune(windowMs);
 
@@ -76,29 +97,24 @@ export function checkRateLimit(
   let entry: Entry;
 
   if (!existing) {
-    // First-ever request for this key.
     entry = {
       current: { count: 0, windowStart: slotStart },
       previous: { count: 0, windowStart: slotStart - windowMs },
     };
   } else if (existing.current.windowStart === slotStart) {
-    // Still in the same slot — use as-is.
     entry = existing;
   } else if (existing.current.windowStart === slotStart - windowMs) {
-    // Slot rolled over once — promote current → previous, reset current.
     entry = {
       previous: existing.current,
       current: { count: 0, windowStart: slotStart },
     };
   } else {
-    // Two or more slots have passed — previous data is too stale to weight.
     entry = {
       current: { count: 0, windowStart: slotStart },
       previous: { count: 0, windowStart: slotStart - windowMs },
     };
   }
 
-  // Weighted sliding-window estimate *before* counting this request.
   const elapsedFraction = (now - slotStart) / windowMs;
   const estimate =
     entry.previous.count * (1 - elapsedFraction) + entry.current.count;
@@ -108,10 +124,58 @@ export function checkRateLimit(
     return { success: false, remaining: 0, resetAt };
   }
 
-  // Allow: increment and persist.
   entry.current.count += 1;
   store.set(key, entry);
 
   const remaining = Math.max(0, Math.floor(limit - (estimate + 1)));
   return { success: true, remaining, resetAt };
+}
+
+// ── Unified async rate-limit check ─────────────────────────────────────────
+
+export async function checkRateLimit(
+  key: string,
+  config: RateLimitConfig,
+): Promise<RateLimitResult> {
+  const upstash = getUpstashLimiter(config.limit, config.windowMs);
+  if (upstash) {
+    try {
+      const res = await upstash.limit(key);
+      return {
+        success: res.success,
+        remaining: Math.max(0, res.remaining),
+        resetAt: res.reset,
+      };
+    } catch (err) {
+      console.error(
+        "[rate-limit] Upstash check failed, falling back to in-memory:",
+        err instanceof Error ? err.message : String(err)
+      );
+    }
+  }
+
+  return checkMemoryRateLimit(key, config);
+}
+
+/**
+ * Extract client IP from request headers and run `checkRateLimit`.
+ * Convenient for Server Actions (auth, contact form) where `headers()` is used.
+ */
+export async function checkActionRateLimit(
+  label: string,
+  config: RateLimitConfig,
+  requestHeaders: { get(name: string): string | null },
+  identifierSuffix?: string,
+): Promise<RateLimitResult> {
+  const forwarded = requestHeaders.get("x-forwarded-for");
+  const ip =
+    forwarded?.split(",")[0]?.trim() ||
+    requestHeaders.get("x-real-ip")?.trim() ||
+    "unknown";
+
+  const key = identifierSuffix
+    ? `${ip}:${label}:${identifierSuffix}`
+    : `${ip}:${label}`;
+
+  return checkRateLimit(key, config);
 }

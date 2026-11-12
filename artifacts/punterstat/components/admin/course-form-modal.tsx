@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import Image from "next/image";
 import { X, Loader2, BookOpen, ImagePlus, Trash2 } from "lucide-react";
 import { createCourse, updateCourse } from "@/lib/admin/actions";
 import { uploadToCloudinary, type UploadSignature } from "@/lib/cloudinary/upload";
@@ -109,6 +110,7 @@ export function CourseFormModal({ categories, course, onClose }: CourseFormModal
           </div>
           <button
             type="button"
+            aria-label="Close modal"
             onClick={onClose}
             className="rounded-lg p-1 text-[#1e293b]/40 hover:bg-slate-100 hover:text-[#0f172a]"
           >
@@ -152,11 +154,12 @@ export function CourseFormModal({ categories, course, onClose }: CourseFormModal
               >
                 {thumbnailUrl ? (
                   <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={thumbnailUrl}
                       alt="Course thumbnail"
-                      className="h-full w-full object-cover"
+                      fill
+                      unoptimized={thumbnailUrl.startsWith("blob:")}
+                      className="object-cover"
                     />
                     {/* Overlay on hover */}
                     {!isUploading && (
@@ -217,10 +220,11 @@ export function CourseFormModal({ categories, course, onClose }: CourseFormModal
 
             {/* ── Title ── */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-[#1e293b]/70">
+              <label htmlFor="course-title" className="mb-1 block text-xs font-semibold text-[#1e293b]/70">
                 Title <span className="text-red-500">*</span>
               </label>
               <input
+                id="course-title"
                 name="title"
                 value={title}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
@@ -232,10 +236,11 @@ export function CourseFormModal({ categories, course, onClose }: CourseFormModal
 
             {/* ── Slug ── */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-[#1e293b]/70">
+              <label htmlFor="course-slug" className="mb-1 block text-xs font-semibold text-[#1e293b]/70">
                 Slug <span className="text-red-500">*</span>
               </label>
               <input
+                id="course-slug"
                 name="slug"
                 value={slug}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -251,10 +256,11 @@ export function CourseFormModal({ categories, course, onClose }: CourseFormModal
 
             {/* ── Description ── */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-[#1e293b]/70">
+              <label htmlFor="course-description" className="mb-1 block text-xs font-semibold text-[#1e293b]/70">
                 Description
               </label>
               <textarea
+                id="course-description"
                 name="description"
                 defaultValue={course?.description ?? ""}
                 rows={3}
@@ -266,8 +272,9 @@ export function CourseFormModal({ categories, course, onClose }: CourseFormModal
             {/* ── Module + Level ── */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-[#1e293b]/70">Module</label>
+                <label htmlFor="course-category" className="mb-1 block text-xs font-semibold text-[#1e293b]/70">Module</label>
                 <select
+                  id="course-category"
                   name="category_id"
                   defaultValue={course?.categoryId ?? ""}
                   className="w-full rounded-xl border border-border bg-slate-50 px-3 py-2 text-sm text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-violet-500/30"
@@ -282,8 +289,9 @@ export function CourseFormModal({ categories, course, onClose }: CourseFormModal
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold text-[#1e293b]/70">Level</label>
+                <label htmlFor="course-level" className="mb-1 block text-xs font-semibold text-[#1e293b]/70">Level</label>
                 <select
+                  id="course-level"
                   name="level"
                   defaultValue={course?.level ?? "beginner"}
                   className="w-full rounded-xl border border-border bg-slate-50 px-3 py-2 text-sm text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-violet-500/30"
@@ -299,10 +307,11 @@ export function CourseFormModal({ categories, course, onClose }: CourseFormModal
             {/* ── Sort order + Premium ── */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-[#1e293b]/70">
+                <label htmlFor="course-sort-order" className="mb-1 block text-xs font-semibold text-[#1e293b]/70">
                   Sort Order
                 </label>
                 <input
+                  id="course-sort-order"
                   name="sort_order"
                   type="number"
                   defaultValue={course?.sortOrder ?? 0}

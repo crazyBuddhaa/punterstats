@@ -1,4 +1,5 @@
 import { getBlockStat, type BlockFactor } from "@/lib/lessons/data-blocks";
+import { sanitizeContentHtml } from "@/lib/sanitize-html";
 
 const VALID_FACTORS: BlockFactor[] = ["home_win_rate", "avg_goals", "btts_rate", "over25_rate"];
 
@@ -53,7 +54,6 @@ function parseChunks(html: string): ContentChunk[] {
 
     if (!VALID_FACTORS.includes(factorRaw as BlockFactor)) {
       // Unknown factor — leave as empty comment; do not discard surrounding HTML
-      console.warn(`[lesson-content] Unknown data-factor "${factorRaw}" — skipping block.`);
       lastIndex = match.index + match[0].length;
       continue;
     }
@@ -141,13 +141,7 @@ interface LessonContentProps {
 /**
  * Server component that renders lesson HTML with optional live data block support.
  *
- * For lessons without any `data-block` markers (all current lessons), this is
- * equivalent to a plain `dangerouslySetInnerHTML` render — no DB queries are made.
- *
- * When a lesson contains a data-block marker, e.g.:
- *   <div data-block="stat" data-factor="home_win_rate" data-league="E0"></div>
- * the component queries the historical_matches dataset server-side and renders
- * a live stat card inline.
+ * All HTML chunks are sanitized at render time with isomorphic-dompurify.
  */
 export async function LessonContent({
   html,
@@ -157,25 +151,27 @@ export async function LessonContent({
   const chunks = parseChunks(decoded);
   const className = proseClass(variant);
 
-  // Fast path: no data-block markers — single render, no async work
+  // Fast path: no data-block markers — single sanitized render, no async work
   if (chunks.length === 1 && chunks[0].kind === "html") {
+    const safeHtml = sanitizeContentHtml(chunks[0].content);
     return (
       <div
         className={className}
-        dangerouslySetInnerHTML={{ __html: chunks[0].content }}
+        dangerouslySetInnerHTML={{ __html: safeHtml }}
       />
     );
   }
 
-  // Mixed path: render HTML segments and live blocks interspersed
+  // Mixed path: render sanitized HTML segments and live blocks interspersed
   return (
     <div className={className}>
       {chunks.map((chunk, i) => {
         if (chunk.kind === "html") {
+          const safeHtml = sanitizeContentHtml(chunk.content);
           return (
             <div
               key={i}
-              dangerouslySetInnerHTML={{ __html: chunk.content }}
+              dangerouslySetInnerHTML={{ __html: safeHtml }}
             />
           );
         }

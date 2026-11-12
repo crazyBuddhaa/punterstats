@@ -80,9 +80,6 @@ export async function getFootballDataFixtures(options?: {
 
   const apiKey = process.env.FOOTBALL_DATA_API_KEY;
   if (!apiKey) {
-    console.warn(
-      "[sports-data/football-data] FOOTBALL_DATA_API_KEY is not set — cannot fetch live fixtures."
-    );
     await releaseFixturesLock(SOURCE);
     return { success: false, error: "Match data is not configured yet" };
   }

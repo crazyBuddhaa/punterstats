@@ -80,3 +80,6 @@ export default sentryDsn
       silent: true,
     })
   : nextConfig;
+
+import("@opennextjs/cloudflare").then((m) => m.initOpenNextCloudflareForDev());
+

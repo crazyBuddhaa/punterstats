@@ -10,7 +10,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkActionRateLimit } from "@/lib/rate-limit";
 
-const uuidSchema = z.string().uuid();
+const uuidSchema = z.string().max(36).uuid();
 
 function htmlPage(title: string, body: string, status = 200): Response {
   const html = `<!DOCTYPE html>

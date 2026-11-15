@@ -6,9 +6,18 @@ import { sendEmail } from "@/lib/email/resend";
 import { checkActionRateLimit } from "@/lib/rate-limit";
 
 const contactSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  subject: z.string().min(5, "Subject must be at least 5 characters"),
+  name: z
+    .string()
+    .min(2, "Name must be at least 2 characters")
+    .max(100, "Name must be 100 characters or fewer"),
+  email: z
+    .string()
+    .max(254, "Email must be 254 characters or fewer")
+    .email("Please enter a valid email address"),
+  subject: z
+    .string()
+    .min(5, "Subject must be at least 5 characters")
+    .max(200, "Subject must be 200 characters or fewer"),
   message: z
     .string()
     .min(20, "Message must be at least 20 characters")

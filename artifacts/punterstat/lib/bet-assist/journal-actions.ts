@@ -28,7 +28,7 @@ const betSchema = z.object({
   yourProb: optionalNumber.refine((v) => v === null || (v > 0 && v < 1), "Probability must be between 0 and 100%"),
   closingOdds: optionalNumber.refine((v) => v === null || v > 1, "Closing odds must be greater than 1"),
   legCount: z.number().int().min(1, "Legs must be at least 1").max(50, "Legs cannot exceed 50").optional(),
-  placedAt: z.string().optional(),
+  placedAt: z.string().max(64).optional(),
   notes: z.string().trim().max(1000).optional().nullable(),
 });
 
@@ -115,7 +115,7 @@ export async function addBet(input: NewBetInput): Promise<ActionResult> {
 }
 
 const settleSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().max(36).uuid(),
   status: z.enum(BET_STATUSES),
   cashoutAmount: optionalNumber,
   closingOdds: optionalNumber,
@@ -151,7 +151,7 @@ export async function settleBet(input: z.input<typeof settleSchema>): Promise<Ac
 }
 
 export async function deleteBet(id: string): Promise<ActionResult> {
-  if (!z.string().uuid().safeParse(id).success) return { success: false, error: "Invalid bet" };
+  if (!z.string().max(36).uuid().safeParse(id).success) return { success: false, error: "Invalid bet" };
   const supabase = await createClient();
   const {
     data: { user },

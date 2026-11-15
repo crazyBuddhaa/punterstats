@@ -7,7 +7,11 @@
     "build": "pnpm --filter punterstat run build",
     "lint": "pnpm --filter punterstat run lint",
     "test": "pnpm --filter punterstat run test",
-    "typecheck": "pnpm -r --if-present run typecheck"
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "check-migrations": "pnpm --filter punterstat-scripts run check-migrations"
+  },
+  "engines": {
+    "node": ">=20.9"
   },
   "devDependencies": {
     "prettier": "^3.9.4",

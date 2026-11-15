@@ -21,8 +21,8 @@ Learn the maths of betting, analyse matches with transparent probabilities, and 
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 15 (App Router) |
-| Language | TypeScript |
+| Framework | Next.js 16 (App Router, Turbopack, React 19) |
+| Language | TypeScript 5 |
 | Styling | Tailwind CSS + shadcn/ui |
 | Animation | Framer Motion |
 | State | Zustand |
@@ -43,25 +43,25 @@ Learn the maths of betting, analyse matches with transparent probabilities, and 
 
 ### Prerequisites
 
-- Node.js 18+
-- pnpm (recommended) or npm
+- Node.js 20.9+ (Node 22 recommended; pinned in `.nvmrc`)
+- pnpm (workspace root lockfile)
 
 ### Installation
 
 ```bash
 # Clone the repository
 git clone https://github.com/crazyBuddhaa/punterstats.git
-cd punterstats/artifacts/punterstat
+cd punterstats
 
-# Install dependencies
-npm install
+# Install dependencies from the workspace root
+pnpm install --frozen-lockfile
 
 # Set up environment variables
-cp .env.local.example .env.local
-# Edit .env.local with your Supabase, Cloudinary, Resend, and API credentials
+cp artifacts/punterstat/.env.local.example artifacts/punterstat/.env.local
+# Edit artifacts/punterstat/.env.local with your Supabase, Cloudinary, Resend, and API credentials
 
-# Run development server
-npm run dev
+# Run development server (Next.js 16 + Turbopack)
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
@@ -136,8 +136,9 @@ artifacts/punterstat/
 │   ├── spot-the-value/     # EV calculator
 │   └── supabase/           # Supabase client/server helpers
 ├── store/                  # Zustand stores (auth, ui)
-├── supabase/migrations/    # 40 SQL migration files
+├── supabase/migrations/    # 55 SQL migration files (001..055)
 ├── types/                  # Shared TypeScript types
+├── proxy.ts                # Next.js 16 request proxy (Node.js runtime: redirects, rate limits, auth)
 ├── .env.local.example      # Environment variable template
 └── vercel.json             # Vercel deployment config
 ```
@@ -162,8 +163,9 @@ artifacts/punterstat/
 | 12 | SEO, Storage & Polish | ✅ Complete |
 | 13 | Historical Stats & R2 Data Lake | ✅ Complete |
 | 14 | Live Odds & Spot the Value | ✅ Complete |
-| 15 | Fixes & Hardening (ongoing) | 🔄 In progress |
+| 15 | Fixes & Hardening (ongoing) | ✅ Complete |
 | 16 | Three-pillar restage + Bet Assist (Picks removed; Bet Assist = slip checker, calculators, tracker.) | ✅ Complete |
+| 17 | Betting Report Card + Weekly Report Email + CI & Next.js 16 Upgrade | ✅ Complete |
 
 ---
 

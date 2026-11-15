@@ -25,7 +25,7 @@ export function RichTextEditor({
   const editorRef = useRef<HTMLDivElement>(null);
   const hiddenRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [isEmpty, setIsEmpty] = useState(!defaultValue.trim());
+  const [isEmpty, setIsEmpty] = useState(() => !sanitizeContentHtml(defaultValue).trim());
   const [uploading, setUploading] = useState(false);
 
   // Initialise editor with sanitized HTML on mount (runs once)
@@ -37,7 +37,6 @@ export function RichTextEditor({
     if (hiddenRef.current) {
       hiddenRef.current.value = safeHtml;
     }
-    setIsEmpty(!safeHtml.trim());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

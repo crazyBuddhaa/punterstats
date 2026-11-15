@@ -7,6 +7,7 @@
     "seed-r2": "tsx ./src/seed-r2.ts",
     "ingest-r2": "tsx ./src/ingest-r2-to-supabase.ts",
     "concat-migrations": "tsx ./src/concat-migrations.ts",
+    "check-migrations": "tsx ./src/check-migrations.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

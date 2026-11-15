@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -170,9 +170,6 @@ export function FixtureCard({ fixture }: { fixture: FixtureMatch }) {
     weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
   });
 
-  // Clear stale analysis whenever either input set changes
-  useEffect(() => { setResult(null); }, [marketOdds, modelProbs]);
-
   const homeOdds = parseFloat(marketOdds.home);
   const drawOdds = parseFloat(marketOdds.draw);
   const awayOdds = parseFloat(marketOdds.away);
@@ -238,7 +235,11 @@ export function FixtureCard({ fixture }: { fixture: FixtureMatch }) {
                   <input
                     type="number" min="1.01" step="0.01" placeholder="e.g. 2.50"
                     value={marketOdds[key]}
-                    onChange={(e) => setMarketOdds((p) => ({ ...p, [key]: e.target.value }))}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setMarketOdds((p) => ({ ...p, [key]: val }));
+                      setResult(null);
+                    }}
                     className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-[#0f172a] placeholder:text-[#1e293b]/30 focus:border-[#3D2DFF] focus:outline-none focus:ring-1 focus:ring-[#3D2DFF]"
                   />
                 </div>
@@ -256,7 +257,11 @@ export function FixtureCard({ fixture }: { fixture: FixtureMatch }) {
                     <input
                       type="number" min="0" max="100" step="0.5" placeholder="0"
                       value={modelProbs[key]}
-                      onChange={(e) => setModelProbs((p) => ({ ...p, [key]: e.target.value }))}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setModelProbs((p) => ({ ...p, [key]: val }));
+                        setResult(null);
+                      }}
                       className="w-full rounded-lg border border-border bg-white px-3 py-2 pr-7 text-sm text-[#0f172a] placeholder:text-[#1e293b]/30 focus:border-[#3D2DFF] focus:outline-none focus:ring-1 focus:ring-[#3D2DFF]"
                     />
                     <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#1e293b]/40">%</span>

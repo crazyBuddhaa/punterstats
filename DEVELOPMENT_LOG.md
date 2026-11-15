@@ -17,6 +17,28 @@
 
 ## Completed Work
 
+### Infrastructure, CI & Next.js 16 Upgrade
+
+#### ✅ Hardening Gaps, GitHub Actions CI & Next.js 16 Upgrade
+**Date:** 2026-11-12
+
+Completed workspace hardening, automated CI checks, and upgraded PunterStat from Next.js 15.1.11 to Next.js 16.4.3 (with React 19.3.1 and Turbopack by default).
+
+**Hardening & CI (`main`):**
+- Added explicit `vite` (`8.3.5`) and `vitest` (`5.1.0`) devDependencies in `artifacts/punterstat/package.json` and regenerated `pnpm-lock.yaml` so `pnpm install --frozen-lockfile && pnpm test` succeeds on a clean install.
+- Updated `artifacts/punterstat/vercel.json` `installCommand` to `pnpm install --frozen-lockfile`.
+- Added `.nvmrc` (`22`) and `engines.node >=20.9` in both root and app `package.json` files.
+- Added `.github/workflows/ci.yml` (SHA-pinned actions, `permissions: contents: read`, concurrency cancellation, frozen-lockfile install, migration prefix check, typecheck, lint, test, and build with dummy env vars derived strictly from `.env.local.example`) and `scripts/src/check-migrations.ts`.
+
+**Next.js 16 Upgrade (`chore/next-16`):**
+- Upgraded `next` to `16.4.3`, `eslint-config-next` to `16.4.3`, `react` and `react-dom` to `19.3.1`, `@types/react` and `@types/react-dom` to `19.3.0`, and pinned `@sentry/nextjs` (`11.9.0`).
+- Audited all async request APIs (`params`, `searchParams`, `cookies()`, `headers()`) across `app/` and `lib/` and aligned `searchParams` types in `app/dashboard/bet-tracker/page.tsx` and `app/(main)/stats/results/page.tsx` with Next 16's `Promise<Record<string, string | string[] | undefined>>`.
+- Migrated `middleware.ts` to `proxy.ts` (`export default async function proxy` on the Node.js runtime), preserving all 301 redirects, rate limiting, Supabase session refresh, and protected/authenticated route guards.
+- Migrated `pnpm lint` from removed `next lint` to `eslint .` with native flat config imports from `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`, and resolved all React 19 hook and TypeScript lint errors.
+- Updated `next.config.ts` for Next 16 image defaults (`minimumCacheTTL: 14400`, `qualities: [75]`, Cloudinary & Supabase storage `remotePatterns`), removed redundant `--turbopack` flag from `next dev`, and added `instrumentation-client.ts` for Sentry client instrumentation under Turbopack.
+
+---
+
 ### Positioning — Bet Analysis · Bet Learning · Bet Assist
 
 #### ✅ Remove Data-Driven Picks & Reposition as Education, Analysis & Tools Only

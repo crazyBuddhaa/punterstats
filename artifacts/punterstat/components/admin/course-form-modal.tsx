@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { X, Loader2, BookOpen, ImagePlus, Trash2 } from "lucide-react";
 import { createCourse, updateCourse } from "@/lib/admin/actions";
@@ -37,10 +37,6 @@ export function CourseFormModal({ categories, course, onClose }: CourseFormModal
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const isEdit = !!course;
-
-  useEffect(() => {
-    if (!slugTouched) setSlug(slugify(title));
-  }, [title, slugTouched]);
 
   async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) {
@@ -227,7 +223,11 @@ export function CourseFormModal({ categories, course, onClose }: CourseFormModal
                 id="course-title"
                 name="title"
                 value={title}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const nextTitle = e.target.value;
+                  setTitle(nextTitle);
+                  if (!slugTouched) setSlug(slugify(nextTitle));
+                }}
                 required
                 className="w-full rounded-xl border border-border bg-slate-50 px-3 py-2 text-sm text-[#0f172a] placeholder:text-[#1e293b]/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
                 placeholder="Introduction to Betting Markets"

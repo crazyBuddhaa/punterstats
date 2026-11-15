@@ -6,15 +6,26 @@ import { ResultsTable } from "@/components/stats/results-table";
 export const metadata = { title: "Match Results | PunterStat" };
 
 interface Props {
-  searchParams: Promise<Record<string, string>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-async function ResultsSection({ searchParams }: { searchParams: Record<string, string> }) {
-  const league   = searchParams.league   ?? "";
-  const season   = searchParams.season   ?? "";
-  const team     = searchParams.team     ?? "";
-  const result   = searchParams.result   ?? "";
-  const page     = Math.max(1, parseInt(searchParams.page ?? "1", 10));
+function firstString(value: string | string[] | undefined): string {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value[0] ?? "";
+  return "";
+}
+
+async function ResultsSection({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp       = await searchParams;
+  const league   = firstString(sp.league);
+  const season   = firstString(sp.season);
+  const team     = firstString(sp.team);
+  const result   = firstString(sp.result);
+  const page     = Math.max(1, parseInt(firstString(sp.page) || "1", 10));
 
   const [paged, leagues, seasons] = await Promise.all([
     getResults(
@@ -59,9 +70,7 @@ async function ResultsSection({ searchParams }: { searchParams: Record<string, s
   );
 }
 
-export default async function ResultsPage({ searchParams }: Props) {
-  const sp = await searchParams;
-
+export default function ResultsPage({ searchParams }: Props) {
   return (
     <main className="min-h-screen bg-[#0f172a] py-10 px-4">
       <div className="mx-auto max-w-7xl">
@@ -83,7 +92,7 @@ export default async function ResultsPage({ searchParams }: Props) {
             </div>
           }
         >
-          <ResultsSection searchParams={sp} />
+          <ResultsSection searchParams={searchParams} />
         </Suspense>
       </div>
     </main>

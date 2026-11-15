@@ -9,7 +9,11 @@ export const metadata: Metadata = { title: "Bet Tracker — Dashboard — Punter
 
 const PREFILL_KEYS = ["event", "selection", "odds", "prob", "bookmaker", "market", "stake", "legs"] as const;
 
-export default async function BetTrackerPage({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
+export default async function BetTrackerPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requireAuth();
   const [bets, params] = await Promise.all([getJournal(), searchParams]);
 

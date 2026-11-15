@@ -30,11 +30,20 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
+  experimental: {
+    cpus: 1,
+  },
   images: {
+    minimumCacheTTL: 14400,
+    qualities: [75],
     remotePatterns: [
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.supabase.co",
       },
     ],
   },

@@ -60,7 +60,12 @@ function getIp(request: NextRequest): string {
   return "unknown";
 }
 
-export async function middleware(request: NextRequest) {
+/**
+ * Next.js 16 request proxy (runs on the Node.js runtime).
+ * Handles 301 redirects for retired routes, inbound rate limiting,
+ * Supabase SSR session refresh, and protected/authenticated route guards.
+ */
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ── Permanent 301 redirects for removed Picks routes (before auth guards) ──

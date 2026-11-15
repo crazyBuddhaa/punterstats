@@ -35,7 +35,7 @@ export async function createClient() {
             );
           } catch {
             // Called from a Server Component — mutations are a no-op here.
-            // Middleware handles session refresh instead.
+            // Proxy (proxy.ts) handles session refresh instead.
           }
         },
       },

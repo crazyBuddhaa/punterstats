@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { X, Loader2, Zap } from "lucide-react";
 import { createLesson, updateLesson } from "@/lib/admin/actions";
 import type { AdminLesson } from "@/lib/admin/queries";
@@ -30,10 +30,6 @@ export function LessonFormModal({ courseId, lesson, onClose }: LessonFormModalPr
   const [isPublished, setIsPublished] = useState(lesson?.isPublished ?? false);
   const formRef = useRef<HTMLFormElement>(null);
   const isEdit = !!lesson;
-
-  useEffect(() => {
-    if (!slugTouched) setSlug(slugify(title));
-  }, [title, slugTouched]);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -90,7 +86,11 @@ export function LessonFormModal({ courseId, lesson, onClose }: LessonFormModalPr
               <input
                 name="title"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => {
+                  const nextTitle = e.target.value;
+                  setTitle(nextTitle);
+                  if (!slugTouched) setSlug(slugify(nextTitle));
+                }}
                 required
                 className="w-full rounded-xl border border-border bg-slate-50 px-3 py-2 text-sm text-[#0f172a] placeholder:text-[#1e293b]/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
                 placeholder="Understanding Odds Formats"

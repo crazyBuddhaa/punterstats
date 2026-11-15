@@ -71,11 +71,7 @@ export function OddsPicker({ onSelect, onAddLeg, accumMode = false }: OddsPicker
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  async function load(key: string) {
-    setSportKey(key);
-    setLoading(true);
-    setError(null);
-    setExpanded(null);
+  async function fetchOdds(key: string) {
     try {
       const res = await fetch(`/api/odds?sport=${encodeURIComponent(key)}`);
       const json = await res.json();
@@ -94,8 +90,41 @@ export function OddsPicker({ onSelect, onAddLeg, accumMode = false }: OddsPicker
     }
   }
 
+  async function load(key: string) {
+    setSportKey(key);
+    setLoading(true);
+    setError(null);
+    setExpanded(null);
+    await fetchOdds(key);
+  }
+
   // Auto-load on mount
-  useEffect(() => { load(SPORTS[0].key); }, []);
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/odds?sport=${encodeURIComponent(SPORTS[0].key)}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (!active) return;
+        if (json.success && Array.isArray(json.events) && json.events.length > 0) {
+          setEvents(json.events);
+          setExpanded(json.events[0]?.id ?? null);
+        } else {
+          setEvents([]);
+          setError(json.error ?? "No live odds right now — try another league or enter odds manually.");
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setEvents([]);
+        setError("Could not reach odds service — enter odds manually.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="rounded-xl border border-border bg-white overflow-hidden">

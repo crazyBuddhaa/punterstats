@@ -1,20 +1,9 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { createRequire } from "module";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const require = createRequire(import.meta.url);
-const nextReq = createRequire(require.resolve("next/package.json"));
-const { FlatCompat } = nextReq("@eslint/eslintrc");
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
+import nextTypescript from "eslint-config-next/typescript";
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...nextCoreWebVitals,
+  ...nextTypescript,
   {
     ignores: [".next/**", "node_modules/**", "out/**", "build/**", "next-env.d.ts"],
   },

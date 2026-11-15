@@ -1,28 +1,29 @@
 import Link from "next/link";
-import type { ElementType } from "react";
 import { ArrowRight, BookOpen, FlaskConical, BarChart2, TrendingUp, Compass } from "lucide-react";
 import type { Recommendation } from "@/lib/dashboard/recommendations";
 
-const HREF_ICONS: Record<string, ElementType> = {
-  "/simulation-engine": FlaskConical,
-  "/match-breakdown": BarChart2,
-  "/spot-the-value": TrendingUp,
-  "/betting-academy": BookOpen,
-  "/sports-university": BookOpen,
-};
-
-function iconForHref(href: string): ElementType {
-  // Exact match first, then prefix match for deep lesson paths
-  if (HREF_ICONS[href]) return HREF_ICONS[href];
-  for (const [prefix, Icon] of Object.entries(HREF_ICONS)) {
-    if (href.startsWith(prefix)) return Icon;
+function RecommendationIcon({ href, className }: { href: string; className?: string }) {
+  if (href === "/simulation-engine" || href.startsWith("/simulation-engine")) {
+    return <FlaskConical className={className} />;
   }
-  return Compass;
+  if (href === "/match-breakdown" || href.startsWith("/match-breakdown")) {
+    return <BarChart2 className={className} />;
+  }
+  if (href === "/spot-the-value" || href.startsWith("/spot-the-value")) {
+    return <TrendingUp className={className} />;
+  }
+  if (
+    href === "/betting-academy" ||
+    href.startsWith("/betting-academy") ||
+    href === "/sports-university" ||
+    href.startsWith("/sports-university")
+  ) {
+    return <BookOpen className={className} />;
+  }
+  return <Compass className={className} />;
 }
 
 export function RecommendationCard({ rec }: { rec: Recommendation }) {
-  const Icon = iconForHref(rec.href);
-
   return (
     <div className="rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50 to-white p-5 shadow-sm">
       <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-teal-600">
@@ -30,7 +31,7 @@ export function RecommendationCard({ rec }: { rec: Recommendation }) {
       </p>
       <div className="flex items-start gap-4">
         <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-100">
-          <Icon className="h-5 w-5 text-teal-700" />
+          <RecommendationIcon href={rec.href} className="h-5 w-5 text-teal-700" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-[#0f172a]">{rec.title}</p>

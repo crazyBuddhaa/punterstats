@@ -22,7 +22,7 @@ pnpm typecheck    # typecheck the app and scripts
 - **Package manager:** `pnpm` with a locked workspace (`pnpm install --frozen-lockfile`). `pnpm-workspace.yaml` enforces a 1-day `minimumReleaseAge` policy on npm packages.
 - **Commands (from repo root):**
   - `pnpm dev` — start the Next.js 16 development server with Turbopack (`http://localhost:3000`)
-  - `pnpm typecheck` — run `tsc --noEmit` across `artifacts/punterstat` and `scripts`
+  - `pnpm typecheck` — run `tsc --noEmit` across `artifacts/punterstat` and `scripts` (reports `2 of 3 workspace projects` because the root workspace package `punterstat-workspace` is an aggregator with no `.ts` source files of its own)
   - `pnpm lint` — run ESLint (`eslint .`) across `artifacts/punterstat`
   - `pnpm test` — run the Vitest unit test suite
   - `pnpm build` — run a production Turbopack build of `artifacts/punterstat`

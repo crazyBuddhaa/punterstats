@@ -23,6 +23,7 @@ const SECURITY_HEADERS = [
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
   },
+  // TODO: switch to enforcing after reviewing reports
   {
     key: "Content-Security-Policy-Report-Only",
     value: CSP_DIRECTIVES,

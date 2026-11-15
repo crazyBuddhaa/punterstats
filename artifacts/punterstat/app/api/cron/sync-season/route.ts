@@ -16,6 +16,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { verifyCronRequest } from "@/lib/cron-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseFDCsv, upsertMatchesAndOdds } from "@/lib/r2/csv-parser";
 import { isR2Configured } from "@/lib/r2/client";
@@ -45,17 +46,7 @@ function currentSeasonCodes(): Array<{ code: string; label: string }> {
 }
 
 export async function GET(req: Request) {
-  // Hard-fail when CRON_SECRET is not configured — never accept requests
-  // against an undefined secret (would allow "Bearer undefined" to bypass auth).
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) {
-    return NextResponse.json(
-      { error: "CRON_SECRET is not configured on this deployment." },
-      { status: 503 }
-    );
-  }
-  const auth = req.headers.get("authorization");
-  if (auth !== `Bearer ${cronSecret}`) {
+  if (!verifyCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

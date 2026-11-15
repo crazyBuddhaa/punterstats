@@ -14,21 +14,11 @@
  */
 
 import { NextResponse } from "next/server";
+import { verifyCronRequest } from "@/lib/cron-auth";
 import { resolveUnresolved } from "@/lib/predictions/resolver";
 
 export async function GET(req: Request) {
-  // Hard-fail when CRON_SECRET is not configured — never accept an undefined
-  // secret (that would allow "Bearer undefined" to bypass auth).
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) {
-    return NextResponse.json(
-      { error: "CRON_SECRET is not configured on this deployment." },
-      { status: 503 }
-    );
-  }
-
-  const auth = req.headers.get("authorization");
-  if (auth !== `Bearer ${cronSecret}`) {
+  if (!verifyCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -43,3 +43,11 @@ Thumbs.db
 
 # Generated migration bundle
 scripts/all_migrations.sql
+
+# Environment, build artifacts & logs
+.env*
+!.env*.example
+.next
+.vercel
+*.log
+

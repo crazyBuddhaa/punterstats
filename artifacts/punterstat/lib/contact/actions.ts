@@ -47,7 +47,7 @@ export async function submitContact(
   const reqHeaders = await headers();
   const rl = await checkActionRateLimit(
     "contact-action",
-    { limit: 5, windowMs: 60_000 },
+    { limit: 3, windowMs: 60_000 },
     reqHeaders
   );
   if (!rl.success) {
@@ -56,11 +56,17 @@ export async function submitContact(
     };
   }
 
+  // Honeypot trap: if automated bot filled the hidden "website" field, drop silently.
+  const honeypot = formData.get("website");
+  if (typeof honeypot === "string" && honeypot.trim().length > 0) {
+    return { success: true };
+  }
+
   const raw = {
-    name: formData.get("name") as string,
-    email: formData.get("email") as string,
-    subject: formData.get("subject") as string,
-    message: formData.get("message") as string,
+    name: ((formData.get("name") as string) ?? "").replace(/[\r\n]+/g, " ").trim(),
+    email: ((formData.get("email") as string) ?? "").trim(),
+    subject: ((formData.get("subject") as string) ?? "").replace(/[\r\n]+/g, " ").trim(),
+    message: ((formData.get("message") as string) ?? "").trim(),
   };
 
   const parsed = contactSchema.safeParse(raw);

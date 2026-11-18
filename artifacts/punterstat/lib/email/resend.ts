@@ -33,7 +33,7 @@ export async function sendEmail({
   replyTo,
 }: SendEmailOptions): Promise<EmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
+  if (!apiKey || apiKey.includes("placeholder")) {
     return { success: false, error: "Email not configured" };
   }
 

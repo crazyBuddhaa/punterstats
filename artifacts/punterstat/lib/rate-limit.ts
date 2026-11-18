@@ -55,11 +55,18 @@ export interface RateLimitResult {
 
 let redisClient: Redis | null = null;
 const upstashLimiters = new Map<string, Ratelimit>();
+let upstashCircuitOpenUntil = 0;
+
+function isConfiguredEnv(val: string | undefined): val is string {
+  return Boolean(val && !val.includes("placeholder"));
+}
 
 function getUpstashLimiter(limit: number, windowMs: number): Ratelimit | null {
+  if (Date.now() < upstashCircuitOpenUntil) return null;
+
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return null;
+  if (!isConfiguredEnv(url) || !isConfiguredEnv(token)) return null;
 
   const cacheKey = `${limit}:${windowMs}`;
   const cached = upstashLimiters.get(cacheKey);
@@ -147,8 +154,11 @@ export async function checkRateLimit(
         resetAt: res.reset,
       };
     } catch (err) {
-      console.error(
-        "[rate-limit] Upstash check failed, falling back to in-memory:",
+      // Circuit-break Upstash for 60s so unreachable endpoints don't add latency
+      // or flood Cloudflare Observability logs on every request.
+      upstashCircuitOpenUntil = Date.now() + 60_000;
+      console.warn(
+        "[rate-limit] Upstash unreachable, circuit-breaking to in-memory for 60s:",
         err instanceof Error ? err.message : String(err)
       );
     }
@@ -158,8 +168,9 @@ export async function checkRateLimit(
 }
 
 /**
- * Extract client IP from request headers and run `checkRateLimit`.
- * Convenient for Server Actions (auth, contact form) where `headers()` is used.
+ * Extract authoritative client IP from request headers and run `checkRateLimit`.
+ * Prioritizes Cloudflare's `cf-connecting-ip` header so clients cannot spoof
+ * `X-Forwarded-For` to bypass rate limits.
  */
 export async function checkActionRateLimit(
   label: string,
@@ -167,8 +178,10 @@ export async function checkActionRateLimit(
   requestHeaders: { get(name: string): string | null },
   identifierSuffix?: string,
 ): Promise<RateLimitResult> {
+  const cfIp = requestHeaders.get("cf-connecting-ip")?.trim();
   const forwarded = requestHeaders.get("x-forwarded-for");
   const ip =
+    cfIp ||
     forwarded?.split(",")[0]?.trim() ||
     requestHeaders.get("x-real-ip")?.trim() ||
     "unknown";

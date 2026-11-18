@@ -38,7 +38,7 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-6">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2 font-bold text-white">
+            <Link href="/" prefetch={false} className="flex items-center gap-2 font-bold text-white">
               <Image
                 src="/logo.png"
                 alt="PunterStat"
@@ -68,6 +68,7 @@ export function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
+                      prefetch={false}
                       className="text-sm text-white/60 transition-colors hover:text-white"
                     >
                       {link.label}
@@ -93,7 +94,7 @@ export function Footer() {
               PunterStat provides sports betting analysis, education and tools. We do
               not take bets, hold customer funds or give tips. Probabilities are
               model estimates, not guarantees — only bet what you can afford to lose.{" "}
-              <Link href="/responsible-gambling" className="underline underline-offset-2 hover:text-white">
+              <Link href="/responsible-gambling" prefetch={false} className="underline underline-offset-2 hover:text-white">
                 Gamble responsibly
               </Link>
               .

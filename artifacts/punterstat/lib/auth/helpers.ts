@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 import type { UserProfile } from "@/types";
@@ -7,7 +8,18 @@ export type AdminApiAuthResult =
   | { authorized: true; profile: UserProfile; response?: undefined }
   | { authorized: false; profile?: undefined; response: NextResponse };
 
+async function hasSupabaseSession(): Promise<boolean> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key || url.includes("placeholder") || key.includes("placeholder")) {
+    return false;
+  }
+  const cookieStore = await cookies();
+  return cookieStore.getAll().some((c) => c.name.startsWith("sb-"));
+}
+
 export async function getUser() {
+  if (!(await hasSupabaseSession())) return null;
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return null;
@@ -15,6 +27,7 @@ export async function getUser() {
 }
 
 export async function getUserProfile(): Promise<UserProfile | null> {
+  if (!(await hasSupabaseSession())) return null;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;

@@ -87,7 +87,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-screen border-b border-white/10 bg-[#080c1d]">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
         {/* Logo — points to dashboard when authenticated, landing page otherwise */}
-        <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-2 font-bold text-white">
+        <Link href={isAuthenticated ? "/dashboard" : "/"} prefetch={false} className="flex items-center gap-2 font-bold text-white">
           <Image src="/logo.png" alt="PunterStat" width={32} height={32} className="rounded-lg" />
           <span className="text-lg tracking-tight">PunterStat</span>
         </Link>
@@ -109,6 +109,7 @@ export function Navbar() {
                       <DropdownMenuItem key={child.href} asChild>
                         <Link
                           href={child.href}
+                          prefetch={false}
                           className="flex cursor-pointer flex-col items-start gap-0.5 text-white/80 hover:text-white focus:text-white"
                         >
                           <span className="text-sm font-medium">{child.label}</span>
@@ -127,6 +128,7 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch={false}
                 className="rounded-md px-3 py-1.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white"
               >
                 {link.label}
@@ -147,7 +149,7 @@ export function Navbar() {
                 className="text-white/70 hover:bg-white/10 hover:text-white"
                 asChild
               >
-                <Link href="/dashboard">Dashboard</Link>
+                <Link href="/dashboard" prefetch={false}>Dashboard</Link>
               </Button>
               <UserMenu />
             </>
@@ -159,10 +161,10 @@ export function Navbar() {
                 className="text-white/70 hover:bg-white/10 hover:text-white"
                 asChild
               >
-                <Link href="/login">Sign in</Link>
+                <Link href="/login" prefetch={false}>Sign in</Link>
               </Button>
               <Button size="sm" className="bg-[#3D2DFF] text-white hover:bg-[#5244FF]" asChild>
-                <Link href="/register">Get started</Link>
+                <Link href="/register" prefetch={false}>Get started</Link>
               </Button>
             </>
           )}
@@ -173,6 +175,7 @@ export function Navbar() {
           {isAuthenticated && (
             <Link
               href="/dashboard"
+              prefetch={false}
               className="flex items-center gap-1.5 rounded-full bg-[#3D2DFF] px-2.5 py-1 text-xs font-semibold text-white shadow-sm"
             >
               <LayoutDashboard className="h-3.5 w-3.5" />
@@ -223,6 +226,7 @@ export function Navbar() {
                       <Link
                         key={child.href}
                         href={child.href}
+                        prefetch={false}
                         className="block rounded-md py-2 pl-7 pr-3 text-sm font-medium text-white/50 hover:bg-white/10 hover:text-white"
                         onClick={() => { setMobileOpen(false); setOpenGroup(null); }}
                       >
@@ -238,6 +242,7 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch={false}
                 className="rounded-md px-3 py-2 text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white"
                 onClick={() => setMobileOpen(false)}
               >
@@ -254,7 +259,7 @@ export function Navbar() {
                   className="justify-center border-white/20 text-white hover:bg-white/10 hover:text-white"
                   asChild
                 >
-                  <Link href="/dashboard" onClick={() => setMobileOpen(false)}>Dashboard</Link>
+                  <Link href="/dashboard" prefetch={false} onClick={() => setMobileOpen(false)}>Dashboard</Link>
                 </Button>
                 <Button
                   variant="ghost"
@@ -273,10 +278,10 @@ export function Navbar() {
                   className="justify-center border-white/20 text-white hover:bg-white/10 hover:text-white"
                   asChild
                 >
-                  <Link href="/login" onClick={() => setMobileOpen(false)}>Sign in</Link>
+                  <Link href="/login" prefetch={false} onClick={() => setMobileOpen(false)}>Sign in</Link>
                 </Button>
                 <Button size="sm" asChild className="justify-center bg-[#3D2DFF] text-white hover:bg-[#5244FF]">
-                  <Link href="/register" onClick={() => setMobileOpen(false)}>Get started</Link>
+                  <Link href="/register" prefetch={false} onClick={() => setMobileOpen(false)}>Get started</Link>
                 </Button>
               </>
             )}

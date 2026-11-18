@@ -29,6 +29,18 @@ export function ContactForm() {
 
   return (
     <form action={action} className="space-y-5">
+      {/* Honeypot field — hidden from human users, filled by automated spam bots */}
+      <div className="hidden" aria-hidden="true">
+        <label htmlFor="website">Website</label>
+        <input
+          id="website"
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+        />
+      </div>
+
       {state.error && !state.fieldErrors && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {state.error}

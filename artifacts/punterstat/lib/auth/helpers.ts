@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -26,7 +27,7 @@ export async function getUser() {
   return user;
 }
 
-export async function getUserProfile(): Promise<UserProfile | null> {
+export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
   if (!(await hasSupabaseSession())) return null;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -58,7 +59,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   };
-}
+});
 
 /** Redirect to /login if not authenticated. Returns the profile. */
 export async function requireAuth(): Promise<UserProfile> {

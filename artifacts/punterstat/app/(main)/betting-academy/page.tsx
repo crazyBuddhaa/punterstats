@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { GraduationCap } from "lucide-react";
 import { TopicCard } from "@/components/betting-academy/topic-card";
+import { getUserProfile } from "@/lib/auth/helpers";
 import { getTopics, getModuleCount } from "@/lib/betting-academy/queries";
 
 export const metadata: Metadata = {
@@ -9,7 +10,10 @@ export const metadata: Metadata = {
 };
 
 export default async function BettingAcademyPage() {
-  const topics = await getTopics();
+  const [profile, topics] = await Promise.all([
+    getUserProfile(),
+    getTopics(),
+  ]);
 
   const topicsWithCount = await Promise.all(
     topics.map(async (topic) => ({
@@ -18,27 +22,37 @@ export default async function BettingAcademyPage() {
     }))
   );
 
+  const isLoggedIn = Boolean(profile);
+
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      {/* Hero */}
-      <section className="bg-[#0f172a] px-4 py-16 sm:py-20">
-        <div className="container mx-auto max-w-3xl text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-medium text-emerald-400">
-            <GraduationCap className="h-3.5 w-3.5" />
-            Betting Academy
+    <div className={isLoggedIn ? "" : "min-h-screen bg-[#f8fafc]"}>
+      {/* Hero — shown only for public (signed-out) visitors */}
+      {!isLoggedIn && (
+        <section className="bg-[#0f172a] px-4 py-16 sm:py-20">
+          <div className="container mx-auto max-w-3xl text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-medium text-emerald-400">
+              <GraduationCap className="h-3.5 w-3.5" />
+              Betting Academy
+            </div>
+            <h1 className="mb-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              Understand how betting markets work
+            </h1>
+            <p className="text-base text-white/60 leading-relaxed max-w-xl mx-auto">
+              Structured education on odds, probability, value identification, bet types, and bankroll management.
+              No gambling encouragement — just the mechanics, explained clearly.
+            </p>
           </div>
-          <h1 className="mb-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Understand how betting markets work
-          </h1>
-          <p className="text-base text-white/60 leading-relaxed max-w-xl mx-auto">
-            Structured education on odds, probability, value identification, bet types, and bankroll management.
-            No gambling encouragement — just the mechanics, explained clearly.
-          </p>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Topics */}
-      <section className="container mx-auto max-w-6xl px-4 py-12 sm:py-16">
+      <section
+        className={
+          isLoggedIn
+            ? "py-2"
+            : "container mx-auto max-w-6xl px-4 py-12 sm:py-16"
+        }
+      >
         {topicsWithCount.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-20 text-center">
             <GraduationCap className="mb-4 h-12 w-12 text-[#1e293b]/20" />

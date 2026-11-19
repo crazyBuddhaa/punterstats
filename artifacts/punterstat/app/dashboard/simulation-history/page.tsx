@@ -33,11 +33,20 @@ export default async function SimulationHistoryPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-[#0f172a]">Simulation History</h1>
-        <p className="mt-1 text-sm text-[#1e293b]/60">
-          All your simulation sessions — {sessions.length} total.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[#0f172a]">Simulation History</h1>
+          <p className="mt-1 text-sm text-[#1e293b]/60">
+            All your simulation sessions — {sessions.length} total.
+          </p>
+        </div>
+        <Link
+          href="/simulation-engine"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[#0f172a] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#1e293b]"
+        >
+          <FlaskConical className="h-3.5 w-3.5" />
+          Open Simulators
+        </Link>
       </div>
 
       {/* Spot The Value CTA */}
@@ -48,9 +57,9 @@ export default async function SimulationHistoryPage() {
         <span className="flex items-center gap-2.5">
           <Zap className="h-4 w-4 shrink-0" />
           <span>
-            <span className="font-semibold">New: Spot The Value</span>
+            <span className="font-semibold">Spot The Value</span>
             <span className="ml-1.5 text-[#3D2DFF]/70">
-              — compare your model probabilities against live market odds to find value gaps.
+              — compare your model probabilities against market odds to find value gaps.
             </span>
           </span>
         </span>
@@ -61,7 +70,7 @@ export default async function SimulationHistoryPage() {
         <EmptyState
           icon={FlaskConical}
           title="No simulations yet"
-          description="Run the Bet Simulator to practice placing bets with a virtual balance. Sessions are saved here."
+          description="Run the Bet Simulator or Probability Simulator to practice with a virtual ₦ balance. Sessions are saved here."
           actionLabel="Open Simulation Engine"
           actionHref="/simulation-engine"
         />
@@ -80,8 +89,7 @@ export default async function SimulationHistoryPage() {
                     totalPL >= 0 ? "text-emerald-600" : "text-rose-600"
                   }`}
                 >
-                  {totalPL >= 0 ? "+" : ""}
-                  {totalPL.toFixed(0)} ₦
+                  {totalPL >= 0 ? "+" : "-"}₦{Math.abs(totalPL).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </p>
                 <p className="mt-0.5 text-sm text-[#1e293b]/60">Total virtual P&amp;L</p>
               </div>

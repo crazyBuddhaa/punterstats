@@ -70,6 +70,35 @@ export async function updateSessionBalance(
   return { success: true, data: undefined };
 }
 
+export async function saveProbabilitySession(
+  startingBalance: number,
+  medianFinalBalance: number,
+): Promise<ApiResponse<{ id: string }>> {
+  if (!Number.isFinite(startingBalance) || startingBalance <= 0 || !Number.isFinite(medianFinalBalance)) {
+    return { success: false, error: "Invalid simulation values." };
+  }
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated." };
+
+  const { data, error } = await supabase
+    .from("simulation_sessions")
+    .insert({
+      user_id: user.id,
+      type: "probability",
+      starting_balance: Math.round(startingBalance),
+      virtual_balance: Math.round(medianFinalBalance),
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) return { success: false, error: error?.message ?? "Failed to save session." };
+  revalidatePath("/dashboard/simulation-history");
+  return { success: true, data: { id: data.id } };
+}
+
 export async function recordBet(
   sessionId: string,
   odds: number,

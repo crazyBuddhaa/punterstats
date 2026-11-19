@@ -46,7 +46,7 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
   const [manualLegOdds, setManualLegOdds] = useState("2.00");
   const [manualLegLabel, setManualLegLabel] = useState("");
   const [showManualLeg, setShowManualLeg] = useState(false);
-  const [showLivePicker, setShowLivePicker] = useState(true);
+  const [showLivePicker, setShowLivePicker] = useState(false);
 
   // Shared
   const [stake, setStake] = useState("500");

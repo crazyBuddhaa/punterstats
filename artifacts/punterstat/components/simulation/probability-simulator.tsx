@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { AlertCircle, BarChart2, TrendingDown, TrendingUp } from "lucide-react";
 import { ImportFromMatch } from "./import-from-match";
 import { runDistribution, type DistributionResult } from "@/lib/simulation/monte-carlo";
+import { saveProbabilitySession } from "@/lib/simulation/actions";
 
 const ProbabilitySimulatorCharts = dynamic(
   () => import("./probability-simulator-charts"),
@@ -17,13 +18,49 @@ const ProbabilitySimulatorCharts = dynamic(
 );
 
 const RUNS = 1000;
-const STARTING = 10_000;
+const BANKROLL_PRESETS = [10_000, 50_000, 100_000, 500_000];
+
+const SCENARIO_PRESETS = [
+  {
+    label: "Disciplined +EV Singles (2% flat)",
+    bankroll: "50000",
+    odds: "2.00",
+    winPct: "53",
+    numBets: "200",
+    stake: "1000",
+  },
+  {
+    label: "5-Leg SportyBet Acca (10x)",
+    bankroll: "50000",
+    odds: "10.00",
+    winPct: "7",
+    numBets: "100",
+    stake: "1000",
+  },
+  {
+    label: "Over-Staking (10% bankroll)",
+    bankroll: "50000",
+    odds: "2.10",
+    winPct: "50",
+    numBets: "100",
+    stake: "5000",
+  },
+  {
+    label: "Longshot Correct Score",
+    bankroll: "50000",
+    odds: "9.00",
+    winPct: "9",
+    numBets: "150",
+    stake: "500",
+  },
+];
 
 function runSimulation(
   decimalOdds: number,
   winPct: number,
   numBets: number,
-  stakePerBet: number
+  stakePerBet: number,
+  startingBalance: number,
 ): DistributionResult {
   return runDistribution({
     winProb: winPct / 100,
@@ -31,37 +68,50 @@ function runSimulation(
     stakePerBet,
     numBets,
     numTrials: RUNS,
-    startingBalance: STARTING,
+    startingBalance,
   });
 }
 
-export function ProbabilitySimulator() {
+export function ProbabilitySimulator({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
+  const [bankrollInput, setBankrollInput] = useState("50000");
   const [oddsInput, setOddsInput] = useState("2.00");
   const [winPctInput, setWinPctInput] = useState("45");
   const [numBetsInput, setNumBetsInput] = useState("100");
-  const [stakeInput, setStakeInput] = useState("500");
+  const [stakeInput, setStakeInput] = useState("1000");
   const [results, setResults] = useState<DistributionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
 
   const runSim = useCallback(async () => {
     setError(null);
+    const bankroll = parseFloat(bankrollInput);
     const odds = parseFloat(oddsInput);
     const winPct = parseFloat(winPctInput);
     const numBets = parseInt(numBetsInput, 10);
     const stake = parseFloat(stakeInput);
 
+    if (isNaN(bankroll) || bankroll < 1000 || bankroll > 10_000_000) {
+      setError("Starting bankroll must be between ₦1,000 and ₦10,000,000.");
+      return;
+    }
     if (isNaN(odds) || odds < 1.01) { setError("Odds must be ≥ 1.01."); return; }
     if (isNaN(winPct) || winPct <= 0 || winPct >= 100) { setError("Win % must be between 1 and 99."); return; }
     if (isNaN(numBets) || numBets < 10 || numBets > 500) { setError("Number of bets must be 10–500."); return; }
-    if (isNaN(stake) || stake < 100 || stake > 5000) { setError("Stake must be ₦100–₦5,000."); return; }
+    if (isNaN(stake) || stake < 100 || stake > bankroll) {
+      setError(`Stake must be between ₦100 and your bankroll (₦${bankroll.toLocaleString()}).`);
+      return;
+    }
 
     setRunning(true);
     await new Promise((r) => setTimeout(r, 20));
-    const res = runSimulation(odds, winPct, numBets, stake);
+    const res = runSimulation(odds, winPct, numBets, stake, bankroll);
     setResults(res);
     setRunning(false);
-  }, [oddsInput, winPctInput, numBetsInput, stakeInput]);
+
+    if (isAuthenticated) {
+      saveProbabilitySession(bankroll, res.stats.medianFinalBalance).catch(() => {});
+    }
+  }, [bankrollInput, oddsInput, winPctInput, numBetsInput, stakeInput, isAuthenticated]);
 
   const impliedPct =
     parseFloat(oddsInput) > 1 ? (1 / parseFloat(oddsInput)) * 100 : null;
@@ -86,10 +136,29 @@ export function ProbabilitySimulator() {
       {/* Input card */}
       <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
         <h3 className="mb-1 text-sm font-semibold text-[#0f172a]">Simulation Parameters</h3>
-        <p className="mb-5 text-xs text-[#1e293b]/50">
-          Enter your assumptions and run {RUNS} Monte Carlo simulations to see the range of
-          possible outcomes over time.
+        <p className="mb-4 text-xs text-[#1e293b]/50">
+          Pick a realistic scenario preset or enter your own assumptions to run {RUNS.toLocaleString()} Monte Carlo trials.
         </p>
+
+        {/* Scenario presets */}
+        <div className="mb-5 flex flex-wrap gap-2">
+          {SCENARIO_PRESETS.map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => {
+                setBankrollInput(p.bankroll);
+                setOddsInput(p.odds);
+                setWinPctInput(p.winPct);
+                setNumBetsInput(p.numBets);
+                setStakeInput(p.stake);
+              }}
+              className="rounded-full border border-border bg-slate-50 px-3 py-1 text-xs font-medium text-[#1e293b]/75 transition hover:border-[#3D2DFF]/40 hover:bg-[#3D2DFF]/5 hover:text-[#3D2DFF]"
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
 
         <div className="mb-5">
           <ImportFromMatch
@@ -100,8 +169,38 @@ export function ProbabilitySimulator() {
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Bankroll quick selector */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-[#1e293b]/60">Starting Bankroll:</span>
+          {BANKROLL_PRESETS.map((b) => (
+            <button
+              key={b}
+              type="button"
+              onClick={() => setBankrollInput(String(b))}
+              className={`rounded-full border px-2.5 py-0.5 text-xs font-medium tabular-nums transition ${
+                Number(bankrollInput) === b
+                  ? "border-teal-600 bg-teal-50 text-teal-700"
+                  : "border-border bg-white text-[#1e293b]/60 hover:border-slate-300"
+              }`}
+            >
+              ₦{b.toLocaleString()}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {[
+            {
+              label: "Bankroll (₦)",
+              id: "bankroll",
+              value: bankrollInput,
+              set: setBankrollInput,
+              hint: "₦1,000–₦10M",
+              hintColor: undefined,
+              step: "1000",
+              min: "1000",
+              max: "10000000",
+            },
             {
               label: "Decimal Odds",
               id: "odds",
@@ -121,8 +220,8 @@ export function ProbabilitySimulator() {
               hint:
                 edge !== null
                   ? edge > 0
-                    ? `+${edge.toFixed(1)}% edge (positive EV)`
-                    : `${edge.toFixed(1)}% edge (negative EV)`
+                    ? `+${edge.toFixed(1)}% edge (+EV)`
+                    : `${edge.toFixed(1)}% edge (-EV)`
                   : undefined,
               hintColor:
                 edge !== null ? (edge > 0 ? "text-emerald-600" : "text-red-500") : undefined,
@@ -146,11 +245,14 @@ export function ProbabilitySimulator() {
               id: "stake",
               value: stakeInput,
               set: setStakeInput,
-              hint: "₦100–₦5,000",
+              hint:
+                Number(bankrollInput) > 0 && Number(stakeInput) > 0
+                  ? `${((Number(stakeInput) / Number(bankrollInput)) * 100).toFixed(1)}% of bankroll`
+                  : "Min ₦100",
               hintColor: undefined,
               step: "100",
               min: "100",
-              max: "5000",
+              max: bankrollInput,
             },
           ].map(({ label, id, value, set, hint, hintColor, step, min, max }) => (
             <div key={id}>
@@ -238,10 +340,13 @@ export function ProbabilitySimulator() {
                 label: "Median Final Balance",
                 value: fmt(results.stats.medianFinalBalance),
                 sub:
-                  results.stats.medianFinalBalance >= STARTING
+                  results.stats.medianFinalBalance >= (results.balanceHistory[0]?.median ?? Number(bankrollInput))
                     ? "above starting balance"
                     : "below starting balance",
-                color: results.stats.medianFinalBalance >= STARTING ? "text-emerald-600" : "text-red-500",
+                color:
+                  results.stats.medianFinalBalance >= (results.balanceHistory[0]?.median ?? Number(bankrollInput))
+                    ? "text-emerald-600"
+                    : "text-red-500",
               },
               {
                 label: "Profitable Trials",

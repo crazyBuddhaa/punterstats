@@ -1,27 +1,28 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Zap } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PricingCurrencyToggle from "./PricingCurrencyToggle";
 import { PLAN_ROWS } from "./plans";
 
 export const metadata: Metadata = {
   title: "Pricing",
-  description: "Free and premium plans for PunterStat — sports intelligence and education for every level.",
+  description:
+    "Simple, transparent pricing for PunterStat — start free, or upgrade to Pro (₦700/mo) or Premium (₦1,500/mo) with Paystack, cards, bank transfer or OPay/PalmPay.",
 };
 
 const FAQ = [
   {
     q: "Is PunterStat a bookmaker?",
-    a: "No. Learn the maths of betting, analyse matches with transparent probabilities, and check your slips with calculators and a tracker. We don't take bets, hold betting funds or give tips. Your subscription pays for the platform, not for wagers.",
+    a: "No. PunterStat provides sports betting education, match analysis tools, calculators and a personal bet tracker. We do not take bets, hold betting funds or sell tips. Your subscription pays for the analytical platform, not for wagers.",
   },
   {
     q: "What does the Free plan include?",
-    a: "Free users get full access to Sports University and Betting Academy course content. The Bet Simulator and Probability Simulator are available in a basic form. Progress tracking, bookmarks, and match breakdown require a Premium or Pro plan.",
+    a: "Free accounts include full access to Sports University & Betting Academy lessons, lesson bookmarks and progress tracking, the Bet Slip Checker, Betting Calculators, Bet Tracker / Journal with basic ROI summary, and Historical Football Stats & H2H Explorer. Pro (₦700/mo) unlocks the Match Breakdown Analyzer, Simulation Engine history and Spot The Value; Premium (₦1,500/mo) adds the full Betting Report Card (CLV, calibration & leak diagnostics) and Calibration Trainer.",
   },
   {
     q: "Which payment methods do you accept?",
-    a: "We accept card payments via Stripe (UK/international), and African payments via Paystack (cards, bank transfer, USSD) or Remita bank transfer (Nigeria). All plans are billed monthly with no lock-in.",
+    a: "For Nigeria and Africa, we accept Paystack (cards, bank transfer, OPay/PalmPay, USSD) and Remita bank transfer. For UK and international users, we also accept card payments via Stripe. All plans are billed monthly with no lock-in.",
   },
   {
     q: "Can I cancel anytime?",
@@ -36,18 +37,18 @@ const FAQ = [
 export default function PricingPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      {/* Hero */}
-      <section className="bg-[#0f172a] px-4 py-16 sm:py-20">
+      {/* Light editorial hero */}
+      <section className="border-b border-slate-200/80 bg-white px-4 py-14 sm:py-20">
         <div className="container mx-auto max-w-2xl text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-white/70">
-            <Zap className="h-3.5 w-3.5" />
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">
             Simple, transparent pricing
-          </div>
-          <h1 className="mb-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          </p>
+          <h1 className="mb-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl">
             Start free, upgrade when you&apos;re ready
           </h1>
-          <p className="text-base text-white/60 leading-relaxed">
-            All core educational content is free. Premium unlocks the full analytical toolkit.
+          <p className="text-base leading-relaxed text-slate-600">
+            Core lessons, calculators, Bet Slip Checker and Bet Tracker are free forever.
+            Upgrade to Pro (₦700/mo) or Premium (₦1,500/mo) for deep diagnostics.
           </p>
         </div>
       </section>
@@ -56,45 +57,50 @@ export default function PricingPage() {
       <PricingCurrencyToggle plans={PLAN_ROWS} />
 
       {/* Payment providers */}
-      <section className="border-t border-border/50 bg-white px-4 py-10">
-        <div className="container mx-auto max-w-2xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#1e293b]/40 mb-4">
+      <section className="border-t border-slate-200/80 bg-white px-4 py-10">
+        <div className="container mx-auto max-w-3xl text-center">
+          <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-400">
             Accepted payment methods
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-6 text-sm font-medium text-[#1e293b]/60">
-            <span>💳 Stripe — UK &amp; International</span>
-            <span>🌍 Paystack — Africa</span>
-            <span>🏦 Remita — Nigeria (bank transfer)</span>
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm font-medium text-slate-600">
+            <span>Paystack — Nigeria &amp; Africa (cards, transfer, OPay/PalmPay, USSD)</span>
+            <span>Stripe — UK &amp; International</span>
+            <span>Remita — Nigeria bank transfer</span>
           </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="border-t border-border/50 bg-[#f8fafc] px-4 py-14">
+      <section className="border-t border-slate-200/80 bg-[#f8fafc] px-4 py-16">
         <div className="container mx-auto max-w-2xl">
-          <h2 className="mb-8 text-center text-xl font-bold text-[#0f172a]">
+          <h2 className="mb-8 text-center text-2xl font-bold tracking-tight text-slate-950">
             Frequently asked questions
           </h2>
-          <div className="space-y-6">
+          <div className="space-y-4">
             {FAQ.map((item) => (
-              <div key={item.q} className="rounded-xl border border-border/50 bg-white p-5">
-                <h3 className="mb-2 text-sm font-semibold text-[#0f172a]">{item.q}</h3>
-                <p className="text-sm text-[#1e293b]/60 leading-relaxed">{item.a}</p>
+              <div key={item.q} className="rounded-xl border border-slate-200/80 bg-white p-5">
+                <h3 className="mb-2 text-sm font-semibold text-slate-900">{item.q}</h3>
+                <p className="text-sm leading-relaxed text-slate-600">{item.a}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="bg-[#0f172a] px-4 py-14 text-center">
+      {/* Light CTA */}
+      <section className="border-t border-slate-200/80 bg-white px-4 py-16 text-center">
         <div className="container mx-auto max-w-xl">
-          <h2 className="mb-3 text-2xl font-bold text-white">Ready to start learning?</h2>
-          <p className="mb-6 text-sm text-white/60">
+          <h2 className="mb-3 text-2xl font-bold tracking-tight text-slate-950">
+            Ready to start with better numbers?
+          </h2>
+          <p className="mb-6 text-sm text-slate-600">
             Create a free account in under a minute — no card required.
           </p>
-          <Button asChild size="lg" className="bg-[#3D2DFF] hover:bg-[#3D2DFF]/90">
-            <Link href="/register">Get started free</Link>
+          <Button asChild size="lg" className="rounded-lg bg-slate-900 text-white hover:bg-slate-800">
+            <Link href="/register" className="inline-flex items-center gap-2">
+              Get started free
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </Button>
         </div>
       </section>

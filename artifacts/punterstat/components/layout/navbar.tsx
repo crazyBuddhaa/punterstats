@@ -42,10 +42,10 @@ function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D2DFF]">
-          <Avatar className="h-8 w-8">
+        <button className="flex items-center gap-2 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600">
+          <Avatar className="h-8 w-8 border border-slate-200">
             <AvatarImage src={user?.avatarUrl ?? undefined} alt={user?.displayName ?? "User"} />
-            <AvatarFallback className="bg-[#3D2DFF]/25 text-white text-xs font-bold">
+            <AvatarFallback className="bg-slate-900 text-xs font-semibold text-white">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -53,20 +53,20 @@ function UserMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuItem asChild>
-          <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer">
+          <Link href="/dashboard" className="flex cursor-pointer items-center gap-2">
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/dashboard/profile" className="flex items-center gap-2 cursor-pointer">
+          <Link href="/dashboard/profile" className="flex cursor-pointer items-center gap-2">
             <User className="h-4 w-4" />
             Profile
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="flex items-center gap-2 text-red-600 focus:text-red-600 cursor-pointer"
+          className="flex cursor-pointer items-center gap-2 text-red-600 focus:text-red-600"
           onSelect={async () => { await signOut(); }}
         >
           <LogOut className="h-4 w-4" />
@@ -84,11 +84,15 @@ export function Navbar() {
   const isLoading = useAuthStore((s) => s.isLoading);
 
   return (
-    <header className="sticky top-0 z-50 w-screen border-b border-white/10 bg-[#080c1d]">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
         {/* Logo — points to dashboard when authenticated, landing page otherwise */}
-        <Link href={isAuthenticated ? "/dashboard" : "/"} prefetch={false} className="flex items-center gap-2 font-bold text-white">
-          <Image src="/logo.png" alt="PunterStat" width={32} height={32} className="rounded-lg" />
+        <Link
+          href={isAuthenticated ? "/dashboard" : "/"}
+          prefetch={false}
+          className="flex items-center gap-2.5 font-bold text-slate-900"
+        >
+          <Image src="/logo.png" alt="PunterStat" width={30} height={30} className="rounded-lg" />
           <span className="text-lg tracking-tight">PunterStat</span>
         </Link>
 
@@ -99,22 +103,25 @@ export function Navbar() {
               return (
                 <DropdownMenu key={link.label}>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white focus:outline-none">
+                    <button className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus:outline-none">
                       {link.label}
-                      <ChevronDown className="h-3.5 w-3.5" />
+                      <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-72 border-white/10 bg-[#080c1d]">
+                  <DropdownMenuContent
+                    align="start"
+                    className="w-80 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg"
+                  >
                     {link.children.map((child) => (
                       <DropdownMenuItem key={child.href} asChild>
                         <Link
                           href={child.href}
                           prefetch={false}
-                          className="flex cursor-pointer flex-col items-start gap-0.5 text-white/80 hover:text-white focus:text-white"
+                          className="flex cursor-pointer flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-slate-800 hover:bg-slate-50 focus:bg-slate-50"
                         >
-                          <span className="text-sm font-medium">{child.label}</span>
+                          <span className="text-sm font-semibold text-slate-900">{child.label}</span>
                           {child.description && (
-                            <span className="text-xs text-white/45">{child.description}</span>
+                            <span className="text-xs leading-snug text-slate-500">{child.description}</span>
                           )}
                         </Link>
                       </DropdownMenuItem>
@@ -129,7 +136,7 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 prefetch={false}
-                className="rounded-md px-3 py-1.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950"
               >
                 {link.label}
               </Link>
@@ -140,13 +147,13 @@ export function Navbar() {
         {/* Desktop CTA / User menu */}
         <div className="hidden items-center gap-2 lg:flex">
           {isLoading ? (
-            <div className="h-8 w-8 rounded-full bg-white/10 animate-pulse" />
+            <div className="h-8 w-8 animate-pulse rounded-full bg-slate-200" />
           ) : isAuthenticated ? (
             <>
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-white/70 hover:bg-white/10 hover:text-white"
+                className="text-slate-700 hover:bg-slate-100 hover:text-slate-950"
                 asChild
               >
                 <Link href="/dashboard" prefetch={false}>Dashboard</Link>
@@ -158,13 +165,17 @@ export function Navbar() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-white/70 hover:bg-white/10 hover:text-white"
+                className="text-slate-700 hover:bg-slate-100 hover:text-slate-950"
                 asChild
               >
                 <Link href="/login" prefetch={false}>Sign in</Link>
               </Button>
-              <Button size="sm" className="bg-[#3D2DFF] text-white hover:bg-[#5244FF]" asChild>
-                <Link href="/register" prefetch={false}>Get started</Link>
+              <Button
+                size="sm"
+                className="rounded-lg bg-slate-900 text-white hover:bg-slate-800"
+                asChild
+              >
+                <Link href="/register" prefetch={false}>Start free</Link>
               </Button>
             </>
           )}
@@ -176,14 +187,14 @@ export function Navbar() {
             <Link
               href="/dashboard"
               prefetch={false}
-              className="flex items-center gap-1.5 rounded-full bg-[#3D2DFF] px-2.5 py-1 text-xs font-semibold text-white shadow-sm"
+              className="flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm"
             >
               <LayoutDashboard className="h-3.5 w-3.5" />
               <span>Dashboard</span>
             </Link>
           )}
           <button
-            className="flex items-center justify-center rounded-lg p-2 text-white/70 hover:bg-white/10 hover:text-white"
+            className="flex items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             onClick={() => setMobileOpen((o) => !o)}
             aria-label="Toggle menu"
           >
@@ -195,8 +206,8 @@ export function Navbar() {
       {/* Mobile menu */}
       <div
         className={cn(
-          "overflow-hidden border-t border-white/10 bg-[#080c1d] transition-all duration-200 lg:hidden",
-          mobileOpen ? "max-h-[calc(100vh-4rem)] overflow-y-auto" : "max-h-0"
+          "overflow-hidden border-t border-slate-200/80 bg-white transition-all duration-200 lg:hidden",
+          mobileOpen ? "max-h-[calc(100vh-4rem)] overflow-y-auto" : "max-h-0 border-t-0"
         )}
       >
         <nav className="flex flex-col gap-1 px-4 py-3">
@@ -205,13 +216,13 @@ export function Navbar() {
               return (
                 <div key={link.label}>
                   <button
-                    className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white"
+                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-950"
                     onClick={() => setOpenGroup((g) => (g === link.label ? null : link.label))}
                   >
                     {link.label}
                     <ChevronDown
                       className={cn(
-                        "h-3.5 w-3.5 transition-transform duration-200",
+                        "h-3.5 w-3.5 text-slate-400 transition-transform duration-200",
                         openGroup === link.label && "rotate-180"
                       )}
                     />
@@ -227,7 +238,7 @@ export function Navbar() {
                         key={child.href}
                         href={child.href}
                         prefetch={false}
-                        className="block rounded-md py-2 pl-7 pr-3 text-sm font-medium text-white/50 hover:bg-white/10 hover:text-white"
+                        className="block rounded-lg py-2 pl-7 pr-3 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-950"
                         onClick={() => { setMobileOpen(false); setOpenGroup(null); }}
                       >
                         {child.label}
@@ -243,20 +254,20 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 prefetch={false}
-                className="rounded-md px-3 py-2 text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-950"
                 onClick={() => setMobileOpen(false)}
               >
                 {link.label}
               </Link>
             );
           })}
-          <div className="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3">
+          <div className="mt-3 flex flex-col gap-2 border-t border-slate-200 pt-3">
             {isAuthenticated ? (
               <>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="justify-center border-white/20 text-white hover:bg-white/10 hover:text-white"
+                  className="justify-center border-slate-300 text-slate-900 hover:bg-slate-100"
                   asChild
                 >
                   <Link href="/dashboard" prefetch={false} onClick={() => setMobileOpen(false)}>Dashboard</Link>
@@ -264,7 +275,7 @@ export function Navbar() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="justify-center text-red-400 hover:bg-white/10 hover:text-red-300"
+                  className="justify-center text-red-600 hover:bg-red-50 hover:text-red-700"
                   onClick={async () => { setMobileOpen(false); await signOut(); }}
                 >
                   Sign out
@@ -275,13 +286,13 @@ export function Navbar() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="justify-center border-white/20 text-white hover:bg-white/10 hover:text-white"
+                  className="justify-center border-slate-300 text-slate-900 hover:bg-slate-100"
                   asChild
                 >
                   <Link href="/login" prefetch={false} onClick={() => setMobileOpen(false)}>Sign in</Link>
                 </Button>
-                <Button size="sm" asChild className="justify-center bg-[#3D2DFF] text-white hover:bg-[#5244FF]">
-                  <Link href="/register" prefetch={false} onClick={() => setMobileOpen(false)}>Get started</Link>
+                <Button size="sm" asChild className="justify-center bg-slate-900 text-white hover:bg-slate-800">
+                  <Link href="/register" prefetch={false} onClick={() => setMobileOpen(false)}>Start free</Link>
                 </Button>
               </>
             )}

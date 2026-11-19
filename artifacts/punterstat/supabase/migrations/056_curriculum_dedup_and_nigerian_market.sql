@@ -6550,3 +6550,9 @@ SET title = 'Sharp Low-Margin Odds vs Retail Bookmaker Odds'
 WHERE slug = 'exchange-odds-vs-bookmaker-odds'
   AND course_id = (SELECT id FROM public.courses WHERE slug = 'understanding-odds-formats');
 
+
+-- Disambiguate the last duplicate lesson title (Statistical Thinking vs Probability & Value).
+UPDATE public.lessons
+SET title = 'Engineering Features: Form, Rest, Motivation and Lookahead Bias'
+WHERE slug = 'feature-engineering-betting'
+  AND course_id = (SELECT id FROM public.courses WHERE slug = 'building-predictive-models');

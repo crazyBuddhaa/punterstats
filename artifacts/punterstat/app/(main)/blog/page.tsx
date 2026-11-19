@@ -4,10 +4,8 @@ import { PenLine } from "lucide-react";
 import { PostCard } from "@/components/blog/post-card";
 import { BlogSearch } from "@/components/blog/blog-search";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getUserProfile } from "@/lib/auth/helpers";
 import { getPublishedPosts, getAllTags } from "@/lib/blog/queries";
-
-// ISR: revalidate the blog index every 30 minutes so new posts surface quickly.
-export const revalidate = 1800;
 
 export const metadata: Metadata = {
   title: "Blog",
@@ -20,35 +18,47 @@ interface Props {
 
 export default async function BlogPage({ searchParams }: Props) {
   const { tag, q } = await searchParams;
-  const [posts, tags] = await Promise.all([
+  const [profile, posts, tags] = await Promise.all([
+    getUserProfile(),
     getPublishedPosts(tag, q),
     getAllTags(),
   ]);
 
+  const isLoggedIn = Boolean(profile);
   const hasFilter = !!(tag || q);
   const featured = posts[0];
   const rest = posts.slice(1);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      {/* Hero */}
-      <section className="bg-[#0f172a] px-4 py-16 sm:py-20">
-        <div className="container mx-auto max-w-3xl text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-white/70">
-            <PenLine className="h-3.5 w-3.5" />
-            PunterStat Blog
+    <div className={isLoggedIn ? "" : "min-h-screen bg-[#f8fafc]"}>
+      {/* Hero — shown only for signed-out visitors */}
+      {!isLoggedIn && (
+        <section className="bg-[#0f172a] px-4 py-16 sm:py-20">
+          <div className="container mx-auto max-w-3xl text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-white/70">
+              <PenLine className="h-3.5 w-3.5" />
+              PunterStat Blog
+            </div>
+            <h1 className="mb-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              Analysis, education &amp; insight
+            </h1>
+            <p className="text-base text-white/60 leading-relaxed max-w-xl mx-auto">
+              Tactical breakdowns, probability deep-dives, and sports intelligence articles
+              from the PunterStat team.
+            </p>
           </div>
-          <h1 className="mb-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Analysis, education &amp; insight
-          </h1>
-          <p className="text-base text-white/60 leading-relaxed max-w-xl mx-auto">
-            Tactical breakdowns, probability deep-dives, and sports intelligence articles
-            from the PunterStat team.
-          </p>
-        </div>
-      </section>
+        </section>
+      )}
 
-      <section className="container mx-auto max-w-6xl px-4 py-12">
+      <section className={isLoggedIn ? "space-y-6 py-2" : "container mx-auto max-w-6xl px-4 py-12"}>
+        {isLoggedIn && (
+          <div>
+            <h1 className="text-xl font-bold text-[#0f172a] sm:text-2xl">Blog &amp; Case Studies</h1>
+            <p className="mt-1 text-xs text-[#1e293b]/55">
+              Tactical breakdowns, probability deep-dives, and sports intelligence articles.
+            </p>
+          </div>
+        )}
         {/* Search + tag filter */}
         <div className="mb-8">
           <Suspense

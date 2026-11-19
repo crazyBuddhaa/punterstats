@@ -120,7 +120,7 @@ export default async function OptionGlossaryPage() {
             <BookMarked className="mb-4 h-12 w-12 text-[#1e293b]/20" />
             <h2 className="mb-2 text-lg font-semibold text-[#0f172a]">Glossary coming soon</h2>
             <p className="text-sm text-[#1e293b]/50">
-              Entries are being prepared. Run migration 030 in Supabase to populate them.
+              Glossary entries are being prepared. Check back shortly.
             </p>
           </div>
         ) : (

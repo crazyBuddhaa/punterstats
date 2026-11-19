@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BookOpen, Globe } from "lucide-react";
 import { LeagueCard } from "@/components/league-glossary/league-card";
+import { getUserProfile } from "@/lib/auth/helpers";
 import { getLeagues, getTeamCount } from "@/lib/league-glossary/queries";
 
 export const metadata: Metadata = {
@@ -10,7 +11,10 @@ export const metadata: Metadata = {
 };
 
 export default async function LeagueGlossaryPage() {
-  const leagues = await getLeagues();
+  const [profile, leagues] = await Promise.all([
+    getUserProfile(),
+    getLeagues(),
+  ]);
 
   const leaguesWithCount = await Promise.all(
     leagues.map(async (league) => ({
@@ -19,69 +23,83 @@ export default async function LeagueGlossaryPage() {
     }))
   );
 
-  return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      {/* Hero */}
-      <section className="bg-[#0f172a] px-4 py-16 sm:py-20">
-        <div className="container mx-auto max-w-3xl text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1.5">
-            <Globe className="h-3.5 w-3.5 text-amber-400" />
-            <span className="text-xs font-semibold uppercase tracking-widest text-amber-400">
-              League Glossary
-            </span>
-          </div>
-          <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            How Europe&apos;s Top Leagues Actually Work
-          </h1>
-          <p className="mt-4 text-base text-white/60 leading-relaxed max-w-xl mx-auto">
-            Statistical profiles of the major leagues — playing styles, goal
-            averages, home advantage, over/under trends, squad fatigue
-            patterns, and full team breakdowns.
-          </p>
-          <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-amber-500/70">
-            {leagues.length} {leagues.length === 1 ? "League" : "Leagues"} · 2024–25 Season
-          </p>
-        </div>
-      </section>
+  const isLoggedIn = Boolean(profile);
 
-      {/* What you'll learn */}
-      <section className="border-b border-border/60 bg-white px-4 py-8">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                label: "Playing styles",
-                desc: "How each league shapes the football played within it",
-              },
-              {
-                label: "Goals & xG",
-                desc: "Average totals and expected goals trends per division",
-              },
-              {
-                label: "Home advantage",
-                desc: "Quantified home-field lift and win-rate breakdowns",
-              },
-              {
-                label: "Team profiles",
-                desc: "Formation, style, home/away records, and xG per club",
-              },
-            ].map((item) => (
-              <div key={item.label} className="flex gap-3">
-                <div className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-amber-500/10 flex items-center justify-center">
-                  <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[#0f172a]">{item.label}</p>
-                  <p className="text-xs text-[#1e293b]/50 leading-relaxed">{item.desc}</p>
-                </div>
+  return (
+    <div className={isLoggedIn ? "" : "min-h-screen bg-[#f8fafc]"}>
+      {/* Hero & marketing strip — shown only for signed-out visitors */}
+      {!isLoggedIn && (
+        <>
+          <section className="bg-[#0f172a] px-4 py-16 sm:py-20">
+            <div className="container mx-auto max-w-3xl text-center">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1.5">
+                <Globe className="h-3.5 w-3.5 text-amber-400" />
+                <span className="text-xs font-semibold uppercase tracking-widest text-amber-400">
+                  League Glossary
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+              <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                How Europe&apos;s Top Leagues Actually Work
+              </h1>
+              <p className="mt-4 text-base text-white/60 leading-relaxed max-w-xl mx-auto">
+                Statistical profiles of the major leagues — playing styles, goal
+                averages, home advantage, over/under trends, squad fatigue
+                patterns, and full team breakdowns.
+              </p>
+              <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-amber-500/70">
+                {leagues.length} {leagues.length === 1 ? "League" : "Leagues"} · 2024–25 Season
+              </p>
+            </div>
+          </section>
+
+          <section className="border-b border-border/60 bg-white px-4 py-8">
+            <div className="container mx-auto max-w-6xl">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  {
+                    label: "Playing styles",
+                    desc: "How each league shapes the football played within it",
+                  },
+                  {
+                    label: "Goals & xG",
+                    desc: "Average totals and expected goals trends per division",
+                  },
+                  {
+                    label: "Home advantage",
+                    desc: "Quantified home-field lift and win-rate breakdowns",
+                  },
+                  {
+                    label: "Team profiles",
+                    desc: "Formation, style, home/away records, and xG per club",
+                  },
+                ].map((item) => (
+                  <div key={item.label} className="flex gap-3">
+                    <div className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-amber-500/10 flex items-center justify-center">
+                      <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-[#0f172a]">{item.label}</p>
+                      <p className="text-xs text-[#1e293b]/50 leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </>
+      )}
 
       {/* Leagues grid */}
-      <section className="container mx-auto max-w-6xl px-4 py-12">
+      <section className={isLoggedIn ? "space-y-6 py-2" : "container mx-auto max-w-6xl px-4 py-12"}>
+        {isLoggedIn && (
+          <div>
+            <h1 className="text-xl font-bold text-[#0f172a] sm:text-2xl">League Glossary</h1>
+            <p className="mt-1 text-xs text-[#1e293b]/55">
+              Playing styles, goal averages, home advantage, and club breakdowns across Europe&apos;s top leagues.
+            </p>
+          </div>
+        )}
+
         {leaguesWithCount.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-20 text-center">
             <BookOpen className="mb-4 h-12 w-12 text-[#1e293b]/20" />
@@ -100,16 +118,18 @@ export default async function LeagueGlossaryPage() {
       </section>
 
       {/* Educational disclaimer */}
-      <section className="border-t border-border/60 bg-white px-4 py-8">
-        <div className="container mx-auto max-w-3xl text-center">
-          <p className="text-xs text-[#1e293b]/40 leading-relaxed">
-            All statistics are for educational purposes only. Figures are
-            derived from published 2024–25 season data and are intended to
-            illustrate how leagues differ — not to guide betting decisions.
-            PunterStat does not facilitate gambling of any kind.
-          </p>
-        </div>
-      </section>
+      {!isLoggedIn && (
+        <section className="border-t border-border/60 bg-white px-4 py-8">
+          <div className="container mx-auto max-w-3xl text-center">
+            <p className="text-xs text-[#1e293b]/40 leading-relaxed">
+              All statistics are for educational purposes only. Figures are
+              derived from published 2024–25 season data and are intended to
+              illustrate how leagues differ — not to guide betting decisions.
+              PunterStat does not facilitate gambling of any kind.
+            </p>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

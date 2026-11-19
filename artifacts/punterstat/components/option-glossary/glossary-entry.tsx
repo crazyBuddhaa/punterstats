@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, AlertTriangle, Calculator, BarChart2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ChevronDown, AlertTriangle, Calculator, BarChart2, Link2, Check, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BetTypeEntry } from "@/lib/option-glossary/types";
 
@@ -11,15 +12,40 @@ interface GlossaryEntryProps {
 }
 
 export function GlossaryEntry({ entry, defaultOpen = false }: GlossaryEntryProps) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useState(
+    () => defaultOpen || (typeof window !== "undefined" && window.location.hash === `#${entry.slug}`),
+  );
+  const [copied, setCopied] = useState(false);
+
+  // Open if URL hash changes to target this entry (#slug)
+  useEffect(() => {
+    const onHash = () => {
+      if (window.location.hash === `#${entry.slug}`) setOpen(true);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [entry.slug]);
+
+  function copyAnchorLink() {
+    if (typeof window === "undefined") return;
+    const url = `${window.location.origin}${window.location.pathname}#${entry.slug}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    }).catch(() => {});
+  }
 
   return (
-    <div className={cn(
-      "rounded-2xl border bg-white transition-shadow duration-200",
-      open ? "border-emerald-200 shadow-md" : "border-border shadow-sm hover:border-emerald-100 hover:shadow"
-    )}>
+    <div
+      id={entry.slug}
+      className={cn(
+        "scroll-mt-24 rounded-2xl border bg-white transition-shadow duration-200",
+        open ? "border-emerald-200 shadow-md" : "border-border shadow-sm hover:border-emerald-100 hover:shadow"
+      )}
+    >
       {/* Header — always visible */}
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-start justify-between gap-4 p-5 text-left"
         aria-expanded={open}
@@ -44,7 +70,6 @@ export function GlossaryEntry({ entry, defaultOpen = false }: GlossaryEntryProps
       {/* Expanded content */}
       {open && (
         <div className="border-t border-border/60 px-5 pb-5 pt-4 space-y-5">
-
           {/* Worked Example */}
           <div className="rounded-xl bg-[#0f172a]/[0.03] border border-[#0f172a]/[0.06] p-4">
             <div className="mb-2.5 flex items-center gap-2">
@@ -90,6 +115,39 @@ export function GlossaryEntry({ entry, defaultOpen = false }: GlossaryEntryProps
               </ul>
             </div>
           )}
+
+          {/* Actions footer: copy deep-link + try in tools */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-3">
+            <button
+              type="button"
+              onClick={copyAnchorLink}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#1e293b]/55 hover:text-[#0f172a] transition"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-3.5 w-3.5 text-emerald-600" /> Link copied
+                </>
+              ) : (
+                <>
+                  <Link2 className="h-3.5 w-3.5" /> Copy link
+                </>
+              )}
+            </button>
+            <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
+              <Link
+                href="/bet-assist/calculators"
+                className="inline-flex items-center gap-1 text-[#3D2DFF] hover:underline"
+              >
+                Try in Calculators <ArrowRight className="h-3 w-3" />
+              </Link>
+              <Link
+                href="/bet-assist/slip-checker"
+                className="inline-flex items-center gap-1 text-teal-700 hover:underline"
+              >
+                Check a Slip <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          </div>
         </div>
       )}
     </div>

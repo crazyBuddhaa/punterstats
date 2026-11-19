@@ -18,6 +18,22 @@ interface CategoryFilterProps {
   entries: BetTypeEntry[];
 }
 
+const SHORTHAND_MAP: Record<string, string[]> = {
+  gg: ["both teams to score", "btts"],
+  ng: ["both teams to score", "btts", "no goal"],
+  "1x": ["double chance", "home or draw"],
+  x2: ["double chance", "draw or away"],
+  "12": ["double chance", "home or away"],
+  dnb: ["draw no bet"],
+  hc: ["handicap", "asian handicap"],
+  ah: ["asian handicap"],
+  ov: ["over"],
+  un: ["under"],
+  cs: ["correct score"],
+  "ht/ft": ["half time", "full time"],
+  acca: ["accumulator", "parlay", "multiple"],
+};
+
 export function CategoryFilter({ categories, entries }: CategoryFilterProps) {
   const [activeSlug, setActiveSlug] = useState<string>("all");
   const [query, setQuery] = useState("");
@@ -28,12 +44,22 @@ export function CategoryFilter({ categories, entries }: CategoryFilterProps) {
       list = list.filter((e) => e.category?.slug === activeSlug);
     }
     if (query.trim()) {
-      const q = query.toLowerCase();
-      list = list.filter(
-        (e) =>
-          e.name.toLowerCase().includes(q) ||
-          e.explanation.toLowerCase().includes(q)
-      );
+      const q = query.trim().toLowerCase();
+      const extraTerms = SHORTHAND_MAP[q] ?? [];
+      const terms = [q, ...extraTerms];
+      list = list.filter((e) => {
+        const haystack = [
+          e.name,
+          e.slug,
+          e.explanation,
+          e.workedExample,
+          e.volatilityNote,
+          ...e.commonMisreadings,
+        ]
+          .join(" ")
+          .toLowerCase();
+        return terms.some((t) => haystack.includes(t));
+      });
     }
     return list;
   }, [entries, activeSlug, query]);
@@ -60,7 +86,7 @@ export function CategoryFilter({ categories, entries }: CategoryFilterProps) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search bet types…"
+          placeholder="Search bet types or shorthand (e.g. GG, DNB, 1X, Over 2.5, Asian Handicap)…"
           className="w-full rounded-xl border border-border bg-white py-2.5 pl-10 pr-4 text-sm text-[#0f172a] placeholder:text-[#1e293b]/30 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
         />
       </div>

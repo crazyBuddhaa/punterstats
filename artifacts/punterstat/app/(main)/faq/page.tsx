@@ -65,8 +65,8 @@ const faqSections = [
         a: "Yes. Creating an account is completely free, and all core educational content — Sports University and Betting Academy — is free to access with no time limits.",
       },
       {
-        q: "What does a Premium account include?",
-        a: "Premium unlocks the full analytical toolkit: Match Breakdown Analyzer, progress tracking, lesson bookmarks, simulation history, and priority support. See the pricing page for the full breakdown.",
+        q: "What do Pro (₦700/mo) and Premium (₦1,500/mo) include?",
+        a: "Free accounts include all Sports University & Betting Academy lessons, Bet Slip Checker, Betting Calculators, Stats Explorer, and the Bet Tracker. Pro (₦700/month) unlocks the Match Breakdown Analyzer, saved analysis history, Simulation History, and Spot The Value. Premium (₦1,500/month) adds the full Betting Report Card (CLV, probability calibration, and automated leak detection), Calibration Trainer, and priority support. Pay via Paystack (cards, bank transfer, OPay/PalmPay, USSD), Remita, or Stripe.",
       },
       {
         q: "Can I cancel my subscription?",
@@ -87,15 +87,15 @@ const faqSections = [
     items: [
       {
         q: "What data do you collect?",
-        a: "We collect your name, email address, and learning activity (lesson progress, simulation sessions, bookmarks). We do not collect financial data — there are no payment details stored on PunterStat directly. See our Privacy Policy for the full breakdown.",
+        a: "We collect your name, email address, and learning/journal activity (lesson progress, bet tracker entries, simulation sessions, bookmarks). We do not store your card or bank details — payments are processed securely by Paystack, Remita, or Stripe. See our Privacy Policy for the full breakdown.",
       },
       {
         q: "Who can see my data?",
-        a: "Your learning activity is private to your account. Administrators can access platform-level usage statistics for moderation and support purposes. We do not sell your data to third parties.",
+        a: "Your learning and bet-tracking activity is private to your account. Administrators can access platform-level usage statistics for moderation and support purposes. We do not sell your data to third parties.",
       },
       {
-        q: "Is PunterStat GDPR compliant?",
-        a: "Yes. We process personal data under the UK GDPR and EU GDPR. You have the right to access, correct, and delete your data at any time. Contact legal@punterstat.site to exercise your rights.",
+        q: "Is PunterStat compliant with Nigeria NDPA and GDPR?",
+        a: "Yes. We process personal data in line with the Nigeria Data Protection Act (NDPA 2023) as well as the UK GDPR and EU GDPR. You have the right to access, correct, export, and delete your data at any time. Contact legal@punterstat.site to exercise your rights.",
       },
     ],
   },

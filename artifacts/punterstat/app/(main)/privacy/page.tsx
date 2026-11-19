@@ -51,18 +51,19 @@ export default function PrivacyPage() {
             <li>To comply with legal obligations.</li>
           </ul>
 
-          <h2>3. Legal Basis for Processing (UK/EEA Users)</h2>
+          <h2>3. Legal Basis for Processing (Nigeria NDPA 2023 &amp; UK/EEA GDPR)</h2>
+          <p>We process personal data in accordance with the Nigeria Data Protection Act (NDPA 2023) and, for UK/EEA users, the UK GDPR and EU GDPR, relying on:</p>
           <ul>
             <li><strong>Contract performance</strong> — to provide the services you signed up for.</li>
             <li><strong>Legitimate interests</strong> — to improve the Platform and prevent fraud.</li>
-            <li><strong>Consent</strong> — for marketing emails, which you can withdraw at any time.</li>
+            <li><strong>Consent</strong> — for marketing and weekly summary emails, which you can withdraw at any time.</li>
             <li><strong>Legal obligation</strong> — where required by applicable law.</li>
           </ul>
 
           <h2>4. Data Sharing</h2>
           <p>We do not sell your personal data. We share data only:</p>
           <ul>
-            <li><strong>With service providers:</strong> Supabase (database &amp; auth), Cloudinary (media hosting), Resend (transactional email). Each is bound by appropriate data processing agreements.</li>
+            <li><strong>With service providers:</strong> Supabase (database &amp; auth), Paystack, Remita, and Stripe (payment processing — we never store your card numbers), Cloudinary (media hosting), and Resend (transactional email). Each is bound by appropriate data processing agreements.</li>
             <li><strong>With law enforcement:</strong> When required by law or to protect rights and safety.</li>
             <li><strong>In a business transfer:</strong> In connection with a merger, acquisition, or sale of assets, with notice to affected users.</li>
           </ul>

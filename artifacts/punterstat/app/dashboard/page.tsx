@@ -9,6 +9,9 @@ import {
   Bell,
   Target,
   Zap,
+  NotebookPen,
+  Calculator,
+  ClipboardCheck,
 } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
 import {
@@ -17,6 +20,8 @@ import {
   getSimulationSessions,
   getResolvedPredictions,
 } from "@/lib/dashboard/queries";
+import { getJournal } from "@/lib/bet-assist/journal-actions";
+import { journalStats } from "@/lib/bet-assist/journal";
 import { scoreCalibration } from "@/lib/calibration/scorer";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { getRecommendation } from "@/lib/dashboard/recommendations";
@@ -32,34 +37,77 @@ function formatDate(str: string) {
 
 export default async function DashboardPage() {
   const profile = await requireAuth();
-  const [stats, inProgress, simSessions, resolvedPredictions, recommendation] =
+  const [stats, inProgress, simSessions, resolvedPredictions, recommendation, bets] =
     await Promise.all([
       getDashboardStats(profile.userId),
       getInProgressLessons(profile.userId),
       getSimulationSessions(profile.userId),
       getResolvedPredictions(profile.userId),
       getRecommendation(profile.userId),
+      getJournal(),
     ]);
   const calibration = scoreCalibration(resolvedPredictions);
+  const tracker = journalStats(bets);
 
-  const hour = new Date().getHours();
+  // Use West Africa Time (WAT = UTC+1) so greetings match Nigerian users' clock
+  const watHour = (new Date().getUTCHours() + 1) % 24;
   const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    watHour < 12 ? "Good morning" : watHour < 17 ? "Good afternoon" : "Good evening";
+
+  const profitDisplay =
+    tracker.settledBets > 0
+      ? `${tracker.profit >= 0 ? "+" : "-"}₦${Math.abs(tracker.profit).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+      : "—";
 
   return (
     <div className="space-y-8">
-      {/* Welcome */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#0f172a]">
-          {greeting}, {profile.displayName?.split(" ")[0] ?? "there"} 👋
-        </h1>
-        <p className="mt-1 text-sm text-[#1e293b]/60">
-          Here&apos;s a snapshot of your learning journey on PunterStat.
-        </p>
+      {/* Welcome & quick actions */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[#0f172a]">
+            {greeting}, {profile.displayName?.split(" ")[0] ?? "there"} 👋
+          </h1>
+          <p className="mt-1 text-sm text-[#1e293b]/60">
+            Here&apos;s your learning and betting performance snapshot.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/dashboard/bet-tracker"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-teal-700"
+          >
+            <NotebookPen className="h-3.5 w-3.5" /> Log a Bet
+          </Link>
+          <Link
+            href="/bet-assist/slip-checker"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-semibold text-[#0f172a] shadow-sm transition hover:bg-slate-50"
+          >
+            <ClipboardCheck className="h-3.5 w-3.5 text-[#3D2DFF]" /> Check a Slip
+          </Link>
+          <Link
+            href="/bet-assist/calculators"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-semibold text-[#0f172a] shadow-sm transition hover:bg-slate-50"
+          >
+            <Calculator className="h-3.5 w-3.5 text-emerald-600" /> Calculators
+          </Link>
+        </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Stat cards (balanced 3×2 grid) */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard
+          label="Bet Tracker P/L"
+          value={profitDisplay}
+          icon={NotebookPen}
+          iconColor={tracker.profit >= 0 ? "text-emerald-600" : "text-rose-600"}
+          iconBg={tracker.profit >= 0 ? "bg-emerald-50" : "bg-rose-50"}
+          note={
+            tracker.settledBets > 0
+              ? `${tracker.settledBets} settled · ${tracker.roi >= 0 ? "+" : ""}${(tracker.roi * 100).toFixed(1)}% ROI`
+              : "Log bets to track ROI & leaks"
+          }
+        />
         <StatCard
           label="Lessons Completed"
           value={stats.lessonsCompleted}

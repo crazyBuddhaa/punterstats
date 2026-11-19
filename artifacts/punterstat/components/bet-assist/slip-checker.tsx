@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, Copy, Plus, Share2, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,9 @@ const RISK_STYLE: Record<SlipRisk, { label: string; className: string; blurb: st
   very_high: { label: "Very high risk", className: "bg-rose-50 text-rose-700 border-rose-200", blurb: "A long shot — it will usually lose." },
 };
 
+const naira = (n: number) =>
+  `${n < 0 ? "-" : ""}₦${Math.abs(n).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+
 function Metric({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "good" | "bad" }) {
   return (
     <div className="rounded-xl border border-border bg-white p-4">
@@ -51,11 +54,15 @@ function Metric({ label, value, sub, tone }: { label: string; value: string; sub
   );
 }
 
-export function SlipChecker() {
+export function SlipChecker({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
+  const [inputMode, setInputMode] = useState<"quick" | "detailed">("detailed");
+  const [quickOddsText, setQuickOddsText] = useState("1.30, 1.55, 1.62, 1.70");
   const [legs, setLegs] = useState<LegDraft[]>([{ ...EMPTY_LEG }, { ...EMPTY_LEG }]);
   const [stake, setStake] = useState("1000");
+  const [bonusPct, setBonusPct] = useState("0");
   const [result, setResult] = useState<SlipAssessment | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copiedVerdict, setCopiedVerdict] = useState(false);
 
   const update = (i: number, patch: Partial<LegDraft>) => {
     setLegs(legs.map((l, j) => (j === i ? { ...l, ...patch } : l)));
@@ -63,14 +70,34 @@ export function SlipChecker() {
   };
 
   const check = () => {
-    const parsed = legs
-      .filter((l) => l.odds.trim() !== "")
-      .map((l) => ({
-        selection: l.selection.trim() || "Selection",
-        event: l.event.trim() || undefined,
-        decimalOdds: Number(l.odds),
-        yourProb: l.yourProb.trim() ? Number(l.yourProb) / 100 : null,
-      }));
+    let parsed: Array<{ selection: string; event?: string; decimalOdds: number; yourProb: number | null }> = [];
+
+    if (inputMode === "quick") {
+      // Extract decimal numbers > 1 from pasted odds text (comma, space, slash, newline separated)
+      const tokens = quickOddsText.match(/\d+(?:\.\d+)?/g) ?? [];
+      parsed = tokens
+        .map((t) => Number(t))
+        .filter((n) => Number.isFinite(n))
+        .map((n, i) => ({
+          selection: `Leg ${i + 1}`,
+          decimalOdds: n,
+          yourProb: null,
+        }));
+      if (parsed.length === 0) {
+        setError("Paste at least one decimal odd greater than 1.00 (e.g. 1.45, 1.80, 2.10).");
+        return;
+      }
+    } else {
+      parsed = legs
+        .filter((l) => l.odds.trim() !== "")
+        .map((l) => ({
+          selection: l.selection.trim() || "Selection",
+          event: l.event.trim() || undefined,
+          decimalOdds: Number(l.odds),
+          yourProb: l.yourProb.trim() ? Number(l.yourProb) / 100 : null,
+        }));
+    }
+
     if (parsed.some((l) => !(l.decimalOdds > 1))) {
       setError("Every leg needs decimal odds greater than 1.00.");
       return;
@@ -84,73 +111,198 @@ export function SlipChecker() {
     setResult(r);
   };
 
+  const bonus = Math.max(0, Number.isFinite(Number(bonusPct)) ? Number(bonusPct) : 0);
+  const stakeNum = Number(stake) || 0;
+  const boostedProfit = result ? result.potentialProfit * (1 + bonus / 100) : 0;
+  const boostedReturn = result ? stakeNum + boostedProfit : 0;
+  const boostedEv =
+    result && stakeNum > 0
+      ? ((result.yourProb ?? result.fairProb) * boostedReturn) / stakeNum - 1
+      : 0;
+
+  function buildVerdictText(r: SlipAssessment): string {
+    const chance = pct(r.yourProb ?? r.fairProb, 1);
+    const lines = [
+      `PunterStat Slip Check (${r.legs.length}-leg ${r.legs.length > 1 ? "acca" : "single"})`,
+      `• Risk: ${RISK_STYLE[r.risk].label} (lands ~1 in ${r.oneWinEvery})`,
+      `• Combined odds: ${r.combinedOdds.toFixed(2)} | Stake: ${naira(stakeNum)} -> ${naira(bonus > 0 ? boostedReturn : r.potentialReturn)}`,
+      `• Est. true chance: ${chance} | Margin drag: ${pct(r.compoundedMargin)}`,
+      `• Checked on punterstat.site/bet-assist/slip-checker`,
+    ];
+    return lines.join("\n");
+  }
+
+  function copyVerdict() {
+    if (!result) return;
+    navigator.clipboard
+      .writeText(buildVerdictText(result))
+      .then(() => {
+        setCopiedVerdict(true);
+        setTimeout(() => setCopiedVerdict(false), 1800);
+      })
+      .catch(() => {});
+  }
+
+  function shareVerdictWhatsApp() {
+    if (!result) return;
+    const text = encodeURIComponent(buildVerdictText(result));
+    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+  }
+
+  const trackerQuery = result
+    ? new URLSearchParams({
+        event:
+          result.legs.length === 1
+            ? result.legs[0].event || "Match"
+            : result.legs
+                .map((l) => l.event)
+                .filter(Boolean)
+                .join(" / ")
+                .slice(0, 180) || `${result.legs.length}-leg accumulator`,
+        selection: result.legs
+          .map((l) => l.selection)
+          .join(" + ")
+          .slice(0, 180),
+        odds: result.combinedOdds.toFixed(2),
+        market: result.legs.length > 1 ? "Accumulator" : "1X2",
+        legs: String(result.legs.length),
+        stake: stake.trim() || "1000",
+        ...(result.yourProb !== null
+          ? { prob: String(Math.round(result.yourProb * 1000) / 10) }
+          : {}),
+      }).toString()
+    : "";
+
+  const trackerHref = `/dashboard/bet-tracker?${trackerQuery}`;
+  const logHref = isAuthenticated ? trackerHref : `/login?next=${encodeURIComponent(trackerHref)}`;
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
       {/* Input */}
       <div className="space-y-4 rounded-2xl border border-border bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-semibold text-[#0f172a]">Your slip</h2>
-          <button
-            className="text-xs font-medium text-[#3D2DFF] hover:underline"
-            onClick={() => {
-              setLegs(SAMPLE.map((l) => ({ ...l })));
-              setResult(null);
-            }}
-          >
-            Load example acca
-          </button>
+          <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                setInputMode("quick");
+                setResult(null);
+              }}
+              className={cn(
+                "rounded-md px-2.5 py-1 text-xs font-medium transition",
+                inputMode === "quick" ? "bg-[#3D2DFF] text-white" : "text-[#1e293b]/60 hover:text-[#0f172a]",
+              )}
+            >
+              Quick Paste Odds
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setInputMode("detailed");
+                setResult(null);
+              }}
+              className={cn(
+                "rounded-md px-2.5 py-1 text-xs font-medium transition",
+                inputMode === "detailed" ? "bg-[#3D2DFF] text-white" : "text-[#1e293b]/60 hover:text-[#0f172a]",
+              )}
+            >
+              Detailed Legs
+            </button>
+          </div>
         </div>
 
-        {legs.map((l, i) => (
-          <div key={i} className="rounded-xl border border-border bg-[#f8fafc] p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs font-semibold text-[#1e293b]/60">Leg {i + 1}</p>
-              {legs.length > 1 && (
-                <button
-                  aria-label={`Remove leg ${i + 1}`}
-                  className="text-[#1e293b]/40 hover:text-rose-600"
-                  onClick={() => {
-                    setLegs(legs.filter((_, j) => j !== i));
-                    setResult(null);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <Label className="text-[11px] text-[#1e293b]/60">Match / event</Label>
-                <Input value={l.event} placeholder="Arsenal v Everton" onChange={(e) => update(i, { event: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-[11px] text-[#1e293b]/60">Selection</Label>
-                <Input value={l.selection} placeholder="Arsenal to win" onChange={(e) => update(i, { selection: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-[11px] text-[#1e293b]/60">Decimal odds</Label>
-                <Input inputMode="decimal" value={l.odds} placeholder="1.80" onChange={(e) => update(i, { odds: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-[11px] text-[#1e293b]/60">Your chance % (optional)</Label>
-                <Input inputMode="decimal" value={l.yourProb} placeholder="e.g. 60" onChange={(e) => update(i, { yourProb: e.target.value })} />
-              </div>
-            </div>
+        {inputMode === "quick" ? (
+          <div className="space-y-2">
+            <Label className="text-xs text-[#1e293b]/65">
+              Paste or type leg odds (separated by commas, spaces, or new lines)
+            </Label>
+            <textarea
+              rows={4}
+              value={quickOddsText}
+              onChange={(e) => {
+                setQuickOddsText(e.target.value);
+                setResult(null);
+              }}
+              placeholder="e.g. 1.35, 1.60, 1.85, 2.10, 1.45"
+              className="w-full rounded-xl border border-input bg-[#f8fafc] p-3 font-mono text-sm text-[#0f172a] focus:border-[#3D2DFF] focus:bg-white focus:outline-none"
+            />
+            <p className="text-[11px] text-[#1e293b]/50">
+              Fastest way to check a 5–15 leg SportyBet or Bet9ja booking code ticket before staking.
+            </p>
           </div>
-        ))}
+        ) : (
+          <>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="text-xs font-medium text-[#3D2DFF] hover:underline"
+                onClick={() => {
+                  setLegs(SAMPLE.map((l) => ({ ...l })));
+                  setResult(null);
+                }}
+              >
+                Load example acca
+              </button>
+            </div>
 
-        {legs.length < 20 && (
-          <Button variant="outline" size="sm" onClick={() => setLegs([...legs, { ...EMPTY_LEG }])}>
-            <Plus className="mr-1 h-4 w-4" /> Add leg
-          </Button>
+            {legs.map((l, i) => (
+              <div key={i} className="rounded-xl border border-border bg-[#f8fafc] p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-semibold text-[#1e293b]/60">Leg {i + 1}</p>
+                  {legs.length > 1 && (
+                    <button
+                      type="button"
+                      aria-label={`Remove leg ${i + 1}`}
+                      className="text-[#1e293b]/40 hover:text-rose-600"
+                      onClick={() => {
+                        setLegs(legs.filter((_, j) => j !== i));
+                        setResult(null);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-[#1e293b]/60">Match / event</Label>
+                    <Input value={l.event} placeholder="Arsenal v Everton" onChange={(e) => update(i, { event: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-[#1e293b]/60">Selection</Label>
+                    <Input value={l.selection} placeholder="Arsenal to win" onChange={(e) => update(i, { selection: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-[#1e293b]/60">Decimal odds</Label>
+                    <Input inputMode="decimal" value={l.odds} placeholder="1.80" onChange={(e) => update(i, { odds: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-[#1e293b]/60">Your chance % (optional)</Label>
+                    <Input inputMode="decimal" value={l.yourProb} placeholder="e.g. 60" onChange={(e) => update(i, { yourProb: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {legs.length < 20 && (
+              <Button type="button" variant="outline" size="sm" onClick={() => setLegs([...legs, { ...EMPTY_LEG }])}>
+                <Plus className="mr-1 h-4 w-4" /> Add leg
+              </Button>
+            )}
+          </>
         )}
 
-        <div className="flex items-end gap-3 border-t border-border pt-4">
-          <div className="flex-1 space-y-1">
-            <Label className="text-[11px] text-[#1e293b]/60">Stake</Label>
+        <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+          <div className="space-y-1">
+            <Label className="text-[11px] text-[#1e293b]/60">Stake (₦)</Label>
             <Input inputMode="decimal" value={stake} onChange={(e) => { setStake(e.target.value); setResult(null); }} />
           </div>
-          <Button variant="teal" onClick={check}>
+          <div className="space-y-1">
+            <Label className="text-[11px] text-[#1e293b]/60">Acca bonus % (optional)</Label>
+            <Input inputMode="decimal" value={bonusPct} placeholder="0" onChange={(e) => setBonusPct(e.target.value)} />
+          </div>
+          <Button type="button" variant="teal" onClick={check}>
             Check slip
           </Button>
         </div>
@@ -161,27 +313,49 @@ export function SlipChecker() {
       <div className="space-y-4">
         {!result ? (
           <div className="flex h-full min-h-[240px] items-center justify-center rounded-2xl border border-dashed border-border bg-white p-8 text-center text-sm text-[#1e293b]/50">
-            Enter your legs and press <strong className="mx-1">Check slip</strong> to see what the price really
+            Enter or paste your leg odds and press <strong className="mx-1">Check slip</strong> to see what the price really
             implies.
           </div>
         ) : (
           <>
             <div className={cn("rounded-2xl border p-5", RISK_STYLE[result.risk].className)}>
-              <p className="text-lg font-bold">{RISK_STYLE[result.risk].label}</p>
-              <p className="text-sm opacity-80">
-                {RISK_STYLE[result.risk].blurb}{" "}
-                {Number.isFinite(result.oneWinEvery) && result.oneWinEvery > 1 && (
-                  <>Expect it to land about <strong>1 time in {result.oneWinEvery}</strong>.</>
-                )}
-              </p>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <p className="text-lg font-bold">{RISK_STYLE[result.risk].label}</p>
+                  <p className="text-sm opacity-80">
+                    {RISK_STYLE[result.risk].blurb}{" "}
+                    {Number.isFinite(result.oneWinEvery) && result.oneWinEvery > 1 && (
+                      <>Expect it to land about <strong>1 time in {result.oneWinEvery}</strong>.</>
+                    )}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={copyVerdict}
+                    className="inline-flex items-center gap-1 rounded-lg bg-white/80 px-2.5 py-1 text-xs font-semibold text-[#0f172a] hover:bg-white"
+                  >
+                    {copiedVerdict ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copiedVerdict ? "Copied" : "Copy"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={shareVerdictWhatsApp}
+                    className="inline-flex items-center gap-1 rounded-lg bg-white/80 px-2.5 py-1 text-xs font-semibold text-[#0f172a] hover:bg-white"
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
+                    WhatsApp
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <Metric label="Combined odds" value={result.combinedOdds.toFixed(2)} />
               <Metric
-                label="Potential return"
-                value={result.potentialReturn.toLocaleString()}
-                sub={`Profit ${result.potentialProfit.toLocaleString()}`}
+                label={bonus > 0 ? `Return (+${bonus}% bonus)` : "Potential return"}
+                value={naira(bonus > 0 ? boostedReturn : result.potentialReturn)}
+                sub={`Profit ${naira(bonus > 0 ? boostedProfit : result.potentialProfit)}`}
               />
               <Metric label="Price implies" value={pct(result.impliedProb, 2)} sub="1 ÷ combined odds" />
               <Metric
@@ -190,12 +364,17 @@ export function SlipChecker() {
                 sub={result.evSource === "yours" ? "From your leg probabilities" : "After removing ~5% margin per leg"}
               />
               <Metric
-                label="Expected value (illustrative)"
-                value={`${result.ev >= 0 ? "+" : ""}${pct(result.ev)}`}
-                sub={`≈ ${result.expectedReturnOnStake.toLocaleString()} per slip (illustrative, not advice)`}
-                tone={result.ev >= 0 ? "good" : "bad"}
+                label={bonus > 0 ? "EV after acca bonus" : "Expected value (illustrative)"}
+                value={`${(bonus > 0 ? boostedEv : result.ev) >= 0 ? "+" : ""}${pct(bonus > 0 ? boostedEv : result.ev)}`}
+                sub={`≈ ${naira(result.expectedReturnOnStake)} expected return per slip`}
+                tone={(bonus > 0 ? boostedEv : result.ev) >= 0 ? "good" : "bad"}
               />
-              <Metric label="Margin you're paying" value={pct(result.compoundedMargin)} sub={`${result.legs.length} leg${result.legs.length > 1 ? "s" : ""} compounded`} tone={result.compoundedMargin > 0.15 ? "bad" : undefined} />
+              <Metric
+                label="Margin you're paying"
+                value={pct(result.compoundedMargin)}
+                sub={`${result.legs.length} leg${result.legs.length > 1 ? "s" : ""} compounded`}
+                tone={result.compoundedMargin > 0.15 ? "bad" : undefined}
+              />
             </div>
 
             {result.warnings.length > 0 && (
@@ -226,7 +405,7 @@ export function SlipChecker() {
                     <th className="pb-2">Leg</th>
                     <th className="pb-2 text-right">Odds</th>
                     <th className="pb-2 text-right">Implied</th>
-                    <th className="pb-2 text-right">EV (illustrative, not advice)</th>
+                    <th className="pb-2 text-right">EV (illustrative)</th>
                   </tr>
                 </thead>
                 <tbody className="tabular-nums">
@@ -249,33 +428,13 @@ export function SlipChecker() {
 
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-white p-4">
               <p className="text-xs text-[#1e293b]/65">
-                Placing this slip? Log it in your Bet Tracker in one click to measure your real results over time.
+                {isAuthenticated
+                  ? "Placing this slip? Log it in your Bet Tracker in one click to measure your real results over time."
+                  : "Sign in to log this slip in your Bet Tracker — your legs and odds will stay prefilled."}
               </p>
               <Button variant="teal" size="sm" asChild>
-                <Link
-                  href={`/dashboard/bet-tracker?${new URLSearchParams({
-                    event:
-                      result.legs.length === 1
-                        ? result.legs[0].event || "Match"
-                        : result.legs
-                            .map((l) => l.event)
-                            .filter(Boolean)
-                            .join(" / ")
-                            .slice(0, 180) || `${result.legs.length}-leg accumulator`,
-                    selection: result.legs
-                      .map((l) => l.selection)
-                      .join(" + ")
-                      .slice(0, 180),
-                    odds: result.combinedOdds.toFixed(2),
-                    market: result.legs.length > 1 ? "Accumulator" : "1X2",
-                    legs: String(result.legs.length),
-                    stake: stake.trim() || "1000",
-                    ...(result.yourProb !== null
-                      ? { prob: String(Math.round(result.yourProb * 1000) / 10) }
-                      : {}),
-                  }).toString()}`}
-                >
-                  Log this slip →
+                <Link href={logHref}>
+                  {isAuthenticated ? "Log this slip →" : "Sign in & log slip →"}
                 </Link>
               </Button>
             </div>

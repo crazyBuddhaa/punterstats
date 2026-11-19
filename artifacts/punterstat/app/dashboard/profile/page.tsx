@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { User } from "lucide-react";
+import Link from "next/link";
+import { User, KeyRound, CreditCard } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
 import { ProfileForm } from "@/components/dashboard/profile-form";
 import { AvatarUpload } from "@/components/dashboard/avatar-upload";
@@ -53,6 +54,27 @@ export default async function ProfilePage() {
 
       {/* Email preferences */}
       <WeeklyReportToggle initialEnabled={weeklyReportEnabled} />
+
+      {/* Security & Billing shortcuts */}
+      <div className="max-w-xl rounded-2xl border border-border bg-white p-6 shadow-sm space-y-3">
+        <h2 className="font-semibold text-[#0f172a]">Security &amp; Billing</h2>
+        <div className="flex flex-wrap gap-2.5">
+          <Link
+            href="/update-password"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-xs font-semibold text-[#0f172a] transition hover:bg-slate-50"
+          >
+            <KeyRound className="h-3.5 w-3.5 text-[#3D2DFF]" />
+            Change Password
+          </Link>
+          <Link
+            href="/dashboard/subscription"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-xs font-semibold text-[#0f172a] transition hover:bg-slate-50"
+          >
+            <CreditCard className="h-3.5 w-3.5 text-teal-600" />
+            Manage Subscription
+          </Link>
+        </div>
+      </div>
 
       {/* Danger zone */}
       <div className="max-w-xl rounded-2xl border border-rose-200 bg-rose-50 p-6">

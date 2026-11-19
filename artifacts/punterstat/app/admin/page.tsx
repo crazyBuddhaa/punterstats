@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth/helpers";
 import { getAdminStats } from "@/lib/admin/queries";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   Users,
   BookOpen,
@@ -9,6 +10,9 @@ import {
   EyeOff,
   CreditCard,
   Zap,
+  NotebookPen,
+  Database,
+  Flag,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -37,29 +41,56 @@ function StatCard({ label, value, sub, icon, href, accent = "bg-violet-50 text-v
 
 export default async function AdminOverviewPage() {
   await requireAdmin();
-  const stats = await getAdminStats();
+  const admin = createAdminClient();
+  const [stats, betsRes] = await Promise.all([
+    getAdminStats(),
+    admin.from("bet_journal").select("id", { count: "exact", head: true }),
+  ]);
+  const totalLoggedBets = betsRes.count ?? 0;
 
   const planColors: Record<string, string> = {
     free: "bg-slate-100 text-slate-600",
+    pro: "bg-indigo-50 text-indigo-700",
     premium: "bg-amber-50 text-amber-700",
-    pro: "bg-violet-50 text-violet-700",
   };
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-[#0f172a]">Admin Overview</h1>
-        <p className="mt-1 text-sm text-[#1e293b]/60">Platform-wide snapshot</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[#0f172a]">Admin Overview</h1>
+          <p className="mt-1 text-sm text-[#1e293b]/60">Platform-wide snapshot</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/admin/data-health"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-semibold text-[#0f172a] shadow-sm transition hover:bg-slate-50"
+          >
+            <Database className="h-3.5 w-3.5 text-teal-600" /> Data Health
+          </Link>
+          <Link
+            href="/admin/flags"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-semibold text-[#0f172a] shadow-sm transition hover:bg-slate-50"
+          >
+            <Flag className="h-3.5 w-3.5 text-violet-600" /> Feature Flags
+          </Link>
+        </div>
       </div>
 
-      {/* Users & sims */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Users, bets, sims & content */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard
           label="Total Users"
           value={stats.totalUsers}
           icon={<Users className="h-5 w-5" />}
           href="/admin/users"
           accent="bg-violet-50 text-violet-600"
+        />
+        <StatCard
+          label="Logged Bets"
+          value={totalLoggedBets}
+          icon={<NotebookPen className="h-5 w-5" />}
+          accent="bg-emerald-50 text-emerald-600"
         />
         <StatCard
           label="Sim Sessions"

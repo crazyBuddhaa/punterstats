@@ -90,28 +90,68 @@ function MarketTile({
   );
 }
 
-type MarketGroup = "goals" | "btts" | "double-chance" | "clean-sheet";
+type MarketGroup = "goals" | "btts" | "double-chance" | "scorelines" | "clean-sheet";
 
 const MARKET_GROUPS: { id: MarketGroup; label: string }[] = [
-  { id: "goals",        label: "Goals Lines" },
-  { id: "btts",         label: "Both Teams To Score" },
-  { id: "double-chance", label: "Double Chance" },
-  { id: "clean-sheet", label: "Clean Sheet" },
+  { id: "goals",         label: "Goals & Team Totals" },
+  { id: "btts",          label: "Both Teams To Score" },
+  { id: "double-chance", label: "Double Chance & DNB" },
+  { id: "scorelines",    label: "Scorelines & Handicap" },
+  { id: "clean-sheet",   label: "Clean Sheet" },
 ];
+
+const TIER_BADGE_STYLES: Record<"Gold" | "Silver" | "Bronze", string> = {
+  Gold:   "border-amber-300 bg-amber-50 text-amber-800",
+  Silver: "border-slate-300 bg-slate-100 text-slate-700",
+  Bronze: "border-orange-300 bg-orange-50 text-orange-800",
+};
 
 export function ProbabilityDisplay({
   result,
   homeTeamName,
   awayTeamName,
 }: ProbabilityDisplayProps) {
-  const { homeWinProb, drawProb, awayWinProb, expectedGoals, derivedMarkets, keyInsights, educationalNote } = result;
+  const {
+    homeWinProb,
+    drawProb,
+    awayWinProb,
+    expectedGoals,
+    derivedMarkets,
+    keyInsights,
+    educationalNote,
+    modelMeta,
+  } = result;
   const [activeGroup, setActiveGroup] = useState<MarketGroup>("goals");
 
   return (
     <div className="space-y-6">
       {/* Outcome probability bars */}
       <div className="rounded-xl border border-border bg-white p-6">
-        <h3 className="mb-5 font-semibold text-[#0f172a]">Outcome Probability Estimate</h3>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-semibold text-[#0f172a]">Outcome Probability Estimate</h3>
+          {modelMeta && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span
+                className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${
+                  modelMeta.source === "dixon-coles-v2"
+                    ? "border-teal-200 bg-teal-50 text-teal-700"
+                    : "border-slate-200 bg-slate-50 text-slate-600"
+                }`}
+              >
+                {modelMeta.source === "dixon-coles-v2"
+                  ? `Dixon-Coles v${modelMeta.modelVersion}${modelMeta.leagueCode ? ` · ${modelMeta.leagueCode}` : ""}`
+                  : "Factor Model"}
+              </span>
+              {modelMeta.reliabilityTier && (
+                <span
+                  className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${TIER_BADGE_STYLES[modelMeta.reliabilityTier]}`}
+                >
+                  {modelMeta.reliabilityTier} Data
+                </span>
+              )}
+            </div>
+          )}
+        </div>
         <div className="space-y-4">
           <OutcomeBar
             label={`${homeTeamName} Win`}
@@ -169,7 +209,7 @@ export function ProbabilityDisplay({
         <div className="border-b border-border px-6 py-4">
           <h3 className="font-semibold text-[#0f172a]">Betting Markets</h3>
           <p className="mt-0.5 text-xs text-[#1e293b]/50">
-            Derived from xG via Poisson distribution — for educational comparison only.
+            Derived coherently from the Dixon-Coles joint scoreline distribution — for educational comparison only.
           </p>
         </div>
 
@@ -192,13 +232,39 @@ export function ProbabilityDisplay({
 
         <div className="p-5">
           {activeGroup === "goals" && (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <MarketTile label="Over 1.5 Goals"  prob={derivedMarkets.over15}  accent="teal" />
-              <MarketTile label="Under 1.5 Goals" prob={derivedMarkets.under15} accent="slate" />
-              <MarketTile label="Over 2.5 Goals"  prob={derivedMarkets.over25}  accent="teal" />
-              <MarketTile label="Under 2.5 Goals" prob={derivedMarkets.under25} accent="slate" />
-              <MarketTile label="Over 3.5 Goals"  prob={derivedMarkets.over35}  accent="indigo" />
-              <MarketTile label="Under 3.5 Goals" prob={derivedMarkets.under35} accent="slate" />
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {typeof derivedMarkets.over05 === "number" && derivedMarkets.over05 > 0 && (
+                  <>
+                    <MarketTile label="Over 0.5 Goals" prob={derivedMarkets.over05} accent="teal" />
+                    <MarketTile label="Under 0.5 Goals" prob={derivedMarkets.under05 ?? 1 - derivedMarkets.over05} accent="slate" />
+                  </>
+                )}
+                <MarketTile label="Over 1.5 Goals"  prob={derivedMarkets.over15}  accent="teal" />
+                <MarketTile label="Under 1.5 Goals" prob={derivedMarkets.under15} accent="slate" />
+                <MarketTile label="Over 2.5 Goals"  prob={derivedMarkets.over25}  accent="teal" />
+                <MarketTile label="Under 2.5 Goals" prob={derivedMarkets.under25} accent="slate" />
+                <MarketTile label="Over 3.5 Goals"  prob={derivedMarkets.over35}  accent="indigo" />
+                <MarketTile label="Under 3.5 Goals" prob={derivedMarkets.under35} accent="slate" />
+                {typeof derivedMarkets.over45 === "number" && derivedMarkets.over45 > 0 && (
+                  <>
+                    <MarketTile label="Over 4.5 Goals" prob={derivedMarkets.over45} accent="indigo" />
+                    <MarketTile label="Under 4.5 Goals" prob={derivedMarkets.under45 ?? 1 - derivedMarkets.over45} accent="slate" />
+                  </>
+                )}
+              </div>
+
+              {typeof derivedMarkets.homeOver05 === "number" && derivedMarkets.homeOver05 > 0 && (
+                <div className="space-y-2.5 pt-2 border-t border-border">
+                  <p className="text-xs font-semibold text-[#0f172a]">Team Goal Totals</p>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <MarketTile label={`${homeTeamName} Over 0.5`} prob={derivedMarkets.homeOver05} accent="teal" />
+                    <MarketTile label={`${homeTeamName} Over 1.5`} prob={derivedMarkets.homeOver15 ?? 0} accent="teal" />
+                    <MarketTile label={`${awayTeamName} Over 0.5`} prob={derivedMarkets.awayOver05 ?? 0} accent="indigo" />
+                    <MarketTile label={`${awayTeamName} Over 1.5`} prob={derivedMarkets.awayOver15 ?? 0} accent="indigo" />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -206,8 +272,8 @@ export function ProbabilityDisplay({
             <div className="space-y-4">
               <p className="text-xs text-[#1e293b]/50 leading-relaxed">
                 Both Teams To Score (BTTS) is the probability that <em>both</em> sides
-                score at least one goal. It is derived from each team&apos;s individual xG using
-                independent Poisson models: P(home ≥ 1) × P(away ≥ 1).
+                score at least one goal, derived from the Dixon-Coles low-score corrected
+                joint scoreline matrix.
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <MarketTile label="BTTS — Yes" prob={derivedMarkets.btts}   accent="teal"  sublabel="Both teams score" />
@@ -217,11 +283,10 @@ export function ProbabilityDisplay({
           )}
 
           {activeGroup === "double-chance" && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <p className="text-xs text-[#1e293b]/50 leading-relaxed">
-                Double Chance covers two of the three 1X2 outcomes. It is the direct sum of
-                the two constituent probabilities — a lower-variance, lower-odds alternative
-                to a straight win bet.
+                Double Chance covers two of the three 1X2 outcomes. Draw No Bet (DNB) removes
+                the draw by re-normalising Home vs Away win probabilities.
               </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <MarketTile
@@ -243,15 +308,89 @@ export function ProbabilityDisplay({
                   accent="amber"
                 />
               </div>
+
+              {typeof derivedMarkets.homeDnb === "number" && derivedMarkets.homeDnb > 0 && (
+                <div className="space-y-2.5 pt-2 border-t border-border">
+                  <p className="text-xs font-semibold text-[#0f172a]">Draw No Bet (DNB)</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <MarketTile
+                      label={`${homeTeamName} DNB`}
+                      sublabel="Stake refunded on draw"
+                      prob={derivedMarkets.homeDnb}
+                      accent="teal"
+                    />
+                    <MarketTile
+                      label={`${awayTeamName} DNB`}
+                      sublabel="Stake refunded on draw"
+                      prob={derivedMarkets.awayDnb ?? 1 - derivedMarkets.homeDnb}
+                      accent="indigo"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeGroup === "scorelines" && (
+            <div className="space-y-5">
+              {derivedMarkets.topScorelines && derivedMarkets.topScorelines.length > 0 && (
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs font-semibold text-[#0f172a]">Top 5 Most Probable Scorelines</p>
+                    <p className="text-[11px] text-[#1e293b]/50">
+                      Exact full-time score probabilities ({homeTeamName} – {awayTeamName}) from the Dixon-Coles matrix.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+                    {derivedMarkets.topScorelines.map((s, idx) => (
+                      <div
+                        key={s.score}
+                        className={`rounded-xl border p-3 text-center ${
+                          idx === 0
+                            ? "border-teal-300 bg-teal-50/70"
+                            : "border-border bg-slate-50/60"
+                        }`}
+                      >
+                        <p className="text-lg font-bold tabular-nums text-[#0f172a]">{s.score}</p>
+                        <p className="mt-0.5 text-xs font-semibold tabular-nums text-teal-700">
+                          {(s.prob * 100).toFixed(1)}%
+                        </p>
+                        <p className="text-[10px] tabular-nums text-[#1e293b]/45">
+                          ≈ {(1 / Math.max(s.prob, 0.001)).toFixed(1)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {typeof derivedMarkets.ahHomeMinus15 === "number" && (
+                <div className="space-y-2.5 pt-2 border-t border-border">
+                  <p className="text-xs font-semibold text-[#0f172a]">Asian Handicap (Home Side)</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <MarketTile
+                      label={`${homeTeamName} -1.5`}
+                      sublabel="Must win by 2+ goals"
+                      prob={derivedMarkets.ahHomeMinus15}
+                      accent="teal"
+                    />
+                    <MarketTile
+                      label={`${homeTeamName} +1.5`}
+                      sublabel="Win, draw, or lose by 1"
+                      prob={derivedMarkets.ahHomePlus15 ?? 0}
+                      accent="indigo"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {activeGroup === "clean-sheet" && (
             <div className="space-y-4">
               <p className="text-xs text-[#1e293b]/50 leading-relaxed">
-                Clean Sheet probability is the Poisson likelihood that the opponent scores
-                zero goals (P(opponent xG = 0) = e<sup>−λ</sup>). It measures each
-                defence&apos;s ability to shut out their opponent based on the xG entered.
+                Clean Sheet probability is the likelihood that the opponent scores zero goals
+                from the Dixon-Coles scoreline matrix.
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <MarketTile

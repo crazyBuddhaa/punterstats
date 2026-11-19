@@ -398,9 +398,9 @@ export function weeklyReportEmail(input: WeeklyReportEmailInput): EmailTemplate 
          <p style="margin:0 0 10px;font-size:13px;color:${BRAND.body};line-height:1.5;">
            No segment leaks were flagged above the 15-bet threshold yet. Keep logging kick-off closing odds to measure price quality.
          </p>
-         <a href="${url}/betting-academy/market-dynamics/sharp-vs-recreational-money/the-closing-line-and-why-it-matters"
+         <a href="${url}/betting-academy/odds-and-markets/odds-comparison-line-shopping/closing-line-value-performance-metric"
             style="font-size:13px;font-weight:600;color:${BRAND.accent};text-decoration:underline;">
-           Read lesson: The Closing Line &amp; Why It Matters &rarr;
+           Read lesson: Closing Line Value as a Performance Metric &rarr;
          </a>
        </div>`;
 
@@ -450,7 +450,7 @@ export function weeklyReportEmail(input: WeeklyReportEmailInput): EmailTemplate 
 
   const leakText = input.topLeak
     ? `Top leak: ${input.topLeak.message}\nLesson: ${input.topLeak.lessonTitle} (${url}${input.topLeak.lessonHref})`
-    : `Lesson: The Closing Line & Why It Matters (${url}/betting-academy/market-dynamics/sharp-vs-recreational-money/the-closing-line-and-why-it-matters)`;
+    : `Lesson: Closing Line Value as a Performance Metric (${url}/betting-academy/odds-and-markets/odds-comparison-line-shopping/closing-line-value-performance-metric)`;
 
   return {
     subject: "Your week in numbers — PunterStat Betting Report Card",

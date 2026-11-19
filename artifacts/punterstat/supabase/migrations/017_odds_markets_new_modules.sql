@@ -1170,13 +1170,6 @@ WHERE c.slug = 'exchange-betting-lay-markets' AND cat.slug = 'odds-and-markets';
 -- ║  MODULE 6 — Building Your Own Lines                     ║
 -- ╚══════════════════════════════════════════════════════════╝
 
-INSERT INTO public.courses (category_id, title, slug, description, level, is_published, sort_order)
-SELECT id, 'Building Your Own Lines', 'building-your-own-lines',
-  'How to construct your own price for an event from scratch — the methodology professionals use to identify when bookmakers are wrong.',
-  'expert', true, 6
-FROM public.course_categories WHERE slug = 'odds-and-markets'
-ON CONFLICT (slug) DO NOTHING;
-
 INSERT INTO public.lessons (course_id, title, slug, content, sort_order, is_published)
 SELECT c.id, 'Why You Must Build Your Own Lines', 'why-build-your-own-lines',
 '## The Fundamental Shift

@@ -3,13 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import { LandingPage } from "@/components/sections/landing-page";
 
 export const metadata: Metadata = {
-  title: "PunterStat — Bet Analysis, Bet Learning & Bet Assist",
+  title: "PunterStat — Know the True Odds Before You Stake",
   description:
-    "Learn the maths of betting, analyse matches with transparent probabilities, and check your slips with calculators and a tracker. We don't take bets and we don't give tips.",
+    "Check your bet slips for hidden margin, track singles and accumulators in ₦, diagnose leaks with your Betting Report Card, and master probability across 400+ lessons. No tips. No bookmaker affiliation.",
   openGraph: {
-    title: "PunterStat — Knowledge Before Decision",
+    title: "PunterStat — Know the True Odds Before You Stake",
     description:
-      "Learn the maths of betting, analyse matches with transparent probabilities, and check your slips with calculators and a tracker. We don't take bets and we don't give tips.",
+      "Bet Slip Checker, ₦ Bet Tracker, Betting Report Card, Match Breakdown, Historical Football Stats and 400+ structured lessons. No tips or bookmaker links.",
   },
 };
 async function getHomepageData() {

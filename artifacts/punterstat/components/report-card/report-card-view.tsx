@@ -40,7 +40,7 @@ const CalibrationChart = dynamic(() => import("./calibration-chart"), {
 });
 
 const money = (n: number) =>
-  n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  `${n < 0 ? "-" : ""}₦${Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /**
  * Data sent to both Free and Premium tiers.
@@ -64,6 +64,7 @@ export interface ReportCardFreeData {
   verdict: ReportCardVerdict;
   verdictTitle: string;
   verdictExplanation: string;
+  detectedLeakCount: number;
   recentBets: JournalBet[];
 }
 
@@ -275,6 +276,15 @@ export function ReportCardView({ freeData, premiumData }: ReportCardViewProps) {
               <p className="mt-1 max-w-3xl text-sm leading-relaxed text-[#1e293b]/80">
                 {freeData.verdictExplanation}
               </p>
+              {freeData.verdict === "too_early" && freeData.settledBets >= 10 && (
+                <p className="mt-2 inline-block rounded-lg border border-slate-200/80 bg-white/80 px-3 py-1.5 text-xs text-[#1e293b]/80">
+                  <strong>Early snapshot (high variance):</strong>{" "}
+                  {freeData.roi >= 0 ? "+" : ""}
+                  {pct(freeData.roi)} ROI across {freeData.settledBets} settled bets — hitting{" "}
+                  {pct(freeData.strikeRate)} vs {pct(freeData.breakEvenRate)} implied break-even (
+                  {freeData.strikeVsBreakEven >= 0 ? "ahead of" : "trailing"} break-even).
+                </p>
+              )}
             </div>
           </div>
 
@@ -723,9 +733,16 @@ export function ReportCardView({ freeData, premiumData }: ReportCardViewProps) {
           <h2 className="text-lg font-bold text-[#0f172a]">
             Unlock Full Report Card Diagnostics with Premium
           </h2>
-          <p className="mx-auto mt-1.5 max-w-xl text-sm text-[#1e293b]/65">
+          {freeData.detectedLeakCount > 0 && (
+            <div className="mx-auto mt-3 inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3.5 py-1 text-xs font-semibold text-rose-700">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              We detected {freeData.detectedLeakCount} structural{" "}
+              {freeData.detectedLeakCount === 1 ? "leak" : "leaks"} in your logged bets
+            </div>
+          )}
+          <p className="mx-auto mt-2 max-w-xl text-sm text-[#1e293b]/65">
             Free accounts include your overall verdict, ROI confidence interval, strike rate vs break-even,
-            and your last 30 logged bets. Upgrade to Premium to unlock:
+            and your last 30 logged bets. Upgrade to Premium (₦1,500/mo) to unlock:
           </p>
           <ul className="mx-auto mt-4 grid max-w-2xl gap-2 text-left text-xs text-[#1e293b]/80 sm:grid-cols-2">
             <li className="rounded-lg border border-border bg-white/80 px-3 py-2">
@@ -741,9 +758,12 @@ export function ReportCardView({ freeData, premiumData }: ReportCardViewProps) {
               • Automated leak detection linked to Betting Academy lessons
             </li>
           </ul>
-          <div className="mt-6">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Button variant="teal" asChild>
-              <Link href="/pricing">View Premium plans →</Link>
+              <Link href="/checkout?plan=premium">Unlock Premium — ₦1,500/mo →</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/pricing">Compare plans</Link>
             </Button>
           </div>
         </section>

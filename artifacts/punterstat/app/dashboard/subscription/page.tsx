@@ -4,53 +4,15 @@ import { CreditCard, CheckCircle2, Lock, ExternalLink } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
 import { getSubscription } from "@/lib/dashboard/queries";
 import { getFullSubscription } from "@/lib/payments/subscriptions";
+import { getPlanRow } from "@/app/(main)/pricing/plans";
 import { ManageBillingButton } from "./ManageBillingButton";
 
 export const metadata: Metadata = { title: "Subscription — Dashboard — PunterStat" };
 
-const planFeatures: Record<string, { included: string[]; locked: string[] }> = {
-  free: {
-    included: [
-      "Access to free courses in Sports University",
-      "Betting Academy core modules",
-      "Simulation Engine (Bet Simulator + Probability Simulator)",
-      "Match Breakdown Analyzer",
-      "Save up to 5 match analyses",
-    ],
-    locked: [
-      "Premium Sports University courses",
-      "Advanced Betting Academy modules",
-      "Unlimited saved analyses",
-      "Priority support",
-      "Downloadable learning materials",
-    ],
-  },
-  premium: {
-    included: [
-      "All free features",
-      "All premium Sports University courses",
-      "Advanced Betting Academy modules",
-      "Unlimited saved analyses",
-      "Downloadable learning materials",
-      "Priority support",
-    ],
-    locked: [],
-  },
-  pro: {
-    included: [
-      "Everything in Premium",
-      "Early access to new modules",
-      "1-on-1 learning sessions (coming soon)",
-      "Advanced analytics on your learning patterns",
-    ],
-    locked: [],
-  },
-};
-
 const planColors: Record<string, { badge: string; border: string }> = {
   free:    { badge: "bg-slate-100 text-slate-600",   border: "border-slate-200"  },
+  pro:     { badge: "bg-indigo-100 text-indigo-700", border: "border-indigo-200" },
   premium: { badge: "bg-amber-100 text-amber-700",   border: "border-amber-200"  },
-  pro:     { badge: "bg-violet-100 text-violet-700", border: "border-violet-200" },
 };
 
 const statusColors: Record<string, string> = {
@@ -72,13 +34,19 @@ export default async function SubscriptionPage() {
   const full         = await getFullSubscription(profile.userId);
 
   const plan     = subscription?.plan ?? "free";
-  const features = planFeatures[plan] ?? planFeatures.free;
-  const colors   = planColors[plan]   ?? planColors.free;
+  const planRow  = getPlanRow(plan);
+  const included = planRow.features.filter((f) => f.included).map((f) => f.label);
+  const locked   = planRow.features.filter((f) => !f.included).map((f) => f.label);
+  const colors   = planColors[plan] ?? planColors.free;
 
   const hasStripe   = !!full?.stripeCustomerId;
   const hasPaystack = !!full?.paystackCustomerCode;
   const hasRemita   = !!full?.remitaRrr;
   const provider    = full?.paymentProvider;
+
+  const cancelSubject = encodeURIComponent(
+    `Cancel ${planRow.name} subscription (${providerLabels[provider ?? ""] ?? "PunterStat"})`,
+  );
 
   return (
     <div className="space-y-8">
@@ -99,8 +67,14 @@ export default async function SubscriptionPage() {
             </div>
             <div className="mt-3 flex items-center gap-3 flex-wrap">
               <span className={`rounded-full px-3 py-1 text-sm font-bold uppercase tracking-wide ${colors.badge}`}>
-                {plan}
+                {planRow.name}
               </span>
+              {planRow.ngn && (
+                <span className="text-sm font-semibold text-[#0f172a]">
+                  {planRow.ngn}
+                  <span className="font-normal text-[#1e293b]/50">{planRow.period}</span>
+                </span>
+              )}
               {subscription && (
                 <span className={`text-sm font-medium ${statusColors[subscription.status] ?? "text-[#1e293b]"}`}>
                   {subscription.status}
@@ -119,12 +93,19 @@ export default async function SubscriptionPage() {
             <div className="flex flex-col gap-2 items-end">
               {hasStripe && <ManageBillingButton />}
               {(hasPaystack || hasRemita) && (
-                <p className="text-xs text-[#1e293b]/50 max-w-[200px] text-right">
-                  To cancel, email{" "}
-                  <a href="mailto:support@punterstat.site" className="underline">
-                    support@punterstat.site
+                <div className="flex flex-col items-end gap-1.5">
+                  <a
+                    href={`mailto:support@punterstat.site?subject=${cancelSubject}`}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-[#1e293b]/70 transition hover:bg-slate-50 hover:text-[#0f172a]"
+                  >
+                    Request cancellation / plan change
                   </a>
-                </p>
+                  <p className="text-[11px] text-[#1e293b]/45 max-w-[240px] text-right">
+                    {hasPaystack
+                      ? "Paystack auto-renewals can also be managed from your Paystack receipt email."
+                      : "Remita payments do not auto-renew; simply skip renewal when your period ends."}
+                  </p>
+                </div>
               )}
             </div>
           )}
@@ -165,7 +146,7 @@ export default async function SubscriptionPage() {
       <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
         <h2 className="mb-4 font-semibold text-[#0f172a]">What&apos;s included</h2>
         <ul className="space-y-2">
-          {features.included.map((f) => (
+          {included.map((f) => (
             <li key={f} className="flex items-start gap-2.5 text-sm text-[#1e293b]/80">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
               {f}
@@ -173,14 +154,14 @@ export default async function SubscriptionPage() {
           ))}
         </ul>
 
-        {features.locked.length > 0 && (
+        {locked.length > 0 && (
           <>
             <div className="my-4 border-t border-border" />
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#1e293b]/40">
-              Unlock with Premium
+              {plan === "pro" ? "Unlock with Premium (₦1,500/mo)" : "Unlock with Pro (₦700/mo) or Premium (₦1,500/mo)"}
             </p>
             <ul className="space-y-2">
-              {features.locked.map((f) => (
+              {locked.map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#1e293b]/40">
                   <Lock className="mt-0.5 h-4 w-4 shrink-0" />
                   {f}
@@ -191,19 +172,22 @@ export default async function SubscriptionPage() {
         )}
       </div>
 
-      {/* Upgrade CTA for free users */}
-      {plan === "free" && (
+      {/* Upgrade CTA for free or pro users */}
+      {plan !== "premium" && (
         <div className="rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50 to-indigo-50 p-6 shadow-sm">
-          <h2 className="font-bold text-[#0f172a]">Upgrade to Premium</h2>
+          <h2 className="font-bold text-[#0f172a]">
+            {plan === "pro" ? "Upgrade to Premium — ₦1,500/mo" : "Upgrade to Pro (₦700/mo) or Premium (₦1,500/mo)"}
+          </h2>
           <p className="mt-1 text-sm text-[#1e293b]/70">
-            Unlock all courses, unlimited analyses, and downloadable materials.
-            Pay via card, Paystack, or Nigerian bank transfer.
+            {plan === "pro"
+              ? "Unlock the full Betting Report Card (CLV, calibration curve, and structural leak detection), Calibration Trainer, and priority support."
+              : "Unlock Match Breakdown Analyzer, Simulation History, Spot The Value, and the full Betting Report Card. Pay via Paystack (cards, OPay/PalmPay, bank transfer, USSD) or Remita."}
           </p>
           <Link
-            href="/pricing"
+            href={plan === "pro" ? "/checkout?plan=premium" : "/pricing"}
             className="mt-4 inline-flex items-center gap-2 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-teal-500/20 transition hover:bg-teal-700"
           >
-            View pricing plans
+            {plan === "pro" ? "Upgrade to Premium" : "View pricing plans"}
             <ExternalLink className="h-3.5 w-3.5" />
           </Link>
         </div>

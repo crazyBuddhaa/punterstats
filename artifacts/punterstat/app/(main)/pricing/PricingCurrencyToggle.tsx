@@ -121,7 +121,7 @@ export default function PricingCurrencyToggle({ plans }: Props) {
       </div>
 
       <p className="mt-6 text-center text-xs text-[#1e293b]/40">
-        NGN rates are approximate (1 GBP ≈ ₦1,900). All plans billed monthly — no contracts.
+        NGN plans are locally priced for Nigeria (Paystack cards, bank transfer, OPay/PalmPay &amp; USSD). Billed monthly — cancel anytime.
       </p>
     </section>
   );

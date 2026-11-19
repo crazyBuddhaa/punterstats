@@ -18,10 +18,25 @@ export const metadata: Metadata = {
     "Personal analytics over your logged bets: ROI confidence intervals, closing-line value, probability calibration, and leak detection.",
 };
 
-export default async function ReportCardPage() {
+interface Props {
+  searchParams: Promise<{ range?: string }>;
+}
+
+function filterBetsByRange<T extends { placedAt: string }>(bets: T[], range: "all" | "30d"): T[] {
+  if (range !== "30d") return bets;
+  const cutoff = new Date().getTime() - 30 * 86_400_000;
+  return bets.filter((b) => new Date(b.placedAt).getTime() >= cutoff);
+}
+
+export default async function ReportCardPage({ searchParams }: Props) {
+  const { range: rawRange } = await searchParams;
+  const range: "all" | "30d" = rawRange === "30d" ? "30d" : "all";
+
   const profile = await requireAuth();
   const isPremium = hasTierAccess(profile, "premium");
-  const bets = await getJournal();
+  const allBets = await getJournal();
+  const bets = filterBetsByRange(allBets, range);
+
   const card = computeReportCard(bets);
 
   const freeData: ReportCardFreeData = {
@@ -41,6 +56,7 @@ export default async function ReportCardPage() {
     verdict: card.verdict,
     verdictTitle: card.verdictTitle,
     verdictExplanation: card.verdictExplanation,
+    detectedLeakCount: card.leaks.length,
     recentBets: bets.slice(0, 30),
   };
 
@@ -68,7 +84,31 @@ export default async function ReportCardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {allBets.length > 0 && (
+            <div className="inline-flex rounded-lg border border-border bg-white p-0.5 shadow-sm">
+              <Link
+                href="/dashboard/report-card"
+                className={`rounded-md px-3 py-1 text-xs font-medium transition ${
+                  range === "all"
+                    ? "bg-[#0f172a] text-white"
+                    : "text-[#1e293b]/60 hover:text-[#0f172a]"
+                }`}
+              >
+                All time
+              </Link>
+              <Link
+                href="/dashboard/report-card?range=30d"
+                className={`rounded-md px-3 py-1 text-xs font-medium transition ${
+                  range === "30d"
+                    ? "bg-[#0f172a] text-white"
+                    : "text-[#1e293b]/60 hover:text-[#0f172a]"
+                }`}
+              >
+                Last 30 days
+              </Link>
+            </div>
+          )}
           <QuickAddBetModal />
           <Button variant="outline" size="sm" asChild>
             <Link href="/dashboard/bet-tracker">Bet Tracker</Link>

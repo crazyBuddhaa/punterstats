@@ -150,6 +150,47 @@ export async function settleBet(input: z.input<typeof settleSchema>): Promise<Ac
   return { success: true };
 }
 
+const updateBetSchema = betSchema.extend({
+  id: z.string().max(36).uuid(),
+});
+
+export type UpdateBetInput = z.input<typeof updateBetSchema>;
+
+export async function updateBet(input: UpdateBetInput): Promise<ActionResult> {
+  const parsed = updateBetSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid bet" };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Sign in to use the bet tracker." };
+
+  const b = parsed.data;
+  const legCount = b.legCount ?? (b.market.toLowerCase() === "accumulator" ? 2 : 1);
+
+  const { error } = await supabase
+    .from("bet_journal")
+    .update({
+      event_name: b.eventName,
+      market: b.market,
+      selection: b.selection,
+      bookmaker: b.bookmaker || null,
+      odds: b.odds,
+      stake: b.stake,
+      your_prob: b.yourProb ?? null,
+      leg_count: legCount,
+      notes: b.notes || null,
+    })
+    .eq("id", b.id)
+    .eq("user_id", user.id);
+
+  if (error) return { success: false, error: error.message };
+  revalidatePath(TRACKER_PATH);
+  revalidatePath(REPORT_CARD_PATH);
+  return { success: true };
+}
+
 export async function deleteBet(id: string): Promise<ActionResult> {
   if (!z.string().max(36).uuid().safeParse(id).success) return { success: false, error: "Invalid bet" };
   const supabase = await createClient();

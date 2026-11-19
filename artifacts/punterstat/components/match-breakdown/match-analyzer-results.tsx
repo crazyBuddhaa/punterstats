@@ -1,6 +1,8 @@
 "use client";
 
-import { Save, CheckCircle2, Loader2 } from "lucide-react";
+import { useState } from "react";
+import Link from "next/link";
+import { Save, CheckCircle2, Loader2, ArrowRight } from "lucide-react";
 import { FactorCard } from "./factor-card";
 import { ProbabilityDisplay } from "./probability-display";
 import type {
@@ -10,6 +12,93 @@ import type {
 } from "@/lib/match-breakdown/types";
 
 const INJURY_OPTIONS: InjuryImpact[] = ["none", "minor", "moderate", "significant", "major"];
+
+function OddsComparisonCard({
+  result,
+  homeTeamName,
+  awayTeamName,
+}: {
+  result: MatchAnalysisResult;
+  homeTeamName: string;
+  awayTeamName: string;
+}) {
+  const [homeOdds, setHomeOdds] = useState("");
+  const [drawOdds, setDrawOdds] = useState("");
+  const [awayOdds, setAwayOdds] = useState("");
+
+  const rows = [
+    { label: `${homeTeamName} Win`, prob: result.homeWinProb, oddsStr: homeOdds, set: setHomeOdds },
+    { label: "Draw", prob: result.drawProb, oddsStr: drawOdds, set: setDrawOdds },
+    { label: `${awayTeamName} Win`, prob: result.awayWinProb, oddsStr: awayOdds, set: setAwayOdds },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-teal-200 bg-teal-50/40 p-5 space-y-4">
+      <div>
+        <h3 className="text-sm font-bold text-[#0f172a]">Compare vs Bookmaker Odds &amp; Log Bet</h3>
+        <p className="mt-0.5 text-xs text-[#1e293b]/60">
+          Enter SportyBet / Bet9ja decimal odds to check whether your model sees positive expected value (+EV), then log directly to Bet Tracker.
+        </p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {rows.map((r) => {
+          const offered = parseFloat(r.oddsStr);
+          const hasOdds = Number.isFinite(offered) && offered > 1;
+          const fairOdds = r.prob > 0 ? 1 / r.prob : 0;
+          const ev = hasOdds ? r.prob * offered - 1 : null;
+          const positive = ev !== null && ev > 0;
+
+          return (
+            <div key={r.label} className="rounded-xl border border-border bg-white p-3.5 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-[#0f172a] truncate">{r.label}</p>
+                <span className="text-[11px] text-[#1e293b]/50 tabular-nums shrink-0">
+                  Fair {fairOdds.toFixed(2)}
+                </span>
+              </div>
+              <input
+                inputMode="decimal"
+                value={r.oddsStr}
+                onChange={(e) => r.set(e.target.value)}
+                placeholder={`Book odds (e.g. ${fairOdds.toFixed(2)})`}
+                className="h-9 w-full rounded-lg border border-border bg-slate-50 px-2.5 text-sm tabular-nums text-[#0f172a] focus:border-teal-600 focus:bg-white focus:outline-none"
+              />
+              {ev !== null ? (
+                <div className="flex items-center justify-between gap-2 pt-0.5">
+                  <span
+                    className={`text-xs font-bold tabular-nums ${
+                      positive ? "text-emerald-600" : "text-rose-600"
+                    }`}
+                  >
+                    {positive ? "+" : ""}
+                    {(ev * 100).toFixed(1)}% EV
+                  </span>
+                  <Link
+                    href={`/dashboard/bet-tracker?${new URLSearchParams({
+                      event: `${homeTeamName} vs ${awayTeamName}`,
+                      selection: r.label,
+                      odds: offered.toFixed(2),
+                      prob: String(Math.round(r.prob * 1000) / 10),
+                      market: "1X2",
+                    }).toString()}`}
+                    className="inline-flex items-center gap-1 rounded-md bg-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-teal-700"
+                  >
+                    Log <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </div>
+              ) : (
+                <p className="text-[11px] text-[#1e293b]/45">
+                  Model: {Math.round(r.prob * 100)}%
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function StepAvailability({
   homeTeamName,
@@ -63,6 +152,7 @@ export function StepAvailability({
               return (
                 <button
                   key={opt}
+                  type="button"
                   onClick={() => setInjuries({ impactRating: opt })}
                   className={`rounded-lg border-2 px-1 py-2 text-center text-[10px] font-semibold capitalize transition ${
                     injuries.impactRating === opt
@@ -205,6 +295,12 @@ export function StepBreakdownResults({
       )}
 
       <ProbabilityDisplay
+        result={result}
+        homeTeamName={homeTeamName}
+        awayTeamName={awayTeamName}
+      />
+
+      <OddsComparisonCard
         result={result}
         homeTeamName={homeTeamName}
         awayTeamName={awayTeamName}

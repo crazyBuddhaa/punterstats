@@ -49,6 +49,25 @@ async function ResultsSection({
     ...(result ? { result } : {}),
   });
 
+  const withGoals = paged.data.filter((m) => m.home_goals !== null && m.away_goals !== null);
+  const sampleStats =
+    withGoals.length > 0
+      ? {
+          avgGoals: (
+            withGoals.reduce((s, m) => s + m.home_goals! + m.away_goals!, 0) / withGoals.length
+          ).toFixed(2),
+          bttsPct: Math.round(
+            (withGoals.filter((m) => m.home_goals! > 0 && m.away_goals! > 0).length / withGoals.length) * 100,
+          ),
+          over15Pct: Math.round(
+            (withGoals.filter((m) => m.home_goals! + m.away_goals! >= 2).length / withGoals.length) * 100,
+          ),
+          over25Pct: Math.round(
+            (withGoals.filter((m) => m.home_goals! + m.away_goals! >= 3).length / withGoals.length) * 100,
+          ),
+        }
+      : null;
+
   return (
     <div className="space-y-6">
       <ResultsFilters
@@ -59,6 +78,21 @@ async function ResultsSection({
         selectedTeam={team}
         selectedResult={result}
       />
+      {sampleStats && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "BTTS (this page)", value: `${sampleStats.bttsPct}%` },
+            { label: "Over 1.5 Goals", value: `${sampleStats.over15Pct}%` },
+            { label: "Over 2.5 Goals", value: `${sampleStats.over25Pct}%` },
+            { label: "Avg Goals / Match", value: sampleStats.avgGoals },
+          ].map((s) => (
+            <div key={s.label} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
+              <p className="text-[11px] text-white/45">{s.label}</p>
+              <p className="mt-0.5 text-lg font-bold tabular-nums text-white">{s.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
       <ResultsTable
         matches={paged.data}
         total={paged.total}
@@ -70,18 +104,22 @@ async function ResultsSection({
   );
 }
 
-export default function ResultsPage({ searchParams }: Props) {
+export default async function ResultsPage({ searchParams }: Props) {
+  const { getUserProfile } = await import("@/lib/auth/helpers");
+  const profile = await getUserProfile();
+  const isLoggedIn = Boolean(profile);
+
   return (
-    <main className="min-h-screen bg-[#0f172a] py-10 px-4">
+    <main className={isLoggedIn ? "rounded-2xl bg-[#0f172a] p-5 sm:p-6 shadow-sm" : "min-h-screen bg-[#0f172a] py-10 px-4"}>
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mb-8">
           <a href="/stats" className="text-sm text-[#7B7BFF] hover:underline mb-2 inline-block">
             ← Stats Centre
           </a>
-          <h1 className="text-3xl font-bold text-white">Match Results</h1>
-          <p className="mt-1 text-white/50">
-            Filter by league, season, or team to explore historical results.
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Match Results</h1>
+          <p className="mt-1 text-sm text-white/50">
+            Filter by league, season, or team to explore historical results and goal trends.
           </p>
         </div>
 

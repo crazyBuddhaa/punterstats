@@ -176,3 +176,66 @@ export async function getLeagues(): Promise<LeagueOption[]> {
     }))
     .sort((a, b) => a.country.localeCompare(b.country) || a.name.localeCompare(b.name));
 }
+
+export interface LeagueBenchmark {
+  code: string;
+  name: string;
+  matches: number;
+  avgGoals: number;
+  homeWinPct: number;
+  bttsPct: number;
+  over25Pct: number;
+}
+
+const TOP_LEAGUES: Array<{ code: string; name: string }> = [
+  { code: "E0", name: "Premier League" },
+  { code: "SP1", name: "La Liga" },
+  { code: "I1", name: "Serie A" },
+  { code: "D1", name: "Bundesliga" },
+  { code: "F1", name: "Ligue 1" },
+];
+
+export async function getLeagueBenchmarks(): Promise<LeagueBenchmark[]> {
+  try {
+    const supabase = createAdminClient();
+    const results = await Promise.all(
+      TOP_LEAGUES.map(async ({ code, name }) => {
+        const { data, error } = await supabase
+          .from("historical_matches")
+          .select("home_goals, away_goals, result")
+          .eq("league_code", code)
+          .not("home_goals", "is", null)
+          .not("away_goals", "is", null)
+          .order("match_date", { ascending: false })
+          .limit(1000);
+
+        if (error || !data || data.length === 0) return null;
+        const n = data.length;
+        let totalGoals = 0;
+        let homeWins = 0;
+        let btts = 0;
+        let over25 = 0;
+        for (const r of data) {
+          const hg = Number(r.home_goals);
+          const ag = Number(r.away_goals);
+          totalGoals += hg + ag;
+          if (r.result === "H" || hg > ag) homeWins++;
+          if (hg > 0 && ag > 0) btts++;
+          if (hg + ag >= 3) over25++;
+        }
+        return {
+          code,
+          name,
+          matches: n,
+          avgGoals: totalGoals / n,
+          homeWinPct: (homeWins / n) * 100,
+          bttsPct: (btts / n) * 100,
+          over25Pct: (over25 / n) * 100,
+        };
+      }),
+    );
+    return results.filter((r): r is LeagueBenchmark => r !== null);
+  } catch {
+    return [];
+  }
+}

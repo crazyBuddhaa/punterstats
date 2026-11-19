@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft, ShieldCheck } from "lucide-react";
-import { getUser } from "@/lib/auth/helpers";
+import { getUserProfile } from "@/lib/auth/helpers";
 import { MatchAnalyzer } from "@/components/match-breakdown/match-analyzer";
 
 export const metadata: Metadata = {
@@ -11,8 +11,31 @@ export const metadata: Metadata = {
 };
 
 export default async function MatchAnalyzerPage() {
-  const user = await getUser();
-  const isAuthenticated = !!user;
+  const profile = await getUserProfile();
+  const isAuthenticated = Boolean(profile);
+
+  if (isAuthenticated) {
+    return (
+      <div className="space-y-6 py-2">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <div>
+            <h1 className="text-xl font-bold text-[#0f172a] sm:text-2xl">Match Breakdown Analyzer</h1>
+            <p className="mt-1 text-xs text-[#1e293b]/55">
+              Weight 6 match factors, compare fair odds against your bookmaker, and log +EV spots directly to Bet Tracker.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/match-analyses"
+            className="text-xs font-semibold text-[#3D2DFF] hover:underline"
+          >
+            Saved analyses →
+          </Link>
+        </div>
+
+        <MatchAnalyzer isAuthenticated />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
@@ -46,17 +69,15 @@ export default async function MatchAnalyzerPage() {
 
       {/* Main layout */}
       <div className="container mx-auto max-w-4xl px-4 py-10">
-        {!isAuthenticated && (
-          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-800">
-            <span className="font-semibold">Sign in to save analyses.</span> Results are available
-            for this session only.{" "}
-            <Link href="/login" className="underline hover:text-amber-900">
-              Sign in →
-            </Link>
-          </div>
-        )}
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-800">
+          <span className="font-semibold">Sign in to save analyses.</span> Results are available
+          for this session only.{" "}
+          <Link href="/login" className="underline hover:text-amber-900">
+            Sign in →
+          </Link>
+        </div>
 
-        <MatchAnalyzer isAuthenticated={isAuthenticated} />
+        <MatchAnalyzer isAuthenticated={false} />
       </div>
     </div>
   );

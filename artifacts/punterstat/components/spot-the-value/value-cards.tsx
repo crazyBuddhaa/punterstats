@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   ChevronDown,
   ChevronUp,
@@ -24,21 +25,30 @@ const RATING_CONFIG: Record<
 };
 
 // ─── Shared outcome row ──────────────────────────────────────────────────────
-export function OutcomeRow({ outcome }: { outcome: OutcomeAssessment }) {
+export function OutcomeRow({
+  outcome,
+  eventName,
+  bookmaker,
+}: {
+  outcome: OutcomeAssessment;
+  eventName?: string;
+  bookmaker?: string;
+}) {
   const ratingCfg = outcome.valueRating ? RATING_CONFIG[outcome.valueRating] : null;
   const Icon = ratingCfg?.icon;
+  const hasPositiveEdge = outcome.valueDelta !== null && outcome.valueDelta > 0 && outcome.modelProb !== null;
 
   return (
-    <div className="flex items-center justify-between py-2.5 text-sm">
+    <div className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
       <div className="min-w-0 flex-1">
         <p className="font-medium text-[#0f172a] truncate">{outcome.label}</p>
         <p className="text-xs text-[#1e293b]/50">
           {outcome.decimalOdds.toFixed(2)} · market fair: {Math.round(outcome.fairImpliedProb * 100)}%
         </p>
       </div>
-      <div className="flex items-center gap-3 shrink-0 ml-4">
+      <div className="flex items-center gap-2.5 shrink-0">
         {outcome.modelProb !== null && (
-          <span className="text-sm text-[#1e293b]/70">
+          <span className="text-xs sm:text-sm text-[#1e293b]/70">
             model: {Math.round(outcome.modelProb * 100)}%
           </span>
         )}
@@ -47,6 +57,21 @@ export function OutcomeRow({ outcome }: { outcome: OutcomeAssessment }) {
             {Icon && <Icon className="h-3 w-3" />}
             {outcome.valueDelta > 0 ? "+" : ""}{Math.round(outcome.valueDelta * 100)}pp
           </span>
+        )}
+        {hasPositiveEdge && eventName && (
+          <Link
+            href={`/dashboard/bet-tracker?${new URLSearchParams({
+              event: eventName,
+              selection: outcome.label,
+              odds: outcome.decimalOdds.toFixed(2),
+              prob: String(Math.round(outcome.modelProb! * 1000) / 10),
+              market: "1X2",
+              ...(bookmaker ? { bookmaker } : {}),
+            }).toString()}`}
+            className="rounded-md bg-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-teal-700"
+          >
+            Log →
+          </Link>
         )}
         {!ratingCfg && <span className="text-xs text-[#1e293b]/30 italic">no model</span>}
       </div>
@@ -109,7 +134,14 @@ export function MatchCard({ match }: { match: MatchValueResult }) {
             Market odds + fair probabilities
           </p>
           <div className="divide-y divide-border/60">
-            {display.outcomes.map((o) => <OutcomeRow key={o.outcome} outcome={o} />)}
+            {display.outcomes.map((o) => (
+              <OutcomeRow
+                key={o.outcome}
+                outcome={o}
+                eventName={`${match.homeTeam} vs ${match.awayTeam}`}
+                bookmaker={match.bookmakerTitle}
+              />
+            ))}
           </div>
 
           <div className="mt-5 rounded-xl border border-dashed border-[#3D2DFF]/30 bg-[#3D2DFF]/5 p-4">

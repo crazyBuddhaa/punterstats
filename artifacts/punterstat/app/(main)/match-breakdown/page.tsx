@@ -93,7 +93,34 @@ const howItWorks = [
   },
 ];
 
-export default function MatchBreakdownPage() {
+export default async function MatchBreakdownPage() {
+  const { getUserProfile } = await import("@/lib/auth/helpers");
+  const profile = await getUserProfile();
+
+  if (profile) {
+    const { MatchAnalyzer } = await import("@/components/match-breakdown/match-analyzer");
+    return (
+      <div className="space-y-6 py-2">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <div>
+            <h1 className="text-xl font-bold text-[#0f172a] sm:text-2xl">Match Breakdown Analyzer</h1>
+            <p className="mt-1 text-xs text-[#1e293b]/55">
+              Weight 6 match factors, compare fair odds against your bookmaker, and log +EV spots directly to Bet Tracker.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/match-analyses"
+            className="text-xs font-semibold text-[#3D2DFF] hover:underline"
+          >
+            Saved analyses →
+          </Link>
+        </div>
+
+        <MatchAnalyzer isAuthenticated />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       {/* Hero */}

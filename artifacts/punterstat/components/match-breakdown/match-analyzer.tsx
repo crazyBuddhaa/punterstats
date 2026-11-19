@@ -312,6 +312,11 @@ export function MatchAnalyzer({ isAuthenticated }: MatchAnalyzerProps) {
     ) : null,
   };
 
+  const [quickMode, setQuickMode] = useState(false);
+
+  const canRunQuick =
+    homeTeam.name.trim().length >= 2 && awayTeam.name.trim().length >= 2;
+
   function handleNext() {
     if (step === 4) {
       runAnalysis();
@@ -322,26 +327,86 @@ export function MatchAnalyzer({ isAuthenticated }: MatchAnalyzerProps) {
 
   return (
     <div className="rounded-2xl border border-border bg-white shadow-sm">
-      <div className="border-b border-border px-6 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
         <div className="flex items-center gap-2">
           <BarChart2 className="h-5 w-5 text-teal-600" />
           <span className="font-semibold text-[#0f172a]">Match Breakdown Analyzer</span>
         </div>
+
+        {step < 5 && (
+          <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
+            <button
+              type="button"
+              onClick={() => setQuickMode(false)}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                !quickMode ? "bg-[#0f172a] text-white" : "text-[#1e293b]/60 hover:text-[#0f172a]"
+              }`}
+            >
+              Guided (6 steps)
+            </button>
+            <button
+              type="button"
+              onClick={() => setQuickMode(true)}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                quickMode ? "bg-[#0f172a] text-white" : "text-[#1e293b]/60 hover:text-[#0f172a]"
+              }`}
+            >
+              Quick 1-Page
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="p-6">
-        <StepHeader step={step} total={STEPS.length} />
-        {steps[step]}
+        {step === 5 ? (
+          steps[5]
+        ) : quickMode ? (
+          <div className="space-y-8">
+            <div>
+              <h3 className="mb-3 text-sm font-semibold text-[#0f172a]">1. Match &amp; Context</h3>
+              {steps[0]}
+            </div>
+            <div className="border-t border-border pt-6">
+              <h3 className="mb-3 text-sm font-semibold text-[#0f172a]">2. Home Team Form</h3>
+              {steps[1]}
+            </div>
+            <div className="border-t border-border pt-6">
+              <h3 className="mb-3 text-sm font-semibold text-[#0f172a]">3. Away Team Form</h3>
+              {steps[2]}
+            </div>
+            <div className="border-t border-border pt-6">
+              <h3 className="mb-3 text-sm font-semibold text-[#0f172a]">4. Head-to-Head</h3>
+              {steps[3]}
+            </div>
+            <div className="border-t border-border pt-6">
+              <h3 className="mb-3 text-sm font-semibold text-[#0f172a]">5. Squad Availability</h3>
+              {steps[4]}
+            </div>
+            <div className="flex justify-end border-t border-border pt-4">
+              <button
+                type="button"
+                disabled={!canRunQuick}
+                onClick={runAnalysis}
+                className="rounded-lg bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Run Breakdown Analysis
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <StepHeader step={step} total={STEPS.length} />
+            {steps[step]}
 
-        {step < 5 && (
-          <NavButtons
-            step={step}
-            total={STEPS.length}
-            onBack={() => setStep((s) => Math.max(0, s - 1) as Step)}
-            onNext={handleNext}
-            nextLabel={step === 4 ? "Run Analysis" : "Continue"}
-            nextDisabled={!stepValid[step]}
-          />
+            <NavButtons
+              step={step}
+              total={STEPS.length}
+              onBack={() => setStep((s) => Math.max(0, s - 1) as Step)}
+              onNext={handleNext}
+              nextLabel={step === 4 ? "Run Analysis" : "Continue"}
+              nextDisabled={!stepValid[step]}
+            />
+          </>
         )}
       </div>
     </div>

@@ -3,7 +3,16 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { Trash2 } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Download,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 
 const BetTrackerChart = dynamic(() => import("./bet-tracker-chart"), {
   ssr: false,
@@ -20,7 +29,7 @@ import {
   type BetStatus,
   type JournalBet,
 } from "@/lib/bet-assist/journal";
-import { addBet, deleteBet, settleBet } from "@/lib/bet-assist/journal-actions";
+import { addBet, deleteBet, settleBet, updateBet } from "@/lib/bet-assist/journal-actions";
 import { pct } from "@/lib/bet-assist/calculators";
 import { cn } from "@/lib/utils";
 
@@ -35,9 +44,32 @@ export interface TrackerPrefill {
   legs?: string;
 }
 
-const MARKETS = ["1X2", "Double chance", "Over/Under", "BTTS", "Asian handicap", "Correct score", "Accumulator", "Player prop", "Other"];
+const MARKETS = [
+  "1X2",
+  "Double chance",
+  "Over/Under",
+  "BTTS",
+  "Asian handicap",
+  "Correct score",
+  "Accumulator",
+  "Player prop",
+  "Other",
+];
 
-const money = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+const BOOKMAKER_PRESETS = ["SportyBet", "Bet9ja", "BetKing", "1xBet", "MSport", "Pinnacle"];
+
+const money = (n: number) =>
+  `₦${Math.abs(n).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+
+const signedMoney = (n: number) => `${n >= 0 ? "+" : "-"}${money(n)}`;
+
+interface AccaLeg {
+  event: string;
+  selection: string;
+  odds: string;
+}
+
+const EMPTY_LEG: AccaLeg = { event: "", selection: "", odds: "" };
 
 function StatTile({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "good" | "bad" }) {
   return (
@@ -57,10 +89,28 @@ function StatTile({ label, value, sub, tone }: { label: string; value: string; s
   );
 }
 
-function AddBetForm({ prefill }: { prefill: TrackerPrefill }) {
+function AddBetForm({
+  prefill,
+  onSaved,
+}: {
+  prefill: TrackerPrefill;
+  onSaved?: () => void;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  const prefillIsAcca =
+    prefill.market === "Accumulator" || (prefill.legs ? Number(prefill.legs) > 1 : false);
+
+  const [betType, setBetType] = useState<"single" | "accumulator">(
+    prefillIsAcca ? "accumulator" : "single",
+  );
+  const [legs, setLegs] = useState<AccaLeg[]>([
+    { ...EMPTY_LEG },
+    { ...EMPTY_LEG },
+  ]);
+
   const [form, setForm] = useState({
     eventName: prefill.event ?? "",
     selection: prefill.selection ?? "",
@@ -69,99 +119,437 @@ function AddBetForm({ prefill }: { prefill: TrackerPrefill }) {
     odds: prefill.odds ?? "",
     stake: prefill.stake ?? "",
     yourProb: prefill.prob ?? "",
-    legCount: prefill.legs ?? (prefill.market === "Accumulator" ? "2" : "1"),
+    legCount: prefill.legs ?? (prefillIsAcca ? "2" : "1"),
     notes: "",
   });
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm({ ...form, [k]: e.target.value });
+
+  const set =
+    (k: keyof typeof form) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setForm({ ...form, [k]: e.target.value });
+
+  const updateLeg = (idx: number, patch: Partial<AccaLeg>) => {
+    setLegs((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
+  };
+
+  // Compute combined odds from filled accumulator legs
+  const validLegs = legs.filter((l) => Number(l.odds) > 1);
+  const computedAccaOdds =
+    validLegs.length > 0
+      ? validLegs.reduce((acc, l) => acc * Number(l.odds), 1)
+      : null;
+
+  const effectiveOdds =
+    betType === "accumulator" && computedAccaOdds !== null
+      ? Number(computedAccaOdds.toFixed(2))
+      : Number(form.odds);
+
+  const effectiveStake = Number(form.stake);
+  const potentialReturn =
+    Number.isFinite(effectiveOdds) &&
+    effectiveOdds > 1 &&
+    Number.isFinite(effectiveStake) &&
+    effectiveStake > 0
+      ? effectiveOdds * effectiveStake
+      : null;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    let eventName = form.eventName.trim();
+    let selection = form.selection.trim();
+    let market = betType === "accumulator" ? "Accumulator" : form.market;
+    let odds = Number(form.odds);
+    let legCount = 1;
+
+    if (betType === "accumulator") {
+      market = "Accumulator";
+      if (validLegs.length >= 2) {
+        odds = Number(computedAccaOdds!.toFixed(2));
+        legCount = validLegs.length;
+        if (!eventName) {
+          eventName =
+            validLegs
+              .map((l) => l.event.trim())
+              .filter(Boolean)
+              .join(" / ")
+              .slice(0, 190) || `${legCount}-leg accumulator`;
+        }
+        if (!selection) {
+          selection =
+            validLegs
+              .map((l) => l.selection.trim() || `${l.event.trim() || "Leg"} @ ${l.odds}`)
+              .join(" + ")
+              .slice(0, 190);
+        }
+      } else {
+        // Allow quick manual combined-odds entry for an accumulator (e.g. from Slip Checker prefill or booking code)
+        const parsedLegs = Number(form.legCount);
+        legCount = Number.isFinite(parsedLegs) && parsedLegs >= 2 ? Math.round(parsedLegs) : 2;
+        if (!eventName) eventName = `${legCount}-leg accumulator`;
+        if (!selection) {
+          setError("Add at least 2 legs with odds > 1.00, or enter a selection & combined odds.");
+          return;
+        }
+      }
+    }
+
+    if (!(odds > 1)) {
+      setError("Odds must be greater than 1.00.");
+      return;
+    }
+
     start(async () => {
-      const parsedLegs = form.legCount.trim() ? Number(form.legCount) : undefined;
       const res = await addBet({
-        eventName: form.eventName,
-        selection: form.selection,
-        market: form.market,
+        eventName,
+        selection,
+        market,
         bookmaker: form.bookmaker || null,
-        odds: Number(form.odds),
+        odds,
         stake: Number(form.stake),
         yourProb: form.yourProb.trim() ? Number(form.yourProb) / 100 : null,
-        legCount: parsedLegs && Number.isFinite(parsedLegs) ? Math.round(parsedLegs) : undefined,
+        legCount,
         notes: form.notes || null,
       });
       if (!res.success) {
         setError(res.error ?? "Could not save bet");
         return;
       }
-      setForm({ eventName: "", selection: "", market: "1X2", bookmaker: "", odds: "", stake: "", yourProb: "", legCount: "1", notes: "" });
+      setForm({
+        eventName: "",
+        selection: "",
+        market: "1X2",
+        bookmaker: form.bookmaker, // keep last used bookmaker for speed
+        odds: "",
+        stake: "",
+        yourProb: "",
+        legCount: "1",
+        notes: "",
+      });
+      setLegs([{ ...EMPTY_LEG }, { ...EMPTY_LEG }]);
+      onSaved?.();
       router.replace("/dashboard/bet-tracker");
       router.refresh();
     });
   };
 
   return (
-    <form onSubmit={submit} className="space-y-4 rounded-2xl border border-border bg-white p-6 shadow-sm">
-      <h2 className="font-semibold text-[#0f172a]">Log a bet</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="space-y-1 sm:col-span-2">
-          <Label htmlFor="bet-event" className="text-xs text-[#1e293b]/60">Match / event *</Label>
-          <Input id="bet-event" required value={form.eventName} onChange={set("eventName")} placeholder="Arsenal v Chelsea" />
-        </div>
-        <div className="space-y-1 sm:col-span-2">
-          <Label htmlFor="bet-selection" className="text-xs text-[#1e293b]/60">Selection *</Label>
-          <Input id="bet-selection" required value={form.selection} onChange={set("selection")} placeholder="Arsenal to win" />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="bet-market" className="text-xs text-[#1e293b]/60">Market</Label>
-          <select
-            id="bet-market"
-            value={form.market}
-            onChange={set("market")}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-          >
-            {MARKETS.map((m) => (
-              <option key={m}>{m}</option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="bet-bookmaker" className="text-xs text-[#1e293b]/60">Bookmaker</Label>
-          <Input id="bet-bookmaker" value={form.bookmaker} onChange={set("bookmaker")} placeholder="Optional" />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="bet-odds" className="text-xs text-[#1e293b]/60">Decimal odds *</Label>
-          <Input id="bet-odds" required inputMode="decimal" value={form.odds} onChange={set("odds")} placeholder="2.10" />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="bet-stake" className="text-xs text-[#1e293b]/60">Stake *</Label>
-          <Input id="bet-stake" required inputMode="decimal" value={form.stake} onChange={set("stake")} placeholder="1000" />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="bet-prob" className="text-xs text-[#1e293b]/60">Your chance % (optional)</Label>
-          <Input id="bet-prob" inputMode="decimal" value={form.yourProb} onChange={set("yourProb")} placeholder="e.g. 52" />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="bet-legs" className="text-xs text-[#1e293b]/60">Legs (1 = Single)</Label>
-          <Input id="bet-legs" type="number" min={1} max={50} inputMode="numeric" value={form.legCount} onChange={set("legCount")} placeholder="1" />
-        </div>
-        <div className="space-y-1 sm:col-span-2">
-          <Label htmlFor="bet-notes" className="text-xs text-[#1e293b]/60">Notes</Label>
-          <Input id="bet-notes" value={form.notes} onChange={set("notes")} placeholder="Why you took it (optional)" />
+    <form onSubmit={submit} className="space-y-4 rounded-2xl border border-border bg-white p-5 sm:p-6 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-semibold text-[#0f172a]">Log a bet</h2>
+        <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
+          {(["single", "accumulator"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => {
+                setBetType(t);
+                if (t === "accumulator") {
+                  setForm((f) => ({ ...f, market: "Accumulator", legCount: Number(f.legCount) > 1 ? f.legCount : "2" }));
+                } else {
+                  setForm((f) => ({ ...f, market: f.market === "Accumulator" ? "1X2" : f.market, legCount: "1" }));
+                }
+              }}
+              className={cn(
+                "rounded-md px-3 py-1 text-xs font-medium capitalize transition",
+                betType === t
+                  ? "bg-[#3D2DFF] text-white shadow-sm"
+                  : "text-[#1e293b]/60 hover:text-[#0f172a]",
+              )}
+            >
+              {t === "single" ? "Single" : "Accumulator"}
+            </button>
+          ))}
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <Button type="submit" variant="teal" disabled={pending}>
-          {pending ? "Saving…" : "Add bet"}
-        </Button>
+
+      {/* Bookmaker quick presets */}
+      <div className="space-y-1.5">
+        <Label htmlFor="bet-bookmaker" className="text-xs text-[#1e293b]/60">
+          Bookmaker
+        </Label>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {BOOKMAKER_PRESETS.map((bm) => (
+            <button
+              key={bm}
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, bookmaker: f.bookmaker === bm ? "" : bm }))}
+              className={cn(
+                "rounded-full border px-2.5 py-0.5 text-xs font-medium transition",
+                form.bookmaker === bm
+                  ? "border-teal-600 bg-teal-50 text-teal-700"
+                  : "border-border bg-white text-[#1e293b]/65 hover:border-slate-300",
+              )}
+            >
+              {bm}
+            </button>
+          ))}
+          <Input
+            id="bet-bookmaker"
+            value={form.bookmaker}
+            onChange={set("bookmaker")}
+            placeholder="Or type other..."
+            className="h-7 w-36 text-xs"
+          />
+        </div>
+      </div>
+
+      {betType === "single" ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-1 sm:col-span-2">
+            <Label htmlFor="bet-event" className="text-xs text-[#1e293b]/60">Match / event *</Label>
+            <Input id="bet-event" required value={form.eventName} onChange={set("eventName")} placeholder="Arsenal v Chelsea" />
+          </div>
+          <div className="space-y-1 sm:col-span-2">
+            <Label htmlFor="bet-selection" className="text-xs text-[#1e293b]/60">Selection *</Label>
+            <Input id="bet-selection" required value={form.selection} onChange={set("selection")} placeholder="Arsenal to win" />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="bet-market" className="text-xs text-[#1e293b]/60">Market</Label>
+            <select
+              id="bet-market"
+              value={form.market}
+              onChange={set("market")}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              {MARKETS.filter((m) => m !== "Accumulator").map((m) => (
+                <option key={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="bet-odds" className="text-xs text-[#1e293b]/60">Decimal odds *</Label>
+            <Input id="bet-odds" required inputMode="decimal" value={form.odds} onChange={set("odds")} placeholder="2.10" />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="bet-stake" className="text-xs text-[#1e293b]/60">Stake (₦) *</Label>
+            <Input id="bet-stake" required inputMode="decimal" value={form.stake} onChange={set("stake")} placeholder="1000" />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="bet-prob" className="text-xs text-[#1e293b]/60">Your chance % (optional)</Label>
+            <Input id="bet-prob" inputMode="decimal" value={form.yourProb} onChange={set("yourProb")} placeholder="e.g. 52" />
+          </div>
+          <div className="space-y-1 sm:col-span-2 lg:col-span-4">
+            <Label htmlFor="bet-notes" className="text-xs text-[#1e293b]/60">Notes</Label>
+            <Input id="bet-notes" value={form.notes} onChange={set("notes")} placeholder="Why you took it (optional)" />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Accumulator leg builder */}
+          <div className="space-y-2 rounded-xl border border-border bg-slate-50/70 p-3.5">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-[#0f172a]">
+                Accumulator legs ({validLegs.length >= 2 ? `${validLegs.length} legs · Combined ${computedAccaOdds!.toFixed(2)}` : `${legs.length} rows`})
+              </p>
+              {legs.length < 25 && (
+                <button
+                  type="button"
+                  onClick={() => setLegs((prev) => [...prev, { ...EMPTY_LEG }])}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-[#3D2DFF] hover:underline"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add leg
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              {legs.map((leg, idx) => (
+                <div key={idx} className="grid grid-cols-[1fr_1fr_84px_auto] items-center gap-2">
+                  <Input
+                    value={leg.event}
+                    onChange={(e) => updateLeg(idx, { event: e.target.value })}
+                    placeholder={`Leg ${idx + 1} match`}
+                    className="h-8 bg-white text-xs"
+                  />
+                  <Input
+                    value={leg.selection}
+                    onChange={(e) => updateLeg(idx, { selection: e.target.value })}
+                    placeholder="Pick (e.g. Over 2.5)"
+                    className="h-8 bg-white text-xs"
+                  />
+                  <Input
+                    inputMode="decimal"
+                    value={leg.odds}
+                    onChange={(e) => updateLeg(idx, { odds: e.target.value })}
+                    placeholder="Odds"
+                    className="h-8 bg-white text-xs tabular-nums"
+                  />
+                  {legs.length > 2 ? (
+                    <button
+                      type="button"
+                      aria-label={`Remove leg ${idx + 1}`}
+                      onClick={() => setLegs((prev) => prev.filter((_, i) => i !== idx))}
+                      className="p-1 text-[#1e293b]/40 hover:text-rose-600"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  ) : (
+                    <span className="w-5" />
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-[#1e293b]/50">
+              Fill leg odds above to auto-calculate combined odds, or enter combined odds &amp; leg count directly below.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-1">
+              <Label htmlFor="acca-odds" className="text-xs text-[#1e293b]/60">Combined odds *</Label>
+              <Input
+                id="acca-odds"
+                inputMode="decimal"
+                required={validLegs.length < 2}
+                value={validLegs.length >= 2 ? computedAccaOdds!.toFixed(2) : form.odds}
+                readOnly={validLegs.length >= 2}
+                onChange={set("odds")}
+                placeholder="6.50"
+                className={validLegs.length >= 2 ? "bg-slate-50 font-semibold" : ""}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="acca-legs" className="text-xs text-[#1e293b]/60">Number of legs *</Label>
+              <Input
+                id="acca-legs"
+                type="number"
+                min={2}
+                max={50}
+                inputMode="numeric"
+                value={validLegs.length >= 2 ? String(validLegs.length) : form.legCount}
+                readOnly={validLegs.length >= 2}
+                onChange={set("legCount")}
+                className={validLegs.length >= 2 ? "bg-slate-50 font-semibold" : ""}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="acca-stake" className="text-xs text-[#1e293b]/60">Stake (₦) *</Label>
+              <Input id="acca-stake" required inputMode="decimal" value={form.stake} onChange={set("stake")} placeholder="1000" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="acca-prob" className="text-xs text-[#1e293b]/60">Your chance % (optional)</Label>
+              <Input id="acca-prob" inputMode="decimal" value={form.yourProb} onChange={set("yourProb")} placeholder="e.g. 15" />
+            </div>
+            {validLegs.length < 2 && (
+              <>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label htmlFor="acca-event" className="text-xs text-[#1e293b]/60">Slip title / booking code (optional)</Label>
+                  <Input id="acca-event" value={form.eventName} onChange={set("eventName")} placeholder="e.g. Saturday EPL 5-fold (BC1234)" />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label htmlFor="acca-selection" className="text-xs text-[#1e293b]/60">Summary of picks *</Label>
+                  <Input id="acca-selection" required value={form.selection} onChange={set("selection")} placeholder="Arsenal + Liverpool + Over 2.5..." />
+                </div>
+              </>
+            )}
+            <div className="space-y-1 sm:col-span-2 lg:col-span-4">
+              <Label htmlFor="acca-notes" className="text-xs text-[#1e293b]/60">Notes</Label>
+              <Input id="acca-notes" value={form.notes} onChange={set("notes")} placeholder="Booking code or reasoning (optional)" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+        <div className="flex items-center gap-3">
+          <Button type="submit" variant="teal" disabled={pending}>
+            {pending ? "Saving…" : betType === "accumulator" ? "Log accumulator" : "Log single bet"}
+          </Button>
+          {potentialReturn !== null && (
+            <span className="text-xs text-[#1e293b]/60 tabular-nums">
+              Potential return: <strong className="text-[#0f172a]">{money(potentialReturn)}</strong>
+            </span>
+          )}
+        </div>
         {error && <p className="text-sm text-rose-600">{error}</p>}
       </div>
     </form>
   );
 }
 
-function SettleControls({ bet }: { bet: JournalBet }) {
+function EditBetRow({ bet, onDone }: { bet: JournalBet; onDone: () => void }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    eventName: bet.eventName,
+    selection: bet.selection,
+    market: MARKETS.includes(bet.market) ? bet.market : "Other",
+    bookmaker: bet.bookmaker ?? "",
+    odds: String(bet.odds),
+    stake: String(bet.stake),
+    legCount: String(bet.legCount ?? 1),
+    yourProb: bet.yourProb !== null ? String(Math.round(bet.yourProb * 1000) / 10) : "",
+    notes: bet.notes ?? "",
+  });
+
+  const set =
+    (k: keyof typeof form) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setForm({ ...form, [k]: e.target.value });
+
+  const save = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    start(async () => {
+      const res = await updateBet({
+        id: bet.id,
+        eventName: form.eventName,
+        selection: form.selection,
+        market: form.market,
+        bookmaker: form.bookmaker || null,
+        odds: Number(form.odds),
+        stake: Number(form.stake),
+        legCount: Math.max(1, Math.round(Number(form.legCount) || 1)),
+        yourProb: form.yourProb.trim() ? Number(form.yourProb) / 100 : null,
+        notes: form.notes || null,
+      });
+      if (!res.success) {
+        setError(res.error ?? "Update failed");
+        return;
+      }
+      onDone();
+      router.refresh();
+    });
+  };
+
+  return (
+    <form onSubmit={save} className="space-y-3 bg-slate-50/80 px-6 py-4">
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+        <Input value={form.eventName} onChange={set("eventName")} placeholder="Match / event" className="h-8 bg-white text-xs sm:col-span-2" required />
+        <Input value={form.selection} onChange={set("selection")} placeholder="Selection" className="h-8 bg-white text-xs sm:col-span-2" required />
+        <select
+          value={form.market}
+          onChange={set("market")}
+          className="h-8 rounded-md border border-input bg-white px-2 text-xs"
+        >
+          {MARKETS.map((m) => (
+            <option key={m}>{m}</option>
+          ))}
+        </select>
+        <Input value={form.bookmaker} onChange={set("bookmaker")} placeholder="Bookmaker" className="h-8 bg-white text-xs" />
+        <Input inputMode="decimal" value={form.odds} onChange={set("odds")} placeholder="Odds" className="h-8 bg-white text-xs" required />
+        <Input inputMode="decimal" value={form.stake} onChange={set("stake")} placeholder="Stake (₦)" className="h-8 bg-white text-xs" required />
+        <Input type="number" min={1} max={50} value={form.legCount} onChange={set("legCount")} placeholder="Legs" className="h-8 bg-white text-xs" />
+        <Input inputMode="decimal" value={form.yourProb} onChange={set("yourProb")} placeholder="Your chance %" className="h-8 bg-white text-xs" />
+        <Input value={form.notes} onChange={set("notes")} placeholder="Notes" className="h-8 bg-white text-xs sm:col-span-2" />
+      </div>
+      <div className="flex items-center gap-2">
+        <Button type="submit" size="sm" variant="teal" className="h-7 text-xs" disabled={pending}>
+          {pending ? "Saving…" : "Save changes"}
+        </Button>
+        <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={onDone}>
+          Cancel
+        </Button>
+        {error && <span className="text-xs text-rose-600">{error}</span>}
+      </div>
+    </form>
+  );
+}
+
+function SettleControls({ bet, onEdit }: { bet: JournalBet; onEdit: () => void }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [status, setStatus] = useState<BetStatus>(bet.status);
@@ -173,6 +561,22 @@ function SettleControls({ bet }: { bet: JournalBet }) {
     status !== bet.status ||
     (status === "cashed_out" && cashout !== (bet.cashoutAmount?.toString() ?? "")) ||
     closing !== (bet.closingOdds?.toString() ?? "");
+
+  const quickSettle = (next: "won" | "lost") =>
+    start(async () => {
+      const res = await settleBet({
+        id: bet.id,
+        status: next,
+        cashoutAmount: null,
+        closingOdds: closing.trim() ? Number(closing) : null,
+      });
+      if (!res.success) setError(res.error ?? "Update failed");
+      else {
+        setStatus(next);
+        setError(null);
+        router.refresh();
+      }
+    });
 
   const save = () =>
     start(async () => {
@@ -197,7 +601,30 @@ function SettleControls({ bet }: { bet: JournalBet }) {
     });
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2">
+    <div className="flex flex-wrap items-center justify-end gap-1.5">
+      {bet.status === "pending" && (
+        <>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => quickSettle("won")}
+            title="Mark Won"
+            className="inline-flex h-8 items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
+          >
+            <Check className="h-3.5 w-3.5" /> Won
+          </button>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => quickSettle("lost")}
+            title="Mark Lost"
+            className="inline-flex h-8 items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+          >
+            <X className="h-3.5 w-3.5" /> Lost
+          </button>
+        </>
+      )}
+
       <select
         aria-label="Result"
         value={status}
@@ -214,7 +641,7 @@ function SettleControls({ bet }: { bet: JournalBet }) {
         <Input
           aria-label="Cash-out amount"
           className="h-8 w-24 text-xs"
-          placeholder="Cash-out"
+          placeholder="Cash-out ₦"
           inputMode="decimal"
           value={cashout}
           onChange={(e) => setCashout(e.target.value)}
@@ -234,7 +661,24 @@ function SettleControls({ bet }: { bet: JournalBet }) {
           Save
         </Button>
       )}
-      <button aria-label="Delete bet" disabled={pending} onClick={remove} className="p-1 text-[#1e293b]/35 hover:text-rose-600">
+      <button
+        type="button"
+        aria-label="Edit bet"
+        disabled={pending}
+        onClick={onEdit}
+        className="p-1 text-[#1e293b]/40 hover:text-[#3D2DFF]"
+        title="Edit bet"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </button>
+      <button
+        type="button"
+        aria-label="Delete bet"
+        disabled={pending}
+        onClick={remove}
+        className="p-1 text-[#1e293b]/35 hover:text-rose-600"
+        title="Delete bet"
+      >
         <Trash2 className="h-4 w-4" />
       </button>
       {error && <p className="w-full text-right text-xs text-rose-600">{error}</p>}
@@ -242,27 +686,156 @@ function SettleControls({ bet }: { bet: JournalBet }) {
   );
 }
 
+function exportBetsCsv(bets: JournalBet[]) {
+  const headers = [
+    "Date",
+    "Event",
+    "Selection",
+    "Market",
+    "Legs",
+    "Bookmaker",
+    "Odds",
+    "Stake (NGN)",
+    "Status",
+    "Profit (NGN)",
+    "Closing Odds",
+    "Your Prob %",
+    "Notes",
+  ];
+  const esc = (v: string | number | null | undefined) => {
+    const s = v === null || v === undefined ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const rows = bets.map((b) => [
+    new Date(b.placedAt).toISOString().slice(0, 10),
+    b.eventName,
+    b.selection,
+    b.market,
+    b.legCount ?? 1,
+    b.bookmaker ?? "",
+    b.odds.toFixed(2),
+    b.stake,
+    b.status,
+    b.status === "pending" ? "" : betProfit(b).toFixed(2),
+    b.closingOdds ?? "",
+    b.yourProb !== null ? (b.yourProb * 100).toFixed(1) : "",
+    b.notes ?? "",
+  ]);
+  const csv = [headers, ...rows].map((r) => r.map(esc).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `punterstat-bets-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: TrackerPrefill }) {
-  const stats = useMemo(() => journalStats(bets), [bets]);
-  const [filter, setFilter] = useState<"all" | "pending" | "settled">("all");
-  const visible = bets.filter((b) =>
-    filter === "all" ? true : filter === "pending" ? b.status === "pending" : b.status !== "pending",
-  );
+  const hasPrefill = Boolean(prefill.event || prefill.selection || prefill.odds);
+  const [formOpen, setFormOpen] = useState(bets.length === 0 || hasPrefill);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const [now] = useState(() => Date.now());
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "settled">("all");
+  const [rangeFilter, setRangeFilter] = useState<"all" | "7d" | "30d" | "90d">("all");
+  const [bookmakerFilter, setBookmakerFilter] = useState<string>("all");
+  const [marketFilter, setMarketFilter] = useState<string>("all");
+
+  const bookmakers = useMemo(() => {
+    const set = new Set<string>();
+    for (const b of bets) if (b.bookmaker) set.add(b.bookmaker);
+    return Array.from(set).sort();
+  }, [bets]);
+
+  const markets = useMemo(() => {
+    const set = new Set<string>();
+    for (const b of bets) if (b.market) set.add(b.market);
+    return Array.from(set).sort();
+  }, [bets]);
+
+  const filtered = useMemo(() => {
+    const cutoff =
+      rangeFilter === "7d"
+        ? now - 7 * 86_400_000
+        : rangeFilter === "30d"
+          ? now - 30 * 86_400_000
+          : rangeFilter === "90d"
+            ? now - 90 * 86_400_000
+            : 0;
+
+    return bets.filter((b) => {
+      if (statusFilter === "pending" && b.status !== "pending") return false;
+      if (statusFilter === "settled" && b.status === "pending") return false;
+      if (cutoff && new Date(b.placedAt).getTime() < cutoff) return false;
+      if (bookmakerFilter !== "all" && (b.bookmaker ?? "") !== bookmakerFilter) return false;
+      if (marketFilter !== "all" && b.market !== marketFilter) return false;
+      return true;
+    });
+  }, [bets, now, statusFilter, rangeFilter, bookmakerFilter, marketFilter]);
+
+  const stats = useMemo(() => journalStats(filtered), [filtered]);
 
   return (
-    <div className="space-y-8">
-      <AddBetForm key={JSON.stringify(prefill)} prefill={prefill} />
+    <div className="space-y-6">
+      {/* Collapsible Log Bet bar */}
+      {bets.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Button
+            type="button"
+            variant={formOpen ? "outline" : "teal"}
+            size="sm"
+            onClick={() => setFormOpen((v) => !v)}
+            className="gap-1.5"
+          >
+            {formOpen ? (
+              <>
+                <ChevronUp className="h-4 w-4" /> Hide bet form
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4" /> Log a bet
+                <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+              </>
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => exportBetsCsv(filtered)}
+            className="gap-1.5"
+          >
+            <Download className="h-3.5 w-3.5" /> Export CSV
+          </Button>
+        </div>
+      )}
+
+      {formOpen && (
+        <AddBetForm
+          key={JSON.stringify(prefill)}
+          prefill={prefill}
+          onSaved={() => {
+            if (bets.length > 0) setFormOpen(false);
+          }}
+        />
+      )}
 
       {bets.length > 0 && (
         <>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <StatTile
               label="Profit / loss"
-              value={`${stats.profit >= 0 ? "+" : ""}${money(stats.profit)}`}
+              value={signedMoney(stats.profit)}
               sub={`${stats.settledBets} settled · ${money(stats.staked)} staked`}
               tone={stats.profit >= 0 ? "good" : "bad"}
             />
-            <StatTile label="ROI" value={`${stats.roi >= 0 ? "+" : ""}${pct(stats.roi)}`} sub="Profit ÷ total staked" tone={stats.roi >= 0 ? "good" : "bad"} />
+            <StatTile
+              label="ROI"
+              value={`${stats.roi >= 0 ? "+" : ""}${pct(stats.roi)}`}
+              sub="Profit ÷ total staked"
+              tone={stats.roi >= 0 ? "good" : "bad"}
+            />
             <StatTile
               label="Strike rate"
               value={pct(stats.strikeRate)}
@@ -278,7 +851,7 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
 
           {stats.curve.length >= 2 && (
             <section className="rounded-2xl border border-border bg-white p-6 shadow-sm">
-              <h2 className="font-semibold text-[#0f172a]">Cumulative profit</h2>
+              <h2 className="font-semibold text-[#0f172a]">Cumulative profit (₦)</h2>
               <p className="mb-4 text-xs text-[#1e293b]/50">
                 After each settled bet · longest losing run: {stats.longestLosingRun}
                 {stats.pendingBets > 0 && ` · ${stats.pendingBets} pending (${money(stats.pendingStake)} at stake)`}
@@ -306,7 +879,9 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
                       <td className="py-2">{m.market}</td>
                       <td className="py-2 text-right">{m.bets}</td>
                       <td className="py-2 text-right">{money(m.staked)}</td>
-                      <td className={cn("py-2 text-right", m.profit >= 0 ? "text-emerald-600" : "text-rose-600")}>{money(m.profit)}</td>
+                      <td className={cn("py-2 text-right", m.profit >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                        {signedMoney(m.profit)}
+                      </td>
                       <td className="py-2 text-right">{pct(m.roi)}</td>
                     </tr>
                   ))}
@@ -316,25 +891,86 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
           )}
 
           <section className="rounded-2xl border border-border bg-white shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-6 py-4">
-              <h2 className="font-semibold text-[#0f172a]">Your bets</h2>
-              <div className="flex gap-1">
-                {(["all", "pending", "settled"] as const).map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setFilter(f)}
-                    className={cn(
-                      "rounded-full px-3 py-1 text-xs font-medium capitalize",
-                      filter === f ? "bg-[#3D2DFF] text-white" : "text-[#1e293b]/60 hover:bg-slate-100",
-                    )}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
+              <h2 className="font-semibold text-[#0f172a]">
+                Your bets <span className="text-xs font-normal text-[#1e293b]/50">({filtered.length})</span>
+              </h2>
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Time range */}
+                <div className="inline-flex rounded-full border border-border bg-slate-50 p-0.5">
+                  {(["7d", "30d", "90d", "all"] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRangeFilter(r)}
+                      className={cn(
+                        "rounded-full px-2.5 py-0.5 text-xs font-medium",
+                        rangeFilter === r ? "bg-[#0f172a] text-white" : "text-[#1e293b]/60 hover:text-[#0f172a]",
+                      )}
+                    >
+                      {r === "all" ? "All time" : r}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Bookmaker filter */}
+                {bookmakers.length > 0 && (
+                  <select
+                    aria-label="Filter by bookmaker"
+                    value={bookmakerFilter}
+                    onChange={(e) => setBookmakerFilter(e.target.value)}
+                    className="h-7 rounded-full border border-border bg-white px-2.5 text-xs text-[#1e293b]/75"
                   >
-                    {f}
-                  </button>
-                ))}
+                    <option value="all">All books</option>
+                    {bookmakers.map((bm) => (
+                      <option key={bm} value={bm}>{bm}</option>
+                    ))}
+                  </select>
+                )}
+
+                {/* Market filter */}
+                {markets.length > 1 && (
+                  <select
+                    aria-label="Filter by market"
+                    value={marketFilter}
+                    onChange={(e) => setMarketFilter(e.target.value)}
+                    className="h-7 rounded-full border border-border bg-white px-2.5 text-xs text-[#1e293b]/75"
+                  >
+                    <option value="all">All markets</option>
+                    {markets.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                )}
+
+                {/* Status filter */}
+                <div className="flex gap-1">
+                  {(["all", "pending", "settled"] as const).map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setStatusFilter(f)}
+                      className={cn(
+                        "rounded-full px-3 py-1 text-xs font-medium capitalize",
+                        statusFilter === f ? "bg-[#3D2DFF] text-white" : "text-[#1e293b]/60 hover:bg-slate-100",
+                      )}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
+
             <ul className="divide-y divide-border">
-              {visible.map((b) => {
+              {filtered.map((b) => {
+                if (editingId === b.id) {
+                  return (
+                    <li key={b.id}>
+                      <EditBetRow bet={b} onDone={() => setEditingId(null)} />
+                    </li>
+                  );
+                }
                 const p = betProfit(b);
                 return (
                   <li key={b.id} className="grid gap-3 px-6 py-4 md:grid-cols-[1fr_auto] md:items-center">
@@ -351,17 +987,22 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
                         {b.yourProb !== null && ` · your chance ${pct(b.yourProb, 0)}`}
                         {b.status !== "pending" && (
                           <span className={cn("ml-2 font-semibold", p >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                            {p >= 0 ? "+" : ""}
-                            {money(p)}
+                            {signedMoney(p)}
                           </span>
                         )}
                       </p>
                     </div>
-                    <SettleControls key={`${b.status}-${b.closingOdds}-${b.cashoutAmount}`} bet={b} />
+                    <SettleControls
+                      key={`${b.status}-${b.closingOdds}-${b.cashoutAmount}`}
+                      bet={b}
+                      onEdit={() => setEditingId(b.id)}
+                    />
                   </li>
                 );
               })}
-              {visible.length === 0 && <li className="px-6 py-8 text-center text-sm text-[#1e293b]/50">No bets here.</li>}
+              {filtered.length === 0 && (
+                <li className="px-6 py-8 text-center text-sm text-[#1e293b]/50">No bets match these filters.</li>
+              )}
             </ul>
           </section>
         </>

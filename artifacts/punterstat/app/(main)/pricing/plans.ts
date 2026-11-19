@@ -1,76 +1,101 @@
-// Shared plan data — imported by both page.tsx and PricingCurrencyToggle.tsx.
+// Shared plan data — single source of truth imported by /pricing,
+// PricingCurrencyToggle.tsx, and /dashboard/subscription.
 // Must live outside page.tsx because Next.js forbids arbitrary named exports from page files.
 
-export const PLAN_ROWS = [
+export interface PlanFeature {
+  label: string;
+  included: boolean;
+}
+
+export interface PlanRow {
+  id: "free" | "pro" | "premium";
+  name: string;
+  gbp: string | null;
+  ngn: string | null;
+  period: string;
+  badge: string | null;
+  description: string;
+  cta: string;
+  ctaHref: string;
+  ctaVariant: "outline" | "default";
+  features: PlanFeature[];
+}
+
+export const PLAN_ROWS: PlanRow[] = [
   {
+    id: "free",
     name: "Free",
-    gbp: null as string | null,
-    ngn: null as string | null,
-    period: "/month",
-    badge: null as string | null,
-    description: "Explore the platform and start learning at no cost.",
-    cta: "Get started free",
-    ctaHref: "/register",
-    ctaVariant: "outline" as const,
-    features: [
-      { label: "Sports University (all lessons)", included: true },
-      { label: "Betting Academy (all lessons)", included: true },
-      { label: "Bet Simulator (basic)", included: true },
-      { label: "Probability Simulator", included: true },
-      { label: "Match Breakdown Analyzer", included: false },
-      { label: "Progress tracking & completion", included: false },
-      { label: "Lesson bookmarks", included: false },
-      { label: "Simulation history", included: false },
-      { label: "Blog access", included: true },
-      { label: "Priority support", included: false },
-    ],
-  },
-  {
-    name: "Premium",
-    gbp: "£9",
-    ngn: "₦15,000",
-    period: "/month",
-    badge: "Most popular",
-    description: "Full platform access with progress tracking and match analysis.",
-    cta: "Start Premium",
-    ctaHref: "/checkout?plan=premium",
-    ctaVariant: "default" as const,
-    features: [
-      { label: "Sports University (all lessons)", included: true },
-      { label: "Betting Academy (all lessons)", included: true },
-      { label: "Bet Simulator (advanced)", included: true },
-      { label: "Probability Simulator", included: true },
-      { label: "Match Breakdown Analyzer", included: true },
-      { label: "Progress tracking & completion", included: true },
-      { label: "Lesson bookmarks", included: true },
-      { label: "Simulation history", included: true },
-      { label: "Blog access", included: true },
-      { label: "Priority support", included: false },
-    ],
-  },
-  {
-    name: "Pro",
-    gbp: "£19",
-    ngn: "₦32,000",
+    gbp: null,
+    ngn: null,
     period: "/month",
     badge: null,
-    description: "Everything in Premium plus priority support and early feature access.",
+    description: "Learn the mechanics and check your slips at zero cost.",
+    cta: "Get started free",
+    ctaHref: "/register",
+    ctaVariant: "outline",
+    features: [
+      { label: "Sports University & Betting Academy lessons", included: true },
+      { label: "Bet Slip Checker & Betting Calculators", included: true },
+      { label: "Bet Tracker / Journal & basic ROI summary", included: true },
+      { label: "Historical Football Stats & H2H Explorer", included: true },
+      { label: "Lesson bookmarks & progress tracking", included: true },
+      { label: "Match Breakdown Analyzer & saved history", included: false },
+      { label: "Simulation Engine history & Spot The Value", included: false },
+      { label: "Full Betting Report Card (CLV, calibration & leaks)", included: false },
+      { label: "Calibration Trainer & behavioural flags", included: false },
+      { label: "Priority support", included: false },
+    ],
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    gbp: "£4",
+    ngn: "₦700",
+    period: "/month",
+    badge: "Most popular",
+    description: "For regular punters who want matchday analysis tools and saved history.",
     cta: "Start Pro",
     ctaHref: "/checkout?plan=pro",
-    ctaVariant: "default" as const,
+    ctaVariant: "default",
     features: [
-      { label: "Sports University (all lessons)", included: true },
-      { label: "Betting Academy (all lessons)", included: true },
-      { label: "Bet Simulator (advanced)", included: true },
-      { label: "Probability Simulator", included: true },
-      { label: "Match Breakdown Analyzer", included: true },
-      { label: "Progress tracking & completion", included: true },
-      { label: "Lesson bookmarks", included: true },
-      { label: "Simulation history", included: true },
-      { label: "Blog access", included: true },
+      { label: "Sports University & Betting Academy lessons", included: true },
+      { label: "Bet Slip Checker & Betting Calculators", included: true },
+      { label: "Bet Tracker / Journal & basic ROI summary", included: true },
+      { label: "Historical Football Stats & H2H Explorer", included: true },
+      { label: "Lesson bookmarks & progress tracking", included: true },
+      { label: "Match Breakdown Analyzer & saved history", included: true },
+      { label: "Simulation Engine history & Spot The Value", included: true },
+      { label: "Full Betting Report Card (CLV, calibration & leaks)", included: false },
+      { label: "Calibration Trainer & behavioural flags", included: false },
+      { label: "Priority support", included: false },
+    ],
+  },
+  {
+    id: "premium",
+    name: "Premium",
+    gbp: "£9",
+    ngn: "₦1,500",
+    period: "/month",
+    badge: "Best value",
+    description: "Full diagnostic analytics — spot leaks, track CLV, and sharpen calibration.",
+    cta: "Start Premium",
+    ctaHref: "/checkout?plan=premium",
+    ctaVariant: "default",
+    features: [
+      { label: "Sports University & Betting Academy lessons", included: true },
+      { label: "Bet Slip Checker & Betting Calculators", included: true },
+      { label: "Bet Tracker / Journal & basic ROI summary", included: true },
+      { label: "Historical Football Stats & H2H Explorer", included: true },
+      { label: "Lesson bookmarks & progress tracking", included: true },
+      { label: "Match Breakdown Analyzer & saved history", included: true },
+      { label: "Simulation Engine history & Spot The Value", included: true },
+      { label: "Full Betting Report Card (CLV, calibration & leaks)", included: true },
+      { label: "Calibration Trainer & behavioural flags", included: true },
       { label: "Priority support", included: true },
     ],
   },
 ];
 
-export type PlanRow = (typeof PLAN_ROWS)[number];
+export function getPlanRow(planId: string): PlanRow {
+  return PLAN_ROWS.find((p) => p.id === planId) ?? PLAN_ROWS[0];
+}

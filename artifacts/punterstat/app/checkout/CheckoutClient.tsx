@@ -42,26 +42,26 @@ export function CheckoutClient({ planId, displayGbp, displayNgn }: Props) {
 
   const providers: ProviderOption[] = [
     {
-      id: "stripe",
-      label: "Pay with card",
-      sublabel: "UK / International · Visa, Mastercard, Apple Pay",
-      currency: displayGbp + "/month",
-      icon: <CreditCard className="h-5 w-5" />,
-      badge: "Recommended",
-    },
-    {
       id: "paystack",
       label: "Pay with Paystack",
-      sublabel: "Africa · Cards, Bank Transfer, USSD",
+      sublabel: "Nigeria & Africa · Cards, Bank Transfer, OPay/PalmPay, USSD",
       currency: displayNgn + "/month",
       icon: <Building2 className="h-5 w-5" />,
+      badge: "Recommended",
     },
     {
       id: "remita",
       label: "Pay via bank (Remita)",
-      sublabel: "Nigeria · Any bank, USSD, internet banking",
+      sublabel: "Nigeria · Any bank branch, USSD, internet banking",
       currency: displayNgn + "/month",
       icon: <Landmark className="h-5 w-5" />,
+    },
+    {
+      id: "stripe",
+      label: "Pay with card (International)",
+      sublabel: "UK / International · Visa, Mastercard, Apple Pay",
+      currency: displayGbp + "/month",
+      icon: <CreditCard className="h-5 w-5" />,
     },
   ];
 

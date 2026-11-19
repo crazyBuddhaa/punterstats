@@ -7,28 +7,27 @@ import type { PlanConfig, PlanId } from "./types";
 export * from "./types";
 
 // ── Plan prices ────────────────────────────────────────────────────────────
-// GBP is the canonical currency (Stripe).
-// NGN rates are approximate — update quarterly.
-// 1 GBP ≈ 1,900 NGN as of 2025-Q3
+// NGN prices are locally calibrated for Nigerian punters (Paystack / Remita).
+// GBP prices apply to UK / International card checkout (Stripe).
 
 export const PLAN_CONFIG: Record<PlanId, PlanConfig> = {
+  pro: {
+    id: "pro",
+    name: "Pro",
+    gbpPence: 400,           // £4.00
+    ngnKobo: 70_000,         // ₦700
+    displayGbp: "£4",
+    displayNgn: "₦700",
+    description: "Full Match Breakdown Analyzer, Bet Tracker, and Simulation History.",
+  },
   premium: {
     id: "premium",
     name: "Premium",
     gbpPence: 900,           // £9.00
-    ngnKobo: 1_500_000,     // ₦15,000
+    ngnKobo: 150_000,        // ₦1,500
     displayGbp: "£9",
-    displayNgn: "₦15,000",
-    description: "Full platform access with progress tracking and match analysis.",
-  },
-  pro: {
-    id: "pro",
-    name: "Pro",
-    gbpPence: 1_900,         // £19.00
-    ngnKobo: 3_200_000,     // ₦32,000
-    displayGbp: "£19",
-    displayNgn: "₦32,000",
-    description: "Everything in Premium plus priority support and early feature access.",
+    displayNgn: "₦1,500",
+    description: "Everything in Pro plus full Betting Report Card (CLV, calibration & leak detection) and priority support.",
   },
 };
 

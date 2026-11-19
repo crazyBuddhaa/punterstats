@@ -1,13 +1,22 @@
 import type { Metadata } from "next";
-import { Target, CheckCircle2, ListChecks, Gauge, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import Link from "next/link";
+import { Target, CheckCircle2, ListChecks, Gauge, TrendingUp, TrendingDown, Minus, ClipboardCheck } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
 import { getResolvedPredictions, getPredictionRecords } from "@/lib/dashboard/queries";
 import { scoreCalibration, scoreCalibrationTrend } from "@/lib/calibration/scorer";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { ResolvePredictionButton } from "@/components/dashboard/resolve-prediction-button";
+import { CalibrationTrainer } from "@/components/calibration/calibration-trainer";
 
 export const metadata: Metadata = { title: "Calibration — Dashboard — PunterStat" };
+
+function brierLabel(score: number): string {
+  if (score < 0.55) return "Sharp (< 0.55) — beating typical football benchmarks";
+  if (score <= 0.62) return "Solid (0.55–0.62) — well-calibrated estimates";
+  if (score <= 0.67) return "Market-average (0.62–0.67) — close to uniform baseline";
+  return "Overconfident (> 0.67) — pull extreme probabilities back toward the middle";
+}
 
 const RESULT_LABEL: Record<string, string> = {
   home_win: "Home win",
@@ -61,19 +70,30 @@ export default async function CalibrationPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-[#0f172a]">Calibration Engine</h1>
-        <p className="mt-1 text-sm text-[#1e293b]/60">
-          How well the model&apos;s predicted probabilities have matched real outcomes, based on
-          predictions you&apos;ve tracked from Match Breakdown.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[#0f172a]">Calibration Engine</h1>
+          <p className="mt-1 text-sm text-[#1e293b]/60">
+            Practice probability estimation with the 5-match drill, log upcoming 1X2 forecasts, and score your Brier accuracy over time.
+          </p>
+        </div>
+        <Link
+          href="/dashboard/report-card"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3.5 py-2 text-xs font-semibold text-[#0f172a] shadow-sm transition hover:bg-slate-50"
+        >
+          <ClipboardCheck className="h-3.5 w-3.5 text-teal-600" />
+          Bet Journal Calibration →
+        </Link>
       </div>
+
+      {/* Interactive Drill & Manual Forecast Logger */}
+      <CalibrationTrainer />
 
       {records.length === 0 ? (
         <EmptyState
           icon={Target}
           title="No tracked predictions yet"
-          description="Use “Track This Prediction” on a Match Breakdown analysis to start building your calibration history."
+          description="Use “Log Forecast” above or “Track This Prediction” on a Match Breakdown analysis to build your personal calibration history."
           actionLabel="Go to Match Breakdown"
           actionHref="/match-breakdown"
         />
@@ -103,7 +123,7 @@ export default async function CalibrationPage() {
               icon={Gauge}
               iconColor="text-violet-600"
               iconBg="bg-violet-50"
-              note="Lower is better — 0 is perfect, ~0.6-0.7 is typical for football"
+              note={summary.sampleSize > 0 ? brierLabel(summary.brierScore) : "Lower is better — 0 is perfect, < 0.55 is sharp"}
             />
           </div>
 

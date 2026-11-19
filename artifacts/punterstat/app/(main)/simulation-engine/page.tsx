@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { FlaskConical, Dices, TrendingUp, ArrowRight, ShieldCheck } from "lucide-react";
+import { getUserProfile } from "@/lib/auth/helpers";
 
 export const metadata: Metadata = {
   title: "Simulation Engine — PunterStat",
   description:
-    "Practice bet placement and run probability scenarios in a risk-free virtual environment. No real money. Pure education.",
+    "Practice bet placement and run 1,000-trial Monte Carlo probability scenarios in a risk-free virtual environment. No real money. Pure education.",
 };
 
 const simulators = [
@@ -18,9 +19,9 @@ const simulators = [
       "Start with a virtual ₦10,000 balance. Enter decimal odds and a stake, and watch your balance move with each outcome. Track your win streaks, ROI, and decision patterns over time.",
     highlights: [
       "Virtual ₦10,000 balance",
-      "Win / loss streak tracking",
-      "ROI & profit analytics",
-      "Per-bet history table",
+      "Singles & correlated accumulators",
+      "Win / loss streak & ROI analytics",
+      "Saved session history",
     ],
     cta: "Open Bet Simulator",
     accentBg: "bg-teal-50",
@@ -33,12 +34,12 @@ const simulators = [
     badge: "Monte Carlo",
     title: "Probability Simulator",
     description:
-      "Enter your odds, estimated win percentage, and number of bets. Run 200 Monte Carlo simulations simultaneously and see the full distribution of possible outcomes — from ruin to profit.",
+      "Enter your bankroll, odds, estimated win percentage, and number of bets. Run 1,000 Monte Carlo trials simultaneously and see the full distribution of outcomes — from ruin to profit.",
     highlights: [
-      "200 parallel simulations",
-      "Balance band charts",
-      "Expected value calculation",
-      "Variance & ruin rate analysis",
+      "1,000 parallel Monte Carlo trials",
+      "Nigerian punter scenario presets",
+      "Custom bankroll & percentile bands",
+      "Variance, drawdown & risk-of-ruin analysis",
     ],
     cta: "Open Probability Simulator",
     accentBg: "bg-indigo-50",
@@ -47,41 +48,63 @@ const simulators = [
   },
 ];
 
-export default function SimulationEnginePage() {
-  return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      {/* Hero */}
-      <section className="bg-[#0f172a] px-4 py-16 sm:py-20">
-        <div className="container mx-auto max-w-3xl text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-medium text-teal-400">
-            <FlaskConical className="h-3.5 w-3.5" />
-            Simulation Engine
-          </div>
-          <h1 className="mb-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Explore probability without risking anything
-          </h1>
-          <p className="mx-auto max-w-xl text-base leading-relaxed text-white/60">
-            Two interactive simulators to help you understand variance, expected value, and the
-            long-term mechanics of betting mathematics — with no real money involved.
-          </p>
-        </div>
-      </section>
+export default async function SimulationEnginePage() {
+  const profile = await getUserProfile();
+  const isLoggedIn = Boolean(profile);
 
-      {/* Disclaimer bar */}
-      <div className="border-b border-border bg-white">
-        <div className="container mx-auto max-w-4xl px-4 py-3">
-          <div className="flex items-center gap-2 text-xs text-[#1e293b]/60">
-            <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-            <span>
-              All simulations use virtual currency only. No real money is ever involved. This tool
-              is for educational purposes — understanding probability and variance, not gambling.
-            </span>
+  return (
+    <div className={isLoggedIn ? "" : "min-h-screen bg-[#f8fafc]"}>
+      {/* Hero & disclaimer — shown only for signed-out visitors */}
+      {!isLoggedIn && (
+        <>
+          <section className="bg-[#0f172a] px-4 py-16 sm:py-20">
+            <div className="container mx-auto max-w-3xl text-center">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-medium text-teal-400">
+                <FlaskConical className="h-3.5 w-3.5" />
+                Simulation Engine
+              </div>
+              <h1 className="mb-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                Explore probability without risking anything
+              </h1>
+              <p className="mx-auto max-w-xl text-base leading-relaxed text-white/60">
+                Two interactive simulators to help you understand variance, expected value, and the
+                long-term mechanics of betting mathematics — with no real money involved.
+              </p>
+            </div>
+          </section>
+
+          <div className="border-b border-border bg-white">
+            <div className="container mx-auto max-w-4xl px-4 py-3">
+              <div className="flex items-center gap-2 text-xs text-[#1e293b]/60">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                <span>
+                  All simulations use virtual currency only. No real money is ever involved. This tool
+                  is for educational purposes — understanding probability and variance, not gambling.
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Simulator cards */}
-      <section className="container mx-auto max-w-5xl px-4 py-12 sm:py-16">
+      <section className={isLoggedIn ? "space-y-6 py-2" : "container mx-auto max-w-5xl px-4 py-12 sm:py-16"}>
+        {isLoggedIn && (
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <h1 className="text-xl font-bold text-[#0f172a] sm:text-2xl">Simulation Engine</h1>
+              <p className="mt-1 text-xs text-[#1e293b]/55">
+                Virtual ₦ bankroll practice and 1,000-trial Monte Carlo variance modeling.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/simulation-history"
+              className="text-xs font-semibold text-[#3D2DFF] hover:underline"
+            >
+              Simulation history →
+            </Link>
+          </div>
+        )}
         <div className="grid gap-6 lg:grid-cols-2">
           {simulators.map(
             ({ href, icon: Icon, badge, title, description, highlights, cta, accentBg, accentBorder, accentText }) => (

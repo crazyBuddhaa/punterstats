@@ -30,6 +30,7 @@ const assistItems = [
   { href: "/stats", label: "Stats Centre", icon: Database },
   { href: "/dashboard/match-analyses", label: "Match Analyses", icon: BarChart2 },
   { href: "/dashboard/calibration", label: "Calibration", icon: Target },
+  { href: "/simulation-engine", label: "Simulation Engine", icon: FlaskConical },
   { href: "/dashboard/simulation-history", label: "Simulation History", icon: FlaskConical },
   { href: "/dashboard/spot-the-value", label: "Spot The Value", icon: Zap },
 ];

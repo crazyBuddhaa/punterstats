@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Target, CheckCircle2, ListChecks, Gauge, TrendingUp, TrendingDown, Minus, ClipboardCheck } from "lucide-react";
+import { Target, CheckCircle2, ListChecks, Gauge, TrendingUp, TrendingDown, Minus, ClipboardCheck, Lock } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
+import { hasTierAccess } from "@/lib/auth/access";
 import { getResolvedPredictions, getPredictionRecords } from "@/lib/dashboard/queries";
 import { scoreCalibration, scoreCalibrationTrend } from "@/lib/calibration/scorer";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -31,6 +32,7 @@ function formatDate(str: string | null) {
 
 export default async function CalibrationPage() {
   const profile = await requireAuth();
+  const isPremium = hasTierAccess(profile, "premium");
   const [resolved, records] = await Promise.all([
     getResolvedPredictions(profile.userId),
     getPredictionRecords(profile.userId),
@@ -72,7 +74,12 @@ export default async function CalibrationPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#0f172a]">Calibration Engine</h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold text-[#0f172a]">Calibration Engine</h1>
+            <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-900">
+              Premium
+            </span>
+          </div>
           <p className="mt-1 text-sm text-[#1e293b]/60">
             Practice probability estimation with the 5-match drill, log upcoming 1X2 forecasts, and score your Brier accuracy over time.
           </p>
@@ -85,6 +92,28 @@ export default async function CalibrationPage() {
           Bet Journal Calibration →
         </Link>
       </div>
+
+      {!isPremium && (
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50/70 px-5 py-4">
+          <div className="flex items-start gap-3">
+            <Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" />
+            <div className="text-sm">
+              <p className="font-semibold text-amber-950">
+                Try the 5-match drill below — upgrade to Premium (₦1,500/mo) for full diagnostics
+              </p>
+              <p className="mt-0.5 text-xs text-amber-900/80">
+                Premium unlocks full Betting Report Card calibration curves, CLV analysis, and behavioural leak flags.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/checkout?plan=premium"
+            className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+          >
+            Upgrade to Premium
+          </Link>
+        </div>
+      )}
 
       {/* Interactive Drill & Manual Forecast Logger */}
       <CalibrationTrainer />

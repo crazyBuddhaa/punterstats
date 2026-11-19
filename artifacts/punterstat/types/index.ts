@@ -5,6 +5,7 @@
 // --- User & Auth ---
 
 export type UserRole = "user" | "premium" | "admin";
+export type PlanTier = "free" | "pro" | "premium";
 
 export interface UserProfile {
   id: string;
@@ -13,6 +14,8 @@ export interface UserProfile {
   avatarUrl: string | null;
   bio: string | null;
   role: UserRole;
+  /** Active subscription plan from subscriptions.plan ("free" | "pro" | "premium") */
+  plan?: PlanTier;
   createdAt: string;
   updatedAt: string;
 }

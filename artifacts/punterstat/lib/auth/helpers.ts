@@ -33,11 +33,18 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data, error: profileError } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
+  const [{ data, error: profileError }, { data: sub }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", user.id)
+      .single(),
+    supabase
+      .from("subscriptions")
+      .select("plan, status")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
 
   if (profileError) {
     // PGRST116 = "no rows returned" — treat as missing profile, not a crash.
@@ -49,6 +56,16 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
   }
   if (!data) return null;
 
+  const isActiveSub = sub && (sub.status === "active" || sub.status === "trialing");
+  const resolvedPlan: "free" | "pro" | "premium" =
+    isActiveSub && sub.plan === "premium"
+      ? "premium"
+      : isActiveSub && sub.plan === "pro"
+        ? "pro"
+        : data.role === "premium"
+          ? "premium"
+          : "free";
+
   return {
     id: data.id,
     userId: data.user_id,
@@ -56,6 +73,7 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
     avatarUrl: data.avatar_url,
     bio: data.bio,
     role: data.role,
+    plan: resolvedPlan,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   };

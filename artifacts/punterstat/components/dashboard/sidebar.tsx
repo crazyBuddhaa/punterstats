@@ -23,17 +23,22 @@ import {
   Database,
 } from "lucide-react";
 
-const assistItems = [
+const assistItems: Array<{
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  tier?: "Pro" | "Premium";
+}> = [
   { href: "/dashboard/bet-tracker", label: "Bet Tracker", icon: NotebookPen },
-  { href: "/dashboard/report-card", label: "Report Card", icon: ClipboardCheck },
+  { href: "/dashboard/report-card", label: "Report Card", icon: ClipboardCheck, tier: "Premium" },
   { href: "/bet-assist/slip-checker", label: "Slip Checker", icon: ClipboardCheck },
   { href: "/bet-assist/calculators", label: "Calculators", icon: Calculator },
   { href: "/stats", label: "Stats Centre", icon: Database },
-  { href: "/dashboard/match-analyses", label: "Match Analyses", icon: BarChart2 },
-  { href: "/dashboard/calibration", label: "Calibration", icon: Target },
+  { href: "/dashboard/match-analyses", label: "Match Analyses", icon: BarChart2, tier: "Pro" },
+  { href: "/dashboard/calibration", label: "Calibration", icon: Target, tier: "Premium" },
   { href: "/simulation-engine", label: "Simulation Engine", icon: FlaskConical },
-  { href: "/dashboard/simulation-history", label: "Simulation History", icon: FlaskConical },
-  { href: "/dashboard/spot-the-value", label: "Spot The Value", icon: Zap },
+  { href: "/dashboard/simulation-history", label: "Simulation History", icon: FlaskConical, tier: "Pro" },
+  { href: "/dashboard/spot-the-value", label: "Spot The Value", icon: Zap, tier: "Pro" },
 ];
 
 const topItems = [
@@ -61,12 +66,14 @@ function NavItem({
   icon: Icon,
   exact = false,
   badge,
+  tier,
 }: {
   href: string;
   label: string;
   icon: React.ElementType;
   exact?: boolean;
   badge?: number;
+  tier?: "Pro" | "Premium";
 }) {
   const pathname = usePathname();
   const active = exact ? pathname === href : pathname.startsWith(href);
@@ -80,13 +87,23 @@ function NavItem({
           : "text-[#1e293b]/70 hover:bg-slate-100 hover:text-[#0f172a]"
       }`}
     >
-      <span className="flex items-center gap-2.5">
+      <span className="flex items-center gap-2.5 truncate">
         <Icon className="h-4 w-4 shrink-0" />
-        {label}
+        <span className="truncate">{label}</span>
       </span>
       {badge && badge > 0 ? (
         <span className="rounded-full bg-teal-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
           {badge > 99 ? "99+" : badge}
+        </span>
+      ) : tier ? (
+        <span
+          className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider leading-none ${
+            tier === "Premium"
+              ? "border-amber-200 bg-amber-50 text-amber-800"
+              : "border-teal-200 bg-teal-50 text-teal-800"
+          }`}
+        >
+          {tier}
         </span>
       ) : active ? (
         <ChevronRight className="h-3.5 w-3.5 opacity-30" />
@@ -110,8 +127,8 @@ export function DashboardSidebar({ unreadCount = 0 }: DashboardSidebarProps) {
       <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-[#1e293b]/40">
         Analysis &amp; Assist
       </p>
-      {assistItems.map(({ href, label, icon }) => (
-        <NavItem key={href} href={href} label={label} icon={icon} />
+      {assistItems.map(({ href, label, icon, tier }) => (
+        <NavItem key={href} href={href} label={label} icon={icon} tier={tier} />
       ))}
 
       <div className="my-3 border-t border-border" />

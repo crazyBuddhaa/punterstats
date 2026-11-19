@@ -536,14 +536,27 @@ export function LandingPage({ courses, lessons, isAuthenticated }: LandingPagePr
                       : "border-slate-200 bg-[#f8fafc]"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-base font-bold text-slate-950">{plan.name}</h3>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold text-slate-950">{plan.name}</h3>
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                          plan.id === "free"
+                            ? "border-slate-200 bg-slate-100 text-slate-700"
+                            : plan.id === "pro"
+                              ? "border-teal-200 bg-teal-50 text-teal-800"
+                              : "border-amber-200 bg-amber-50 text-amber-900"
+                        }`}
+                      >
+                        {plan.tierTag}
+                      </span>
+                    </div>
                     {plan.badge && (
                       <span
                         className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
                           isHighlighted
                             ? "bg-slate-900 text-white"
-                            : "bg-teal-50 text-teal-800"
+                            : "text-slate-500"
                         }`}
                       >
                         {plan.badge}

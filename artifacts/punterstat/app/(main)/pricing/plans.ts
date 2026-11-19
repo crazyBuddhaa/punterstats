@@ -10,6 +10,7 @@ export interface PlanFeature {
 export interface PlanRow {
   id: "free" | "pro" | "premium";
   name: string;
+  tierTag: "Free" | "Pro" | "Premium";
   gbp: string | null;
   ngn: string | null;
   period: string;
@@ -25,10 +26,11 @@ export const PLAN_ROWS: PlanRow[] = [
   {
     id: "free",
     name: "Free",
+    tierTag: "Free",
     gbp: null,
     ngn: null,
     period: "/month",
-    badge: null,
+    badge: "Free forever",
     description: "Learn the mechanics and check your slips at zero cost.",
     cta: "Get started free",
     ctaHref: "/register",
@@ -49,6 +51,7 @@ export const PLAN_ROWS: PlanRow[] = [
   {
     id: "pro",
     name: "Pro",
+    tierTag: "Pro",
     gbp: "£4",
     ngn: "₦700",
     period: "/month",
@@ -73,6 +76,7 @@ export const PLAN_ROWS: PlanRow[] = [
   {
     id: "premium",
     name: "Premium",
+    tierTag: "Premium",
     gbp: "£9",
     ngn: "₦1,500",
     period: "/month",

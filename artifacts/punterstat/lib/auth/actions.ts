@@ -28,7 +28,7 @@ const signUpSchema = z.object({
     .min(8, "Password must be at least 8 characters")
     .max(128, "Password must be 128 characters or fewer"),
   ageConfirmed: z.literal("on", {
-    errorMap: () => ({ message: "You must confirm you are 18 or older to register." }),
+    message: "You must confirm you are 18 or older to register.",
   }),
 });
 
@@ -68,7 +68,7 @@ export async function signIn(
   });
 
   if (!parsed.success) {
-    return { success: false, error: parsed.error.errors[0].message };
+    return { success: false, error: parsed.error.issues[0].message };
   }
 
   const supabase = await createClient();
@@ -111,7 +111,7 @@ export async function signUp(
   });
 
   if (!parsed.success) {
-    return { success: false, error: parsed.error.errors[0].message };
+    return { success: false, error: parsed.error.issues[0].message };
   }
 
   const supabase = await createClient();
@@ -194,7 +194,7 @@ export async function resetPassword(
   });
 
   if (!parsed.success) {
-    return { success: false, error: parsed.error.errors[0].message };
+    return { success: false, error: parsed.error.issues[0].message };
   }
 
   const supabase = await createClient();
@@ -231,7 +231,7 @@ export async function updatePassword(
   });
 
   if (!parsed.success) {
-    return { success: false, error: parsed.error.errors[0].message };
+    return { success: false, error: parsed.error.issues[0].message };
   }
 
   const supabase = await createClient();

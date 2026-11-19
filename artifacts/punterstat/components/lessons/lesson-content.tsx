@@ -141,7 +141,7 @@ interface LessonContentProps {
 /**
  * Server component that renders lesson HTML with optional live data block support.
  *
- * All HTML chunks are sanitized at render time with isomorphic-dompurify.
+ * All HTML chunks are sanitized at render time with sanitize-html (Workers-safe).
  */
 export async function LessonContent({
   html,

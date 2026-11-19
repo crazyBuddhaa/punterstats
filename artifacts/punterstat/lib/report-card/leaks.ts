@@ -88,12 +88,12 @@ export const LEAK_LESSON_MAP: Record<LeakId, LeakLessonMapping> = {
   negative_clv: {
     id: "negative_clv",
     title: "Taking prices worse than the closing line",
-    topicSlug: "market-dynamics",
-    moduleSlug: "sharp-vs-recreational-money",
-    lessonSlug: "the-closing-line-and-why-it-matters",
-    fullSlug: "market-dynamics/sharp-vs-recreational-money/the-closing-line-and-why-it-matters",
-    href: "/betting-academy/market-dynamics/sharp-vs-recreational-money/the-closing-line-and-why-it-matters",
-    lessonTitle: "The Closing Line & Why It Matters",
+    topicSlug: "odds-and-markets",
+    moduleSlug: "odds-comparison-line-shopping",
+    lessonSlug: "closing-line-value-performance-metric",
+    fullSlug: "odds-and-markets/odds-comparison-line-shopping/closing-line-value-performance-metric",
+    href: "/betting-academy/odds-and-markets/odds-comparison-line-shopping/closing-line-value-performance-metric",
+    lessonTitle: "Closing Line Value as a Performance Metric",
   },
   poor_calibration: {
     id: "poor_calibration",

@@ -18,6 +18,7 @@ import {
   NotebookPen,
   ClipboardCheck,
   GraduationCap,
+  Library,
 } from "lucide-react";
 
 const assistItems = [
@@ -33,6 +34,7 @@ const topItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/continue-learning", label: "Continue Learning", icon: BookOpen },
   { href: "/sports-university", label: "Sports University", icon: GraduationCap },
+  { href: "/betting-academy", label: "Betting Academy", icon: Library },
   { href: "/dashboard/bookmarks", label: "Saved Lessons", icon: Bookmark },
   { href: "/dashboard/progress", label: "Learning Progress", icon: TrendingUp },
 ];

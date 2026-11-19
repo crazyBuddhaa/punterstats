@@ -69,32 +69,57 @@ export default function ResponsibleGamblingPage() {
           </p>
         </section>
 
+        <section className="rounded-2xl border border-border bg-white p-6 shadow-sm space-y-4">
+          <h2 className="text-xl font-bold text-[#0f172a]">Self-exclusion &amp; limits in Nigeria</h2>
+          <p className="text-sm text-[#1e293b]/70 leading-relaxed">
+            If betting stops feeling controlled, take immediate practical steps on your accounts and payment apps:
+          </p>
+          <ul className="list-disc space-y-1.5 pl-5 text-sm text-[#1e293b]/75">
+            <li>
+              <strong>SportyBet, Bet9ja, BetKing &amp; 1xBet:</strong> Open <em>Account Settings → Responsible Gaming</em> (or contact live support) to set daily/weekly deposit limits or request a 30-day to permanent self-exclusion.
+            </li>
+            <li>
+              <strong>OPay / PalmPay / Bank apps:</strong> Lower your daily transfer limit or disable betting merchant payments so impulse reloads aren&apos;t one tap away.
+            </li>
+            <li>
+              <strong>Device blocking:</strong> Install a site/app blocker like{" "}
+              <a href="https://www.gamban.com" target="_blank" rel="noopener noreferrer" className="font-medium text-[#3D2DFF] hover:underline">
+                Gamban
+              </a>{" "}
+              across your phone and browser.
+            </li>
+          </ul>
+        </section>
+
         <section className="rounded-2xl border border-border bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-xl font-bold text-[#0f172a]">Where to get help</h2>
-          <ul className="space-y-2 text-sm text-[#1e293b]/75">
+          <h2 className="mb-3 text-xl font-bold text-[#0f172a]">Where to get help (Nigeria &amp; International)</h2>
+          <ul className="space-y-2.5 text-sm text-[#1e293b]/75">
+            <li>
+              <a href="https://mentallyaware.org" target="_blank" rel="noopener noreferrer" className="font-medium text-[#3D2DFF] hover:underline">
+                Mentally Aware Nigeria Initiative (MANI)
+              </a>{" "}
+              — free, confidential mental health &amp; crisis support in Nigeria (call/WhatsApp 0809 111 6264).
+            </li>
+            <li>
+              <strong>NLRC / Lagos State Lotteries &amp; Gaming Authority (LSLGA)</strong> — regulatory bodies overseeing licensed operators in Nigeria; you can escalate operator self-exclusion issues through their consumer protection desks.
+            </li>
             <li>
               <a href="https://www.gamblingtherapy.org" target="_blank" rel="noopener noreferrer" className="font-medium text-[#3D2DFF] hover:underline">
                 Gambling Therapy
               </a>{" "}
-              — free international support by live chat and forums, in several languages.
+              — free international support by live chat and forums, accessible from Nigeria.
+            </li>
+            <li>
+              <a href="https://www.gamblersanonymous.org" target="_blank" rel="noopener noreferrer" className="font-medium text-[#3D2DFF] hover:underline">
+                Gamblers Anonymous
+              </a>{" "}
+              — peer support meetings worldwide (including online meetings).
             </li>
             <li>
               <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" className="font-medium text-[#3D2DFF] hover:underline">
                 BeGambleAware
               </a>{" "}
               — advice, self-assessment and support (UK).
-            </li>
-            <li>
-              <a href="https://www.gamblersanonymous.org" target="_blank" rel="noopener noreferrer" className="font-medium text-[#3D2DFF] hover:underline">
-                Gamblers Anonymous
-              </a>{" "}
-              — peer support meetings worldwide.
-            </li>
-            <li>
-              <a href="https://www.gamban.com" target="_blank" rel="noopener noreferrer" className="font-medium text-[#3D2DFF] hover:underline">
-                Gamban
-              </a>{" "}
-              — software that blocks gambling sites and apps on your devices.
             </li>
           </ul>
           <p className="mt-4 text-sm text-[#1e293b]/60">

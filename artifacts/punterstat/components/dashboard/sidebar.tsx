@@ -26,6 +26,7 @@ import {
 const assistItems = [
   { href: "/dashboard/bet-tracker", label: "Bet Tracker", icon: NotebookPen },
   { href: "/dashboard/report-card", label: "Report Card", icon: ClipboardCheck },
+  { href: "/bet-assist/slip-checker", label: "Slip Checker", icon: ClipboardCheck },
   { href: "/bet-assist/calculators", label: "Calculators", icon: Calculator },
   { href: "/stats", label: "Stats Centre", icon: Database },
   { href: "/dashboard/match-analyses", label: "Match Analyses", icon: BarChart2 },

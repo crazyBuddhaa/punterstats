@@ -34,6 +34,8 @@ export interface MatchAnalysisInput {
   homeInjuries: InjuryFactor;
   awayInjuries: InjuryFactor;
   leagueImportance: LeagueImportance;
+  /** Optional league code (e.g. "E0", "SP1", "DZ1") for per-league Dixon-Coles rho & model lookup. */
+  leagueCode?: string;
 }
 
 export interface ProbabilityFactor {
@@ -44,24 +46,56 @@ export interface ProbabilityFactor {
   explanation: string;
 }
 
+export interface ScorelineProbability {
+  score: string;
+  home: number;
+  away: number;
+  prob: number;
+}
+
 export interface DerivedMarkets {
-  /** Over / Under totals — Poisson on combined xG */
+  /** Over / Under totals — Dixon-Coles joint scoreline distribution */
   over25: number;
   under25: number;
   over15: number;
   under15: number;
   over35: number;
   under35: number;
-  /** Both Teams To Score — product of each side scoring ≥ 1 */
+  over05?: number;
+  under05?: number;
+  over45?: number;
+  under45?: number;
+  /** Both Teams To Score */
   btts: number;
   noBtts: number;
   /** Double chance — sum of two 1X2 outcomes */
   doubleChanceHD: number; // Home or Draw
   doubleChanceDA: number; // Draw or Away
   doubleChanceHA: number; // Home or Away (no draw)
-  /** Clean sheet — Poisson P(opponent scores 0) */
+  /** Draw No Bet */
+  homeDnb?: number;
+  awayDnb?: number;
+  /** Clean sheet — P(opponent scores 0) */
   homeCleanSheet: number;
   awayCleanSheet: number;
+  /** Team goal totals */
+  homeOver05?: number;
+  homeOver15?: number;
+  awayOver05?: number;
+  awayOver15?: number;
+  /** Asian handicaps (home side) */
+  ahHomeMinus15?: number;
+  ahHomePlus15?: number;
+  /** Top 5 most probable exact scorelines */
+  topScorelines?: ScorelineProbability[];
+}
+
+export interface MatchModelMeta {
+  source: "dixon-coles-v2" | "heuristic";
+  modelVersion: string;
+  leagueCode?: string | null;
+  leagueRho: number;
+  reliabilityTier?: "Gold" | "Silver" | "Bronze" | null;
 }
 
 export interface MatchAnalysisResult {
@@ -73,6 +107,7 @@ export interface MatchAnalysisResult {
   derivedMarkets: DerivedMarkets;
   keyInsights: string[];
   educationalNote: string;
+  modelMeta?: MatchModelMeta;
 }
 
 export interface SavedAnalysis {

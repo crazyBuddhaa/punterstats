@@ -25,6 +25,27 @@ export const LEAGUE_MAP: Record<string, LeagueInfo> = {
   SC0: { name: "Scottish Premiership",country: "Scotland", tier: 1 },
   SC1: { name: "Scottish Championship",country:"Scotland", tier: 2 },
   G1:  { name: "Super League",        country: "Greece",   tier: 1 },
+  // African domestic leagues (SportsAPIPro)
+  DZ1: { name: "Algerian Ligue 1",        country: "Algeria",     tier: 1 },
+  EG1: { name: "Egyptian Premier League", country: "Egypt",       tier: 1 },
+  SN1: { name: "Senegal Ligue 1",         country: "Senegal",     tier: 1 },
+  // Global Extra leagues (football-data.co.uk/new/)
+  ARG: { name: "Liga Profesional",        country: "Argentina",   tier: 1 },
+  AUT: { name: "Austrian Bundesliga",     country: "Austria",     tier: 1 },
+  BRA: { name: "Brasileirão Série A",     country: "Brazil",      tier: 1 },
+  CHN: { name: "Chinese Super League",    country: "China",       tier: 1 },
+  DNK: { name: "Danish Superliga",        country: "Denmark",     tier: 1 },
+  FIN: { name: "Veikkausliiga",           country: "Finland",     tier: 1 },
+  IRL: { name: "League of Ireland",       country: "Ireland",     tier: 1 },
+  JPN: { name: "J1 League",               country: "Japan",       tier: 1 },
+  MEX: { name: "Liga MX",                 country: "Mexico",      tier: 1 },
+  NOR: { name: "Eliteserien",             country: "Norway",      tier: 1 },
+  POL: { name: "Ekstraklasa",             country: "Poland",      tier: 1 },
+  ROU: { name: "Liga I",                  country: "Romania",     tier: 1 },
+  RUS: { name: "Russian Premier League",  country: "Russia",      tier: 1 },
+  SWE: { name: "Allsvenskan",             country: "Sweden",      tier: 1 },
+  SWZ: { name: "Swiss Super League",      country: "Switzerland", tier: 1 },
+  USA: { name: "MLS",                     country: "USA",         tier: 1 },
 };
 
 export function leagueName(code: string): string {

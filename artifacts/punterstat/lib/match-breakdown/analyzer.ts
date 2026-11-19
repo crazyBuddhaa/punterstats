@@ -1,3 +1,12 @@
+import {
+  MODEL_VERSION,
+  TEMPERATURE_DC_MLE,
+  applyTemperature1x2,
+  deriveFullMarkets,
+  getLeagueReliability,
+  getLeagueRho,
+  predictMatchFromModel,
+} from "@/lib/model/dixon-coles-engine";
 import type {
   DerivedMarkets,
   MatchAnalysisInput,
@@ -6,110 +15,46 @@ import type {
   ProbabilityFactor,
 } from "./types";
 
-// ─── Poisson helpers ──────────────────────────────────────────────────────────
-
-/** P(X = k) for Poisson(λ) */
-function poissonPmf(lambda: number, k: number): number {
-  if (lambda <= 0) return k === 0 ? 1 : 0;
-  let logP = k * Math.log(lambda) - lambda;
-  for (let i = 1; i <= k; i++) logP -= Math.log(i);
-  return Math.exp(logP);
-}
-
-// ─── Dixon-Coles low-score correction ────────────────────────────────────────
-//
-// Raw Poisson independence under-estimates 0-0 and 1-1 outcomes and
-// over-estimates 1-0 and 0-1 outcomes relative to observed football data.
-// Dixon & Coles (1997) address this with a multiplicative correction factor τ
-// applied to the four low-scoring cells of the joint probability matrix.
-//
-// ρ (rho) is negative (≈ −0.135) which means the correction:
-//   • boosts  P(0-0) and P(1-1)
-//   • reduces P(1-0) and P(0-1)
-//
-// All other scorelines use τ = 1 (uncorrected).
-
-const MAX_GOALS = 8;         // truncate at 8+ goals per side (negligible mass)
-const DC_RHO    = -0.135;    // published estimate — Dixon & Coles 1997, Table 3
-
-/**
- * Dixon-Coles τ correction for the four low-scoring cells.
- * Returns 1 for all other (i, j) pairs.
- */
-function dcTau(i: number, j: number, lambda: number, mu: number): number {
-  if (i === 0 && j === 0) return 1 - lambda * mu * DC_RHO;
-  if (i === 0 && j === 1) return 1 + lambda * DC_RHO;
-  if (i === 1 && j === 0) return 1 + mu * DC_RHO;
-  if (i === 1 && j === 1) return 1 - DC_RHO;
-  return 1;
-}
-
-/**
- * Build the corrected joint score probability matrix P(i goals, j goals)
- * using Dixon-Coles τ adjustment. Truncated at MAX_GOALS each side and
- * normalised so all cells sum to 1 (truncation + correction shifts the total
- * by ≈0.01–0.03, which re-normalisation handles cleanly).
- */
-function scoreMatrix(lambda: number, mu: number): number[][] {
-  const mat: number[][] = [];
-  let total = 0;
-
-  for (let i = 0; i <= MAX_GOALS; i++) {
-    mat[i] = [];
-    for (let j = 0; j <= MAX_GOALS; j++) {
-      const p = poissonPmf(lambda, i) * poissonPmf(mu, j) * dcTau(i, j, lambda, mu);
-      mat[i][j] = p;
-      total += p;
-    }
-  }
-
-  // Re-normalise after correction + truncation
-  if (total > 0) {
-    for (let i = 0; i <= MAX_GOALS; i++) {
-      for (let j = 0; j <= MAX_GOALS; j++) {
-        mat[i][j] /= total;
-      }
-    }
-  }
-
-  return mat;
-}
-
-function derivedMarkets(homeXG: number, awayXG: number, homeWin: number, draw: number, awayWin: number): DerivedMarkets {
+function derivedMarkets(
+  homeXG: number,
+  awayXG: number,
+  homeWin: number,
+  draw: number,
+  awayWin: number,
+  rho: number
+): DerivedMarkets {
   // Derive all score-based markets from the Dixon-Coles corrected joint
-  // probability matrix rather than from independent Poisson marginals.
-  const mat = scoreMatrix(homeXG, awayXG);
-
-  let under15 = 0, under25 = 0, under35 = 0;
-  let pHomeScore0 = 0, pAwayScore0 = 0, btts = 0;
-
-  for (let i = 0; i <= MAX_GOALS; i++) {
-    for (let j = 0; j <= MAX_GOALS; j++) {
-      const p   = mat[i][j];
-      const tot = i + j;
-      if (tot <= 1) under15 += p;
-      if (tot <= 2) under25 += p;
-      if (tot <= 3) under35 += p;
-      if (i === 0) pHomeScore0 += p;   // away keeps a clean sheet
-      if (j === 0) pAwayScore0 += p;   // home keeps a clean sheet
-      if (i > 0 && j > 0) btts += p;
-    }
-  }
+  // probability matrix using the league's validation-fitted rho.
+  const full = deriveFullMarkets(homeXG, awayXG, rho, 5);
+  const nonDraw = Math.max(1e-9, homeWin + awayWin);
 
   return {
-    over25: 1 - under25,
-    under25,
-    over15: 1 - under15,
-    under15,
-    over35: 1 - under35,
-    under35,
-    btts,
-    noBtts: 1 - btts,
+    over25: full.over25,
+    under25: full.under25,
+    over15: full.over15,
+    under15: full.under15,
+    over35: full.over35,
+    under35: full.under35,
+    over05: full.over05,
+    under05: full.under05,
+    over45: full.over45,
+    under45: full.under45,
+    btts: full.btts,
+    noBtts: full.noBtts,
     doubleChanceHD: homeWin + draw,
     doubleChanceDA: draw + awayWin,
     doubleChanceHA: homeWin + awayWin,
-    homeCleanSheet: pAwayScore0,
-    awayCleanSheet: pHomeScore0,
+    homeDnb: homeWin / nonDraw,
+    awayDnb: awayWin / nonDraw,
+    homeCleanSheet: full.homeCleanSheet,
+    awayCleanSheet: full.awayCleanSheet,
+    homeOver05: full.homeOver05,
+    homeOver15: full.homeOver15,
+    awayOver05: full.awayOver05,
+    awayOver15: full.awayOver15,
+    ahHomeMinus15: full.ahHomeMinus15,
+    ahHomePlus15: full.ahHomePlus15,
+    topScorelines: full.topScorelines,
   };
 }
 
@@ -234,16 +179,46 @@ export function analyzeMatch(input: MatchAnalysisInput): MatchAnalysisResult {
       "High-stakes matches tend to be more cautious, lower-scoring affairs. Home crowds exert stronger pressure in decisive games, amplifying the base home advantage. Friendlies see reduced effort and squad rotation.",
   });
 
-  // ── Aggregate probability ─────────────────────────────────────────────────
-  const totalEdge = factors.reduce((sum, f) => sum + f.homeEdge, 0);
-  // Empirical baseline: home 42%, draw 26%, away 32%
-  let homeWin = clamp(0.42 + totalEdge, 0.10, 0.85);
-  let awayWin = clamp(0.32 - totalEdge * 0.65, 0.06, 0.80);
-  let draw = clamp(1 - homeWin - awayWin, 0.08, 0.40);
-  const sum = homeWin + draw + awayWin;
-  homeWin /= sum;
-  awayWin /= sum;
-  draw /= sum;
+  // ── Aggregate probability (v2.0 Dixon-Coles MLE when teams match, else heuristic) ──
+  const dcMatch = predictMatchFromModel(
+    input.homeTeam.name,
+    input.awayTeam.name,
+    input.leagueCode
+  );
+  const resolvedLeagueCode = dcMatch?.leagueCode ?? input.leagueCode ?? null;
+  const leagueRho = dcMatch?.rho ?? getLeagueRho(resolvedLeagueCode);
+  const reliabilityTier = dcMatch?.reliabilityTier ?? getLeagueReliability(resolvedLeagueCode);
+
+  let finalHomeXG = homeXG;
+  let finalAwayXG = awayXG;
+  let homeWin: number;
+  let draw: number;
+  let awayWin: number;
+
+  if (dcMatch) {
+    // Anchor expected goals to the time-decayed Dixon-Coles MLE strengths,
+    // then apply the user's manual injury & match-stakes adjustments smoothly.
+    const homeMult = clamp(1 - homePenalty + importanceEdge * 0.5, 0.7, 1.25);
+    const awayMult = clamp(1 - awayPenalty - importanceEdge * 0.25, 0.7, 1.25);
+    finalHomeXG = clamp(dcMatch.lambdaHome * homeMult, 0.2, 5.0);
+    finalAwayXG = clamp(dcMatch.lambdaAway * awayMult, 0.2, 5.0);
+
+    const adjustedFull = deriveFullMarkets(finalHomeXG, finalAwayXG, leagueRho, 5);
+    [homeWin, draw, awayWin] = applyTemperature1x2(
+      [adjustedFull.homeWin, adjustedFull.draw, adjustedFull.awayWin],
+      TEMPERATURE_DC_MLE
+    );
+  } else {
+    const totalEdge = factors.reduce((sum, f) => sum + f.homeEdge, 0);
+    // Empirical baseline: home 42%, draw 26%, away 32%
+    homeWin = clamp(0.42 + totalEdge, 0.10, 0.85);
+    awayWin = clamp(0.32 - totalEdge * 0.65, 0.06, 0.80);
+    draw = clamp(1 - homeWin - awayWin, 0.08, 0.40);
+    const sum = homeWin + draw + awayWin;
+    homeWin /= sum;
+    awayWin /= sum;
+    draw /= sum;
+  }
 
   // ── Key insights ──────────────────────────────────────────────────────────
   const insights: string[] = [];
@@ -253,11 +228,11 @@ export function analyzeMatch(input: MatchAnalysisInput): MatchAnalysisResult {
     insights.push(`${input.awayTeam.name} carries strong away form — do not discount the visitor.`);
   if (totalH2H >= 3 && h2h.draws / totalH2H > 0.4)
     insights.push("These sides draw frequently — the draw market deserves attention.");
-  if (homeXG + awayXG > 3.0)
+  if (finalHomeXG + finalAwayXG > 3.0)
     insights.push(
       "High combined xG suggests an open, goal-heavy game — over markets look well-supported."
     );
-  if (homeXG + awayXG < 1.8)
+  if (finalHomeXG + finalAwayXG < 1.8)
     insights.push(
       "Low combined xG — both defences are dominant. Under 2.5 goals markets look statistically favoured."
     );
@@ -272,34 +247,56 @@ export function analyzeMatch(input: MatchAnalysisInput): MatchAnalysisResult {
       "No dominant signal — this match is statistically balanced. Edge comes from line value, not directional confidence."
     );
 
-  const markets = derivedMarkets(homeXG, awayXG, homeWin, draw, awayWin);
+  const markets = derivedMarkets(finalHomeXG, finalAwayXG, homeWin, draw, awayWin, leagueRho);
+  const r3 = (n: number) => Math.round(n * 1000) / 1000;
 
   return {
-    homeWinProb: Math.round(homeWin * 1000) / 1000,
-    drawProb: Math.round(draw * 1000) / 1000,
-    awayWinProb: Math.round(awayWin * 1000) / 1000,
+    homeWinProb: r3(homeWin),
+    drawProb: r3(draw),
+    awayWinProb: r3(awayWin),
     factors,
     expectedGoals: {
-      home: Math.round(homeXG * 10) / 10,
-      away: Math.round(awayXG * 10) / 10,
+      home: Math.round(finalHomeXG * 10) / 10,
+      away: Math.round(finalAwayXG * 10) / 10,
     },
     derivedMarkets: {
-      over25: Math.round(markets.over25 * 1000) / 1000,
-      under25: Math.round(markets.under25 * 1000) / 1000,
-      over15: Math.round(markets.over15 * 1000) / 1000,
-      under15: Math.round(markets.under15 * 1000) / 1000,
-      over35: Math.round(markets.over35 * 1000) / 1000,
-      under35: Math.round(markets.under35 * 1000) / 1000,
-      btts: Math.round(markets.btts * 1000) / 1000,
-      noBtts: Math.round(markets.noBtts * 1000) / 1000,
-      doubleChanceHD: Math.round(markets.doubleChanceHD * 1000) / 1000,
-      doubleChanceDA: Math.round(markets.doubleChanceDA * 1000) / 1000,
-      doubleChanceHA: Math.round(markets.doubleChanceHA * 1000) / 1000,
-      homeCleanSheet: Math.round(markets.homeCleanSheet * 1000) / 1000,
-      awayCleanSheet: Math.round(markets.awayCleanSheet * 1000) / 1000,
+      over25: r3(markets.over25),
+      under25: r3(markets.under25),
+      over15: r3(markets.over15),
+      under15: r3(markets.under15),
+      over35: r3(markets.over35),
+      under35: r3(markets.under35),
+      over05: r3(markets.over05 ?? 0),
+      under05: r3(markets.under05 ?? 0),
+      over45: r3(markets.over45 ?? 0),
+      under45: r3(markets.under45 ?? 0),
+      btts: r3(markets.btts),
+      noBtts: r3(markets.noBtts),
+      doubleChanceHD: r3(markets.doubleChanceHD),
+      doubleChanceDA: r3(markets.doubleChanceDA),
+      doubleChanceHA: r3(markets.doubleChanceHA),
+      homeDnb: r3(markets.homeDnb ?? 0),
+      awayDnb: r3(markets.awayDnb ?? 0),
+      homeCleanSheet: r3(markets.homeCleanSheet),
+      awayCleanSheet: r3(markets.awayCleanSheet),
+      homeOver05: r3(markets.homeOver05 ?? 0),
+      homeOver15: r3(markets.homeOver15 ?? 0),
+      awayOver05: r3(markets.awayOver05 ?? 0),
+      awayOver15: r3(markets.awayOver15 ?? 0),
+      ahHomeMinus15: r3(markets.ahHomeMinus15 ?? 0),
+      ahHomePlus15: r3(markets.ahHomePlus15 ?? 0),
+      topScorelines: markets.topScorelines,
     },
     keyInsights: insights,
-    educationalNote:
-      "These probabilities are generated from the factors you entered using a simplified educational model. They illustrate how analysts weight different signals — not a prediction of any actual match outcome. Professional models incorporate thousands of data points and continuous calibration.",
+    educationalNote: dcMatch
+      ? `Calibrated using PunterStat v${MODEL_VERSION} time-decayed Dixon-Coles MLE (${resolvedLeagueCode}, ρ = ${leagueRho.toFixed(3)}) overlaid with your manual injury and match-stakes inputs. Probabilities are for educational analysis — not betting tips.`
+      : "These probabilities are generated from the factors you entered using a simplified educational model. They illustrate how analysts weight different signals — not a prediction of any actual match outcome. Professional models incorporate thousands of data points and continuous calibration.",
+    modelMeta: {
+      source: dcMatch ? "dixon-coles-v2" : "heuristic",
+      modelVersion: MODEL_VERSION,
+      leagueCode: resolvedLeagueCode,
+      leagueRho,
+      reliabilityTier,
+    },
   };
 }

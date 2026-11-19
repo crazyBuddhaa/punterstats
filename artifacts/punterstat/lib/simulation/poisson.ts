@@ -47,8 +47,17 @@ function factorial(n: number): number {
   return FACT_CACHE[n];
 }
 
-/** Derives 1X2 probabilities implied by a pair of independent Poisson goal rates. */
-export function poisson1x2Probs(lambdaHome: number, lambdaAway: number, maxGoals = 10): OneXTwoProbs {
+/**
+ * Derives 1X2 probabilities implied by a pair of Poisson goal rates.
+ * Pass a non-zero Dixon-Coles `rho` (e.g. from `getLeagueRho(leagueCode)`) to
+ * apply the low-score correlation adjustment; defaults to 0 (independent Poisson).
+ */
+export function poisson1x2Probs(
+  lambdaHome: number,
+  lambdaAway: number,
+  maxGoals = 10,
+  rho = 0
+): OneXTwoProbs {
   let home = 0;
   let draw = 0;
   let away = 0;
@@ -56,7 +65,14 @@ export function poisson1x2Probs(lambdaHome: number, lambdaAway: number, maxGoals
     const ph = poissonPmf(lambdaHome, h);
     for (let a = 0; a <= maxGoals; a++) {
       const pa = poissonPmf(lambdaAway, a);
-      const p = ph * pa;
+      let tau = 1;
+      if (rho !== 0) {
+        if (h === 0 && a === 0) tau = Math.max(1e-6, 1 - lambdaHome * lambdaAway * rho);
+        else if (h === 0 && a === 1) tau = Math.max(1e-6, 1 + lambdaHome * rho);
+        else if (h === 1 && a === 0) tau = Math.max(1e-6, 1 + lambdaAway * rho);
+        else if (h === 1 && a === 1) tau = Math.max(1e-6, 1 - rho);
+      }
+      const p = ph * pa * tau;
       if (h > a) home += p;
       else if (h === a) draw += p;
       else away += p;

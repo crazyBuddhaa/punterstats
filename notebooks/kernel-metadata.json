@@ -1,0 +1,15 @@
+{
+  "id": "oluwafemiadekanmi/punterstat-match-model",
+  "title": "PunterStat Match Model",
+  "code_file": "punterstat_match_model.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": ["martj42/international-football-results-from-1872-to-2017"],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

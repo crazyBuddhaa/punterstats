@@ -1,0 +1,3 @@
+{
+  "install": "export PATH=\"$HOME/.npm-global/bin:$PATH\"; (pnpm -v 2>/dev/null | grep -q '^10\\.') || npm i -g --prefix \"$HOME/.npm-global\" pnpm@10; grep -qxF 'export PATH=\"$HOME/.npm-global/bin:$PATH\"' \"$HOME/.bashrc\" 2>/dev/null || echo 'export PATH=\"$HOME/.npm-global/bin:$PATH\"' >> \"$HOME/.bashrc\"; pnpm install --frozen-lockfile"
+}

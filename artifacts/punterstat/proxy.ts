@@ -29,14 +29,20 @@ const RATE_LIMITED_API_ROUTES: Array<{
   { prefix: "/api/fixtures",       limit: 20, windowMs: 60_000, label: "fixtures"    },
   // Calibration reads only from Supabase.
   { prefix: "/api/calibration",    limit: 20, windowMs: 60_000, label: "calibration" },
-  // R2 dataset listing.
+  // Historical stats queries (H2H, results, seasons, teams).
+  { prefix: "/api/historical",     limit: 30, windowMs: 60_000, label: "historical"  },
+  // Lesson data-block aggregations.
+  { prefix: "/api/lesson-blocks",  limit: 30, windowMs: 60_000, label: "lesson-blk"  },
+  // R2 dataset listing and admin R2 routes.
   { prefix: "/api/r2/datasets",    limit: 30, windowMs: 60_000, label: "r2-datasets" },
+  { prefix: "/api/r2",             limit: 20, windowMs: 60_000, label: "r2-admin"    },
   // Cron endpoints: secondary guard in case a handler misses its CRON_SECRET check.
   { prefix: "/api/cron",           limit:  5, windowMs: 60_000, label: "cron"        },
   // Cloudinary upload signature endpoint.
   { prefix: "/api/upload",         limit: 15, windowMs: 60_000, label: "upload"      },
-  // Payment checkout session creation (/api/checkout/paystack).
-  { prefix: "/api/checkout",       limit: 10, windowMs: 60_000, label: "checkout"      },
+  // Payment checkout & billing portal session creation.
+  { prefix: "/api/checkout",       limit: 10, windowMs: 60_000, label: "checkout"    },
+  { prefix: "/api/portal",         limit: 10, windowMs: 60_000, label: "portal"      },
   // Contact form POSTs (Server Action submissions) and GET floods.
   { prefix: "/contact",            limit:  3, windowMs: 60_000, label: "contact-post", methods: ["POST"] },
   { prefix: "/contact",            limit: 15, windowMs: 60_000, label: "contact-get",  methods: ["GET", "HEAD"] },

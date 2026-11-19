@@ -11,7 +11,7 @@ interface ToolHeroProps {
   eyebrow?: string;
 }
 
-/** Dark page header shared by Bet Analysis / Bet Learning / Bet Assist pages. */
+/** Light editorial page header shared by Bet Analysis / Bet Learning / Bet Assist pages. */
 export function ToolHero({
   icon: Icon,
   title,
@@ -21,25 +21,27 @@ export function ToolHero({
   eyebrow,
 }: ToolHeroProps) {
   return (
-    <div className="border-b border-white/10 bg-[#0f172a]">
-      <div className="container mx-auto max-w-5xl px-4 py-12 sm:py-16">
+    <div className="border-b border-slate-200/80 bg-white">
+      <div className="container mx-auto max-w-5xl px-4 py-10 sm:py-14">
         <Link
           href={backHref}
-          className="mb-6 inline-flex items-center gap-1 text-xs text-white/40 transition hover:text-white/70"
+          className="mb-5 inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition hover:text-slate-900"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
           {backLabel}
         </Link>
         <div className="flex items-start gap-4">
-          <div className="shrink-0 rounded-xl bg-[#3D2DFF]/20 p-3">
-            <Icon className="h-7 w-7 text-[#3D2DFF]" />
+          <div className="shrink-0 rounded-xl border border-teal-200 bg-teal-50 p-3 text-teal-700">
+            <Icon className="h-6 w-6" />
           </div>
           <div>
             {eyebrow && (
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#3D2DFF]">{eyebrow}</p>
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
+                {eyebrow}
+              </p>
             )}
-            <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">{title}</h1>
-            <p className="mt-3 max-w-2xl text-base leading-relaxed text-white/60">{description}</p>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">{title}</h1>
+            <p className="mt-2.5 max-w-2xl text-base leading-relaxed text-slate-600">{description}</p>
           </div>
         </div>
       </div>

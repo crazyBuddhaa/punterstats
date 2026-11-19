@@ -33,16 +33,16 @@ export default async function BlogPage({ searchParams }: Props) {
     <div className={isLoggedIn ? "" : "min-h-screen bg-[#f8fafc]"}>
       {/* Hero — shown only for signed-out visitors */}
       {!isLoggedIn && (
-        <section className="bg-[#0f172a] px-4 py-16 sm:py-20">
+        <section className="border-b border-slate-200/80 bg-white px-4 py-14 sm:py-20">
           <div className="container mx-auto max-w-3xl text-center">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-white/70">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1 text-xs font-semibold text-teal-800">
               <PenLine className="h-3.5 w-3.5" />
               PunterStat Blog
             </div>
-            <h1 className="mb-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h1 className="mb-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
               Analysis, education &amp; insight
             </h1>
-            <p className="text-base text-white/60 leading-relaxed max-w-xl mx-auto">
+            <p className="mx-auto max-w-xl text-base leading-relaxed text-slate-600">
               Tactical breakdowns, probability deep-dives, and sports intelligence articles
               from the PunterStat team.
             </p>

@@ -55,27 +55,27 @@ export default async function CoursePage({ params }: Props) {
 
   return (
     <div className={isLoggedIn ? "" : "min-h-screen bg-[#f8fafc]"}>
-      {/* Dark hero header — shown only for signed-out visitors */}
+      {/* Light hero header — shown only for signed-out visitors */}
       {!isLoggedIn && (
-        <section className="bg-[#0f172a] px-4 py-12">
+        <section className="border-b border-slate-200/80 bg-white px-4 py-10">
           <div className="container mx-auto max-w-6xl">
-            <nav className="mb-4 flex items-center gap-1.5 text-xs text-white/40">
-              <Link href="/sports-university" className="hover:text-white/70 transition-colors">Sports University</Link>
+            <nav className="mb-4 flex items-center gap-1.5 text-xs text-slate-500">
+              <Link href="/sports-university" className="transition-colors hover:text-slate-900">Sports University</Link>
               <ChevronRight className="h-3 w-3" />
-              <Link href={`/sports-university/${categorySlug}`} className="hover:text-white/70 transition-colors">{category.name}</Link>
+              <Link href={`/sports-university/${categorySlug}`} className="transition-colors hover:text-slate-900">{category.name}</Link>
               <ChevronRight className="h-3 w-3" />
-              <span className="text-white/70">{course.title}</span>
+              <span className="font-medium text-slate-900">{course.title}</span>
             </nav>
 
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex-1">
-                <Badge variant="outline" className="mb-3 border-white/20 text-white/60 text-xs">
+                <Badge variant="outline" className="mb-3 border-slate-200 bg-slate-50 text-xs text-slate-600">
                   {LEVEL_LABEL[course.level]}
                 </Badge>
-                <h1 className="text-2xl font-bold text-white sm:text-3xl leading-tight">{course.title}</h1>
-                <p className="mt-3 text-sm text-white/60 leading-relaxed max-w-2xl">{course.description}</p>
+                <h1 className="text-2xl font-bold leading-tight text-slate-950 sm:text-3xl">{course.title}</h1>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">{course.description}</p>
 
-                <div className="mt-5 flex flex-wrap items-center gap-4 text-xs text-white/40">
+                <div className="mt-5 flex flex-wrap items-center gap-4 text-xs text-slate-500">
                   <span className="flex items-center gap-1.5">
                     <BookOpen className="h-3.5 w-3.5" />
                     {lessons.length} {lessons.length === 1 ? "lesson" : "lessons"}
@@ -91,7 +91,7 @@ export default async function CoursePage({ params }: Props) {
 
               {nextIncomplete && (
                 <div className="flex-shrink-0">
-                  <Button asChild className="bg-[#3D2DFF] hover:bg-[#3D2DFF]/90">
+                  <Button asChild className="rounded-lg bg-slate-900 text-white hover:bg-slate-800">
                     <Link href={`/sports-university/${categorySlug}/${courseSlug}/${nextIncomplete.slug}`}>
                       Start course
                     </Link>

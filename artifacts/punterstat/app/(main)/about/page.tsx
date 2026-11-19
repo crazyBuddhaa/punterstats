@@ -89,29 +89,20 @@ export default function AboutPage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-[#0f172a] pb-20 pt-16 sm:pb-28 sm:pt-24">
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage:
-              "linear-gradient(#3D2DFF 1px, transparent 1px), linear-gradient(to right, #3D2DFF 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-          }}
-        />
-        <div className="pointer-events-none absolute -top-40 left-1/2 h-[400px] w-[700px] -translate-x-1/2 rounded-full bg-[#3D2DFF] opacity-[0.06] blur-3xl" />
-        <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6">
+      <section className="border-b border-slate-200/80 bg-white pb-16 pt-14 sm:pb-24 sm:pt-20">
+        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
           <Badge
             variant="outline"
-            className="mb-6 border-[#3D2DFF]/30 bg-[#3D2DFF]/10 px-4 py-1.5 text-sm font-medium text-[#3D2DFF]"
+            className="mb-5 border-teal-200 bg-teal-50 px-3.5 py-1 text-xs font-semibold text-teal-800"
           >
             Our mission
           </Badge>
-          <h1 className="mb-6 text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+          <h1 className="mb-5 text-4xl font-bold leading-tight tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
             We built PunterStat to change{" "}
-            <span className="text-[#3D2DFF]">how people think</span> about
+            <span className="text-teal-700">how people think</span> about
             sports.
           </h1>
-          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-white/60">
+          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-slate-600">
             Not to tip winners. Not to beat bookmakers. To give people a
             genuine understanding of probability, sports systems, and analytical
             decision-making.
@@ -302,18 +293,18 @@ export default function AboutPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-[#0f172a] px-4 py-16 text-center">
+      <section className="border-t border-slate-200/80 bg-[#f8fafc] px-4 py-16 text-center">
         <div className="mx-auto max-w-xl">
-          <h2 className="mb-3 text-2xl font-bold text-white">
+          <h2 className="mb-3 text-2xl font-bold text-slate-950">
             Ready to start thinking analytically?
           </h2>
-          <p className="mb-6 text-sm text-white/60">
+          <p className="mb-6 text-sm text-slate-600">
             Create a free account. No card required. All core content is free.
           </p>
           <Button
             asChild
             size="lg"
-            className="bg-[#3D2DFF] hover:bg-[#3D2DFF]/90"
+            className="rounded-lg bg-slate-900 text-white hover:bg-slate-800"
           >
             <Link href="/register">Get started free</Link>
           </Button>

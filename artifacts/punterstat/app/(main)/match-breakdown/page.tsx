@@ -124,16 +124,16 @@ export default async function MatchBreakdownPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       {/* Hero */}
-      <section className="bg-[#0f172a] px-4 py-16 sm:py-20">
+      <section className="border-b border-slate-200/80 bg-white px-4 py-14 sm:py-20">
         <div className="container mx-auto max-w-3xl text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-medium text-teal-400">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1 text-xs font-semibold text-teal-800">
             <BarChart2 className="h-3.5 w-3.5" />
             Match Breakdown Engine
           </div>
-          <h1 className="mb-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h1 className="mb-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
             Understand how analysts read a match
           </h1>
-          <p className="mx-auto max-w-xl text-base leading-relaxed text-white/60">
+          <p className="mx-auto max-w-xl text-base leading-relaxed text-slate-600">
             Enter the factors that shape match probability — form, head-to-head, goal data, injuries,
             home advantage — and see a full educational breakdown of how each signal moves the
             probability needle.
@@ -141,7 +141,7 @@ export default async function MatchBreakdownPage() {
           <div className="mt-8">
             <Link
               href="/match-breakdown/analyzer"
-              className="inline-flex items-center gap-2 rounded-xl bg-teal-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-500/20 transition hover:bg-teal-400"
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
               Open the Analyzer
               <ArrowRight className="h-4 w-4" />

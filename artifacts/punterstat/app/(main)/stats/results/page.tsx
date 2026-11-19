@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { getResults, getLeagues, getSeasons } from "@/lib/historical-stats/queries";
 import { ResultsFilters } from "@/components/stats/results-filters";
 import { ResultsTable } from "@/components/stats/results-table";
@@ -86,9 +87,9 @@ async function ResultsSection({
             { label: "Over 2.5 Goals", value: `${sampleStats.over25Pct}%` },
             { label: "Avg Goals / Match", value: sampleStats.avgGoals },
           ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
-              <p className="text-[11px] text-white/45">{s.label}</p>
-              <p className="mt-0.5 text-lg font-bold tabular-nums text-white">{s.value}</p>
+            <div key={s.label} className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+              <p className="text-[11px] font-medium text-slate-500">{s.label}</p>
+              <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-950">{s.value}</p>
             </div>
           ))}
         </div>
@@ -110,22 +111,22 @@ export default async function ResultsPage({ searchParams }: Props) {
   const isLoggedIn = Boolean(profile);
 
   return (
-    <main className={isLoggedIn ? "rounded-2xl bg-[#0f172a] p-5 sm:p-6 shadow-sm" : "min-h-screen bg-[#0f172a] py-10 px-4"}>
+    <main className={isLoggedIn ? "space-y-6 py-2" : "min-h-screen bg-[#f8fafc] px-4 py-10"}>
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <a href="/stats" className="text-sm text-[#7B7BFF] hover:underline mb-2 inline-block">
+          <Link href="/stats" className="mb-2 inline-block text-xs font-semibold text-teal-700 hover:underline">
             ← Stats Centre
-          </a>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Match Results</h1>
-          <p className="mt-1 text-sm text-white/50">
+          </Link>
+          <h1 className="text-2xl font-bold text-slate-950 sm:text-3xl">Match Results</h1>
+          <p className="mt-1 text-sm text-slate-600">
             Filter by league, season, or team to explore historical results and goal trends.
           </p>
         </div>
 
         <Suspense
           fallback={
-            <div className="flex items-center justify-center py-24 text-white/40 text-sm">
+            <div className="flex items-center justify-center py-24 text-sm text-slate-500">
               Loading results…
             </div>
           }

@@ -39,20 +39,20 @@ export default async function TopicPage({ params }: Props) {
   return (
     <div className={isLoggedIn ? "" : "min-h-screen bg-[#f8fafc]"}>
       {!isLoggedIn && (
-        <section className="bg-[#0f172a] px-4 py-12">
+        <section className="border-b border-slate-200/80 bg-white px-4 py-10">
           <div className="container mx-auto max-w-6xl">
-            <nav className="mb-4 flex items-center gap-1.5 text-xs text-white/40">
-              <Link href="/betting-academy" className="hover:text-white/70 transition-colors">
+            <nav className="mb-4 flex items-center gap-1.5 text-xs text-slate-500">
+              <Link href="/betting-academy" className="transition-colors hover:text-slate-900">
                 Betting Academy
               </Link>
               <ChevronRight className="h-3 w-3" />
-              <span className="text-white/70">{topic.name}</span>
+              <span className="font-medium text-slate-900">{topic.name}</span>
             </nav>
-            <h1 className="text-2xl font-bold text-white sm:text-3xl">{topic.name}</h1>
+            <h1 className="text-2xl font-bold text-slate-950 sm:text-3xl">{topic.name}</h1>
             {topic.description && (
-              <p className="mt-2 text-sm text-white/60 max-w-xl leading-relaxed">{topic.description}</p>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">{topic.description}</p>
             )}
-            <p className="mt-3 text-xs text-white/30">
+            <p className="mt-3 text-xs font-medium text-slate-400">
               {modules.length} {modules.length === 1 ? "module" : "modules"}
             </p>
           </div>

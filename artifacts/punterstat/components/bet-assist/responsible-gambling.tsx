@@ -5,14 +5,14 @@ import { cn } from "@/lib/utils";
 /** Thin strip shown under tool headers. */
 export function ResponsibleGamblingStrip({ className }: { className?: string }) {
   return (
-    <div className={cn("border-b border-[#1e293b]/20 bg-[#1e293b]", className)}>
+    <div className={cn("border-b border-slate-200/80 bg-slate-100/80", className)}>
       <div className="container mx-auto max-w-5xl px-4 py-2.5">
-        <div className="flex items-start gap-2 text-xs text-white/55">
-          <ShieldCheck className="mt-px h-3.5 w-3.5 shrink-0 text-teal-400" />
+        <div className="flex items-start gap-2 text-xs text-slate-600">
+          <ShieldCheck className="mt-px h-3.5 w-3.5 shrink-0 text-teal-700" />
           <span>
             18+ only. PunterStat does not take bets. Probabilities are estimates, not guarantees — never stake
             more than you can afford to lose.{" "}
-            <Link href="/responsible-gambling" className="underline underline-offset-2 hover:text-white">
+            <Link href="/responsible-gambling" className="font-medium text-slate-900 underline underline-offset-2 hover:text-teal-700">
               Play responsibly
             </Link>
             .

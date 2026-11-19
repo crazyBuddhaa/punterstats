@@ -145,13 +145,13 @@ export default async function BlogPostPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Hero / Header — dark for signed-out visitors, compact light for dashboard */}
+      {/* Light editorial header for signed-out visitors */}
       {!isLoggedIn && (
-        <section className="bg-[#0f172a] px-4 pb-0 pt-10">
+        <section className="border-b border-slate-200/80 bg-white px-4 pb-0 pt-10">
           <div className="container mx-auto max-w-3xl">
             <Link
               href="/blog"
-              className="mb-6 inline-flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors"
+              className="mb-6 inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 transition-colors hover:text-slate-900"
             >
               <ChevronLeft className="h-3 w-3" />
               Back to blog
@@ -163,7 +163,7 @@ export default async function BlogPostPage({ params }: Props) {
                   <Link key={tag} href={`/blog?tag=${tag}`}>
                     <Badge
                       variant="outline"
-                      className="border-white/20 text-white/60 text-xs capitalize hover:border-white/40 hover:text-white transition-colors"
+                      className="border-slate-200 bg-slate-50 text-xs capitalize text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-950"
                     >
                       {tag}
                     </Badge>
@@ -172,15 +172,15 @@ export default async function BlogPostPage({ params }: Props) {
               </div>
             )}
 
-            <h1 className="text-2xl font-bold text-white leading-tight sm:text-3xl lg:text-4xl">
+            <h1 className="text-2xl font-bold leading-tight text-slate-950 sm:text-3xl lg:text-4xl">
               {post.title}
             </h1>
 
             {post.excerpt && (
-              <p className="mt-4 text-base text-white/60 leading-relaxed">{post.excerpt}</p>
+              <p className="mt-4 text-base leading-relaxed text-slate-600">{post.excerpt}</p>
             )}
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 pb-8 text-xs text-white/40">
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 pb-8 text-xs text-slate-500">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5" />

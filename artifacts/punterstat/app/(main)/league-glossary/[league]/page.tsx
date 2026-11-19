@@ -125,37 +125,37 @@ export default async function LeagueDetailPage({ params }: Props) {
 
       {/* Hero — shown only for signed-out visitors */}
       {!isLoggedIn && (
-        <section className="bg-[#0f172a] px-4 py-12 sm:py-16">
+        <section className="border-b border-slate-200/80 bg-white px-4 py-10 sm:py-14">
           <div className="container mx-auto max-w-6xl">
             {/* Breadcrumb */}
-            <nav className="mb-5 flex items-center gap-1.5 text-xs text-white/40">
-              <Link href="/league-glossary" className="hover:text-white/70 transition-colors">
+            <nav className="mb-5 flex items-center gap-1.5 text-xs text-slate-500">
+              <Link href="/league-glossary" className="transition-colors hover:text-slate-900">
                 League Glossary
               </Link>
               <ChevronRight className="h-3 w-3" />
-              <span className="text-white/70">{league.name}</span>
+              <span className="font-medium text-slate-900">{league.name}</span>
             </nav>
 
             <div className="flex flex-wrap items-start gap-4">
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="mb-2 flex items-center gap-2">
                   <span className="text-2xl" aria-hidden="true">{flag}</span>
-                  <span className="text-sm text-white/50">{league.country} · {league.season}</span>
+                  <span className="text-sm text-slate-500">{league.country} · {league.season}</span>
                 </div>
-                <h1 className="text-3xl font-bold text-white sm:text-4xl">{league.name}</h1>
-                <div className="mt-3 flex flex-wrap items-center gap-2.5">
-                  <span className="inline-block rounded-full bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-400 border border-amber-500/20">
+                <h1 className="text-3xl font-bold text-slate-950 sm:text-4xl">{league.name}</h1>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <span className="inline-block rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
                     {styleLabel}
                   </span>
                   <Link
                     href={statsHref}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-white/60 hover:text-white transition"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 transition hover:text-slate-950"
                   >
                     <BarChart2 className="h-3.5 w-3.5" /> Historical Results →
                   </Link>
                   <Link
                     href="/spot-the-value"
-                    className="inline-flex items-center gap-1 text-xs font-medium text-teal-400 hover:text-teal-300 transition"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-teal-700 transition hover:text-teal-800"
                   >
                     <Zap className="h-3.5 w-3.5" /> Live Odds →
                   </Link>
@@ -163,40 +163,40 @@ export default async function LeagueDetailPage({ params }: Props) {
               </div>
 
               {/* Quick stats */}
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 w-full sm:w-auto mt-4 sm:mt-0">
+              <div className="mt-4 grid w-full grid-cols-2 gap-2.5 sm:mt-0 sm:w-auto sm:grid-cols-4">
               {[
                 {
                   icon: Target,
                   value: league.avgGoalsPerGame?.toFixed(2) ?? "—",
                   label: "Goals / game",
-                  color: "text-amber-400",
+                  color: "text-amber-700",
                 },
                 {
                   icon: TrendingUp,
                   value: league.homeWinPct != null ? `${league.homeWinPct}%` : "—",
                   label: "Home wins",
-                  color: "text-emerald-400",
+                  color: "text-emerald-700",
                 },
                 {
                   icon: Activity,
                   value: league.overPct != null ? `${league.overPct}%` : "—",
                   label: `Over ${league.ouReferenceLine ?? 2.5}`,
-                  color: "text-blue-400",
+                  color: "text-blue-700",
                 },
                 {
                   icon: ShieldCheck,
                   value: league.parityScore != null ? league.parityScore.toFixed(0) : "—",
                   label: "Parity score",
-                  color: "text-violet-400",
+                  color: "text-slate-700",
                 },
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-center"
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center"
                 >
                   <stat.icon className={`mx-auto mb-1 h-4 w-4 ${stat.color}`} />
-                  <p className="text-lg font-bold text-white">{stat.value}</p>
-                  <p className="text-[10px] text-white/40">{stat.label}</p>
+                  <p className="text-lg font-bold tabular-nums text-slate-950">{stat.value}</p>
+                  <p className="text-[10px] font-medium text-slate-500">{stat.label}</p>
                 </div>
               ))}
               </div>

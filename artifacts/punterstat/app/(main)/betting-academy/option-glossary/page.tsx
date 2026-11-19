@@ -26,30 +26,30 @@ export default async function OptionGlossaryPage() {
       {/* Hero & marketing strip — shown only for signed-out visitors */}
       {!isLoggedIn && (
         <>
-          <section className="bg-[#0f172a] px-4 py-14 sm:py-18">
+          <section className="border-b border-slate-200/80 bg-white px-4 py-12 sm:py-16">
             <div className="container mx-auto max-w-3xl text-center">
               {/* Breadcrumb */}
-              <nav className="mb-5 flex items-center justify-center gap-1.5 text-xs text-white/40">
-                <Link href="/betting-academy" className="hover:text-white/70 transition-colors">
+              <nav className="mb-5 flex items-center justify-center gap-1.5 text-xs text-slate-500">
+                <Link href="/betting-academy" className="transition-colors hover:text-slate-900">
                   Betting Academy
                 </Link>
                 <ChevronRight className="h-3 w-3" />
-                <span className="text-white/60">Option Glossary</span>
+                <span className="font-medium text-slate-900">Option Glossary</span>
               </nav>
 
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-medium text-emerald-400">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1 text-xs font-semibold text-teal-800">
                 <BookMarked className="h-3.5 w-3.5" />
                 Option Glossary
               </div>
-              <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
                 Every bet type, explained properly
               </h1>
-              <p className="mt-4 text-base text-white/60 leading-relaxed max-w-xl mx-auto">
+              <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-slate-600">
                 Plain-English breakdowns of {totalCount > 0 ? totalCount : "all major"} bet
                 types — what they mean, how they settle, what they cost in volatility,
                 and where bettors most often misread them.
               </p>
-              <p className="mt-5 text-xs font-semibold uppercase tracking-widest text-emerald-500/70">
+              <p className="mt-5 text-xs font-semibold uppercase tracking-widest text-teal-700">
                 {totalCount} entries · 5 categories
               </p>
             </div>

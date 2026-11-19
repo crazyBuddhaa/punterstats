@@ -28,16 +28,16 @@ export default async function BettingAcademyPage() {
     <div className={isLoggedIn ? "" : "min-h-screen bg-[#f8fafc]"}>
       {/* Hero — shown only for public (signed-out) visitors */}
       {!isLoggedIn && (
-        <section className="bg-[#0f172a] px-4 py-16 sm:py-20">
+        <section className="border-b border-slate-200/80 bg-white px-4 py-14 sm:py-20">
           <div className="container mx-auto max-w-3xl text-center">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-medium text-emerald-400">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1 text-xs font-semibold text-teal-800">
               <GraduationCap className="h-3.5 w-3.5" />
               Betting Academy
             </div>
-            <h1 className="mb-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h1 className="mb-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
               Understand how betting markets work
             </h1>
-            <p className="text-base text-white/60 leading-relaxed max-w-xl mx-auto">
+            <p className="mx-auto max-w-xl text-base leading-relaxed text-slate-600">
               Structured education on odds, probability, value identification, bet types, and bankroll management.
               No gambling encouragement — just the mechanics, explained clearly.
             </p>

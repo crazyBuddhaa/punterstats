@@ -57,16 +57,16 @@ export default async function SimulationEnginePage() {
       {/* Hero & disclaimer — shown only for signed-out visitors */}
       {!isLoggedIn && (
         <>
-          <section className="bg-[#0f172a] px-4 py-16 sm:py-20">
+          <section className="border-b border-slate-200/80 bg-white px-4 py-14 sm:py-20">
             <div className="container mx-auto max-w-3xl text-center">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-medium text-teal-400">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1 text-xs font-semibold text-teal-800">
                 <FlaskConical className="h-3.5 w-3.5" />
                 Simulation Engine
               </div>
-              <h1 className="mb-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              <h1 className="mb-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
                 Explore probability without risking anything
               </h1>
-              <p className="mx-auto max-w-xl text-base leading-relaxed text-white/60">
+              <p className="mx-auto max-w-xl text-base leading-relaxed text-slate-600">
                 Two interactive simulators to help you understand variance, expected value, and the
                 long-term mechanics of betting mathematics — with no real money involved.
               </p>

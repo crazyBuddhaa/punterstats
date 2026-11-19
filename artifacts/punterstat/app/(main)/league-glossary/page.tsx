@@ -30,23 +30,23 @@ export default async function LeagueGlossaryPage() {
       {/* Hero & marketing strip — shown only for signed-out visitors */}
       {!isLoggedIn && (
         <>
-          <section className="bg-[#0f172a] px-4 py-16 sm:py-20">
+          <section className="border-b border-slate-200/80 bg-white px-4 py-14 sm:py-20">
             <div className="container mx-auto max-w-3xl text-center">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1.5">
-                <Globe className="h-3.5 w-3.5 text-amber-400" />
-                <span className="text-xs font-semibold uppercase tracking-widest text-amber-400">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1">
+                <Globe className="h-3.5 w-3.5 text-amber-800" />
+                <span className="text-xs font-semibold uppercase tracking-widest text-amber-800">
                   League Glossary
                 </span>
               </div>
-              <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
                 How Europe&apos;s Top Leagues Actually Work
               </h1>
-              <p className="mt-4 text-base text-white/60 leading-relaxed max-w-xl mx-auto">
+              <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-slate-600">
                 Statistical profiles of the major leagues — playing styles, goal
                 averages, home advantage, over/under trends, squad fatigue
                 patterns, and full team breakdowns.
               </p>
-              <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-amber-500/70">
+              <p className="mt-5 text-xs font-semibold uppercase tracking-widest text-teal-700">
                 {leagues.length} {leagues.length === 1 ? "League" : "Leagues"} · 2024–25 Season
               </p>
             </div>

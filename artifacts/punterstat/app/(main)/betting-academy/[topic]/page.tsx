@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight, BookOpen } from "lucide-react";
 import { ModuleCard } from "@/components/betting-academy/module-card";
+import { getUserProfile } from "@/lib/auth/helpers";
 import { getTopicBySlug, getModulesByTopic, getLessonCount } from "@/lib/betting-academy/queries";
 
 interface Props {
@@ -18,7 +19,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TopicPage({ params }: Props) {
   const { topic: slug } = await params;
-  const topic = await getTopicBySlug(slug);
+  const [profile, topic] = await Promise.all([
+    getUserProfile(),
+    getTopicBySlug(slug),
+  ]);
   if (!topic) notFound();
 
   const modules = await getModulesByTopic(topic.id);
@@ -30,28 +34,50 @@ export default async function TopicPage({ params }: Props) {
     }))
   );
 
-  return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      <section className="bg-[#0f172a] px-4 py-12">
-        <div className="container mx-auto max-w-6xl">
-          <nav className="mb-4 flex items-center gap-1.5 text-xs text-white/40">
-            <Link href="/betting-academy" className="hover:text-white/70 transition-colors">
-              Betting Academy
-            </Link>
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-white/70">{topic.name}</span>
-          </nav>
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">{topic.name}</h1>
-          {topic.description && (
-            <p className="mt-2 text-sm text-white/60 max-w-xl leading-relaxed">{topic.description}</p>
-          )}
-          <p className="mt-3 text-xs text-white/30">
-            {modules.length} {modules.length === 1 ? "module" : "modules"}
-          </p>
-        </div>
-      </section>
+  const isLoggedIn = Boolean(profile);
 
-      <section className="container mx-auto max-w-6xl px-4 py-10">
+  return (
+    <div className={isLoggedIn ? "" : "min-h-screen bg-[#f8fafc]"}>
+      {!isLoggedIn && (
+        <section className="bg-[#0f172a] px-4 py-12">
+          <div className="container mx-auto max-w-6xl">
+            <nav className="mb-4 flex items-center gap-1.5 text-xs text-white/40">
+              <Link href="/betting-academy" className="hover:text-white/70 transition-colors">
+                Betting Academy
+              </Link>
+              <ChevronRight className="h-3 w-3" />
+              <span className="text-white/70">{topic.name}</span>
+            </nav>
+            <h1 className="text-2xl font-bold text-white sm:text-3xl">{topic.name}</h1>
+            {topic.description && (
+              <p className="mt-2 text-sm text-white/60 max-w-xl leading-relaxed">{topic.description}</p>
+            )}
+            <p className="mt-3 text-xs text-white/30">
+              {modules.length} {modules.length === 1 ? "module" : "modules"}
+            </p>
+          </div>
+        </section>
+      )}
+
+      <section className={isLoggedIn ? "py-2" : "container mx-auto max-w-6xl px-4 py-10"}>
+        {isLoggedIn && (
+          <div className="mb-6">
+            <nav className="mb-2 flex items-center gap-1.5 text-xs text-[#1e293b]/50">
+              <Link href="/betting-academy" className="hover:text-[#0f172a] transition-colors">
+                Betting Academy
+              </Link>
+              <ChevronRight className="h-3 w-3" />
+              <span className="font-medium text-[#0f172a]">{topic.name}</span>
+            </nav>
+            <div className="flex items-baseline justify-between gap-4">
+              <h1 className="text-xl font-bold text-[#0f172a] sm:text-2xl">{topic.name}</h1>
+              <span className="shrink-0 text-xs text-[#1e293b]/50">
+                {modules.length} {modules.length === 1 ? "module" : "modules"}
+              </span>
+            </div>
+          </div>
+        )}
+
         {modulesWithMeta.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-20 text-center">
             <BookOpen className="mb-4 h-12 w-12 text-[#1e293b]/20" />

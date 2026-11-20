@@ -8,13 +8,13 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
+  Loader2,
   Pencil,
   Plus,
+  Ticket,
   Trash2,
-  Upload,
   X,
 } from "lucide-react";
-import { BetCsvImportPanel } from "./bet-csv-import";
 
 const BetTrackerChart = dynamic(() => import("./bet-tracker-chart"), {
   ssr: false,
@@ -58,7 +58,22 @@ const MARKETS = [
   "Other",
 ];
 
-const BOOKMAKER_PRESETS = ["SportyBet", "Bet9ja", "BetKing", "1xBet", "MSport", "Pinnacle"];
+const BOOKMAKER_PRESETS = ["SportyBet", "Bet9ja", "Football.com", "BetKing", "1xBet", "MSport", "Pinnacle"];
+
+const CODE_BOOKMAKERS = [
+  { key: "sportybet", label: "SportyBet (NG)", name: "SportyBet" },
+  { key: "bet9ja", label: "Bet9ja", name: "Bet9ja" },
+  { key: "football.com", label: "Football.com", name: "Football.com" },
+  { key: "betking", label: "BetKing", name: "BetKing" },
+  { key: "onexbet", label: "1xBet", name: "1xBet" },
+  { key: "msport", label: "MSport", name: "MSport" },
+  { key: "betway", label: "Betway", name: "Betway" },
+  { key: "22bet", label: "22Bet", name: "22Bet" },
+  { key: "sportybet_gh", label: "SportyBet (GH)", name: "SportyBet" },
+  { key: "sportybet_ke", label: "SportyBet (KE)", name: "SportyBet" },
+  { key: "sportybet_za", label: "SportyBet (ZA)", name: "SportyBet" },
+  { key: "sportybet_tz", label: "SportyBet (TZ)", name: "SportyBet" },
+];
 
 const money = (n: number) =>
   `₦${Math.abs(n).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -124,6 +139,104 @@ function AddBetForm({
     legCount: prefill.legs ?? (prefillIsAcca ? "2" : "1"),
     notes: "",
   });
+
+  const [bookingCode, setBookingCode] = useState("");
+  const [codeBookie, setCodeBookie] = useState("sportybet");
+  const [decoding, setDecoding] = useState(false);
+  const [decodeNotice, setDecodeNotice] = useState<string | null>(null);
+
+  const loadBookingCode = async () => {
+    const clean = bookingCode.trim().toUpperCase();
+    if (!clean) {
+      setError("Enter a booking code first (e.g. JQW6XN).");
+      return;
+    }
+    setDecoding(true);
+    setError(null);
+    setDecodeNotice(null);
+    try {
+      const res = await fetch(
+        `/api/bet-assist/decode-slip?code=${encodeURIComponent(clean)}&bookmaker=${encodeURIComponent(codeBookie)}`,
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error ?? "Could not decode booking code.");
+        return;
+      }
+      const rawLegs: { event: string; selection: string; odds: number; modelProb: number | null }[] =
+        data.legs ?? [];
+      if (rawLegs.length === 0) {
+        setError("No readable selections with decimal odds found in that booking code.");
+        return;
+      }
+
+      const bookieInfo = CODE_BOOKMAKERS.find((b) => b.key === codeBookie);
+      const bookieName = bookieInfo?.name ?? codeBookie;
+      const allMatched = rawLegs.every((l) => l.modelProb !== null && l.modelProb > 0);
+      const combinedModelProb = allMatched
+        ? rawLegs.reduce((acc, l) => acc * (l.modelProb as number), 1)
+        : null;
+      const probStr =
+        combinedModelProb !== null && combinedModelProb > 0 && combinedModelProb < 1
+          ? String(Math.round(combinedModelProb * 1000) / 10)
+          : "";
+
+      if (rawLegs.length === 1) {
+        const leg = rawLegs[0];
+        setBetType("single");
+        setForm((f) => ({
+          ...f,
+          eventName: leg.event || f.eventName,
+          selection: leg.selection || f.selection,
+          odds: Number(leg.odds).toFixed(2),
+          bookmaker: bookieName,
+          market: "1X2",
+          legCount: "1",
+          yourProb: probStr || f.yourProb,
+          notes: `Code: ${clean}`,
+        }));
+      } else {
+        const combinedOdds = rawLegs.reduce((acc, l) => acc * Number(l.odds), 1);
+        setBetType("accumulator");
+        setLegs(
+          rawLegs.slice(0, 25).map((l) => ({
+            event: l.event ?? "",
+            selection: l.selection ?? "",
+            odds: Number(l.odds).toFixed(2),
+          })),
+        );
+        setForm((f) => ({
+          ...f,
+          eventName: rawLegs
+            .map((l) => l.event)
+            .filter(Boolean)
+            .join(" / ")
+            .slice(0, 190),
+          selection: rawLegs
+            .map((l) => l.selection)
+            .filter(Boolean)
+            .join(" + ")
+            .slice(0, 190),
+          odds: combinedOdds.toFixed(2),
+          bookmaker: bookieName,
+          market: "Accumulator",
+          legCount: String(rawLegs.length),
+          yourProb: probStr || f.yourProb,
+          notes: `Code: ${clean}`,
+        }));
+      }
+
+      setDecodeNotice(
+        `Loaded ${rawLegs.length} selection${rawLegs.length === 1 ? "" : "s"} from ${bookieInfo?.label ?? bookieName} (${clean})${
+          probStr ? ` · Dixon-Coles v2.0 est. ${probStr}%` : ""
+        }. Enter your stake and click Save bet.`,
+      );
+    } catch {
+      setError("Network error while decoding booking code. Please try again.");
+    } finally {
+      setDecoding(false);
+    }
+  };
 
   const set =
     (k: keyof typeof form) =>
@@ -230,6 +343,8 @@ function AddBetForm({
         notes: "",
       });
       setLegs([{ ...EMPTY_LEG }, { ...EMPTY_LEG }]);
+      setBookingCode("");
+      setDecodeNotice(null);
       onSaved?.();
       router.replace("/dashboard/bet-tracker");
       router.refresh();
@@ -264,6 +379,57 @@ function AddBetForm({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Load by Booking Code */}
+      <div className="rounded-xl border border-teal-200 bg-teal-50/40 p-3.5 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#0f172a]">
+            <Ticket className="h-3.5 w-3.5 text-teal-600" />
+            Load by Booking Code
+          </div>
+          <span className="text-[11px] text-[#1e293b]/55">Auto-fills legs, odds &amp; bookmaker</span>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-[180px_1fr_auto]">
+          <select
+            aria-label="Booking code bookmaker"
+            value={codeBookie}
+            onChange={(e) => setCodeBookie(e.target.value)}
+            className="h-9 rounded-md border border-input bg-white px-2.5 text-xs font-medium text-[#0f172a]"
+          >
+            {CODE_BOOKMAKERS.map((b) => (
+              <option key={b.key} value={b.key}>
+                {b.label}
+              </option>
+            ))}
+          </select>
+          <Input
+            value={bookingCode}
+            onChange={(e) => setBookingCode(e.target.value.toUpperCase())}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                loadBookingCode();
+              }
+            }}
+            placeholder="Booking code (e.g. JQW6XN)"
+            className="h-9 bg-white text-xs font-mono uppercase tracking-wider"
+          />
+          <Button
+            type="button"
+            variant="teal"
+            size="sm"
+            disabled={decoding}
+            onClick={loadBookingCode}
+            className="h-9 gap-1.5"
+          >
+            {decoding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Ticket className="h-3.5 w-3.5" />}
+            {decoding ? "Loading..." : "Load code"}
+          </Button>
+        </div>
+        {decodeNotice && (
+          <p className="text-xs font-medium text-teal-800">{decodeNotice}</p>
+        )}
       </div>
 
       {/* Bookmaker quick presets */}
@@ -736,7 +902,6 @@ function exportBetsCsv(bets: JournalBet[]) {
 export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: TrackerPrefill }) {
   const hasPrefill = Boolean(prefill.event || prefill.selection || prefill.odds);
   const [formOpen, setFormOpen] = useState(bets.length === 0 || hasPrefill);
-  const [importOpen, setImportOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [now] = useState(() => Date.now());
@@ -781,7 +946,7 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
 
   return (
     <div className="space-y-6">
-      {/* Action bar: Log bet + Import CSV + Export CSV */}
+      {/* Action bar: Log bet + Load Betcode + Export CSV */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           {bets.length > 0 && (
@@ -804,15 +969,17 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
               )}
             </Button>
           )}
-          <Button
-            type="button"
-            variant={importOpen ? "teal" : "outline"}
-            size="sm"
-            onClick={() => setImportOpen((v) => !v)}
-            className="gap-1.5"
-          >
-            <Upload className="h-3.5 w-3.5" /> Import CSV
-          </Button>
+          {!formOpen && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setFormOpen(true)}
+              className="gap-1.5"
+            >
+              <Ticket className="h-3.5 w-3.5 text-teal-600" /> Load Betcode
+            </Button>
+          )}
         </div>
 
         {bets.length > 0 && (
@@ -827,8 +994,6 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
           </Button>
         )}
       </div>
-
-      {importOpen && <BetCsvImportPanel onClose={() => setImportOpen(false)} />}
 
       {formOpen && (
         <AddBetForm

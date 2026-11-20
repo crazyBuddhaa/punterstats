@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { requireAuth } from "@/lib/auth/helpers";
+import { getEffectiveTierForProfile } from "@/lib/auth/access";
 import { getDashboardStats } from "@/lib/dashboard/queries";
 import { DashboardSidebar, DashboardMobileNav } from "@/components/dashboard/sidebar";
 import { signOut } from "@/lib/auth/actions";
@@ -15,7 +16,10 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const profile = await requireAuth();
-  const stats = await getDashboardStats(profile.userId);
+  const [stats, userTier] = await Promise.all([
+    getDashboardStats(profile.userId),
+    getEffectiveTierForProfile(profile),
+  ]);
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
@@ -53,7 +57,7 @@ export default async function DashboardLayout({
       {/* Mobile nav strip — horizontal scroll above content */}
       <div className="sticky top-14 z-30 border-b border-border bg-white lg:hidden">
         <div className="mx-auto max-w-7xl overflow-x-auto scrollbar-hide px-4 sm:px-6">
-          <DashboardMobileNav unreadCount={stats.unreadNotifications} />
+          <DashboardMobileNav unreadCount={stats.unreadNotifications} userTier={userTier} />
         </div>
       </div>
 
@@ -65,7 +69,7 @@ export default async function DashboardLayout({
               <LayoutDashboard className="h-4 w-4 text-[#3D2DFF]" />
               <span className="text-sm font-semibold text-[#0f172a]">Dashboard</span>
             </div>
-            <DashboardSidebar unreadCount={stats.unreadNotifications} />
+            <DashboardSidebar unreadCount={stats.unreadNotifications} userTier={userTier} />
           </div>
         </aside>
 

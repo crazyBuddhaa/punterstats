@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { getUserProfile } from "@/lib/auth/helpers";
+import { getEffectiveTierForProfile } from "@/lib/auth/access";
 import { getDashboardStats } from "@/lib/dashboard/queries";
 import { DashboardSidebar, DashboardMobileNav } from "@/components/dashboard/sidebar";
 import { Navbar } from "@/components/layout/navbar";
@@ -16,12 +17,11 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
   if (profile) {
     let unreadCount = 0;
-    try {
-      const stats = await getDashboardStats(profile.userId);
-      unreadCount = stats.unreadNotifications;
-    } catch {
-      // Gracefully continue with 0 if stats fail to load
-    }
+    const [statsResult, userTier] = await Promise.all([
+      getDashboardStats(profile.userId).catch(() => null),
+      getEffectiveTierForProfile(profile),
+    ]);
+    if (statsResult) unreadCount = statsResult.unreadNotifications;
 
     return (
       <div className="min-h-screen bg-[#f8fafc]">
@@ -58,7 +58,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         {/* Mobile nav strip — horizontal scroll above content */}
         <div className="sticky top-14 z-30 border-b border-border bg-white lg:hidden">
           <div className="mx-auto max-w-7xl overflow-x-auto scrollbar-hide px-4 sm:px-6">
-            <DashboardMobileNav unreadCount={unreadCount} />
+            <DashboardMobileNav unreadCount={unreadCount} userTier={userTier} />
           </div>
         </div>
 
@@ -70,7 +70,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
                 <LayoutDashboard className="h-4 w-4 text-[#3D2DFF]" />
                 <span className="text-sm font-semibold text-[#0f172a]">Dashboard</span>
               </div>
-              <DashboardSidebar unreadCount={unreadCount} />
+              <DashboardSidebar unreadCount={unreadCount} userTier={userTier} />
             </div>
           </aside>
 

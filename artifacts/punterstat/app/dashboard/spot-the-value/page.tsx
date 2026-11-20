@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Zap, BookOpen, TrendingUp, BarChart2 } from "lucide-react";
+import { requireAuth } from "@/lib/auth/helpers";
+import { getEffectiveTierForProfile, hasPlanAccess } from "@/lib/auth/access";
 import { getOdds } from "@/lib/odds/client";
 import { computeValueFromOddsEvent } from "@/lib/spot-the-value/calculator";
 import { ValueAnalyzer } from "@/components/spot-the-value/value-analyzer";
+import { PlanGate } from "@/components/billing/plan-gate";
 
 export const metadata: Metadata = {
   title: "Spot The Value — Dashboard | PunterStat",
@@ -11,6 +14,25 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardSpotTheValuePage() {
+  const profile = await requireAuth();
+  const tier = await getEffectiveTierForProfile(profile);
+
+  if (!hasPlanAccess(tier, "pro")) {
+    return (
+      <PlanGate
+        requiredPlan="pro"
+        currentTier={tier}
+        toolName="Spot The Value"
+        description="Compare live bookmaker odds against de-vigged fair market prices and model probabilities to identify mathematical +EV edges before kick-off."
+        highlights={[
+          "Live fixture odds scanner across Premier League, La Liga, Bundesliga, Serie A & Ligue 1",
+          "Automatic bookmaker overround stripping & fair implied probability comparison",
+          "Positive Expected Value (+EV) edge highlighter",
+        ]}
+      />
+    );
+  }
+
   const result = await getOdds("soccer_epl");
   const initialMatches = result.success
     ? result.events

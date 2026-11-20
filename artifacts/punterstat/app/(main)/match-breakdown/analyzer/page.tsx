@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft, ShieldCheck } from "lucide-react";
 import { getUserProfile } from "@/lib/auth/helpers";
+import { getEffectiveTierForProfile, hasPlanAccess } from "@/lib/auth/access";
 import { MatchAnalyzer } from "@/components/match-breakdown/match-analyzer";
+import { PlanGate } from "@/components/billing/plan-gate";
 
 export const metadata: Metadata = {
   title: "Match Analyzer — Match Breakdown Engine — PunterStat",
@@ -13,8 +15,26 @@ export const metadata: Metadata = {
 export default async function MatchAnalyzerPage() {
   const profile = await getUserProfile();
   const isAuthenticated = Boolean(profile);
+  const tier = await getEffectiveTierForProfile(profile);
 
   if (isAuthenticated) {
+    if (!hasPlanAccess(tier, "pro")) {
+      return (
+        <PlanGate
+          requiredPlan="pro"
+          currentTier={tier}
+          toolName="Match Breakdown Analyzer"
+          description="Unlock PunterStat's v2.0 Dixon-Coles match engine across 39 global leagues — weight 6 match factors, inspect Top-5 scorelines, Asian Handicaps, and compare fair odds against your bookmaker."
+          highlights={[
+            "Dixon-Coles v2.0 probabilities across 39 European, global & African leagues",
+            "Expanded markets: 1X2, Over/Under 0.5–4.5, BTTS, DNB, Asian Handicap & Top-5 Scorelines",
+            "Save unlimited match breakdowns to your Saved Match Analyses history",
+            "One-click +EV logging directly into Bet Tracker",
+          ]}
+        />
+      );
+    }
+
     return (
       <div className="space-y-6 py-2">
         <div className="flex flex-wrap items-baseline justify-between gap-2">

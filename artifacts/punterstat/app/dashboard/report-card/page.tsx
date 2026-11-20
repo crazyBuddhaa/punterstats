@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
-import { hasTierAccess } from "@/lib/auth/access";
+import { getEffectiveTierForProfile, hasPlanAccess } from "@/lib/auth/access";
 import { getJournal } from "@/lib/bet-assist/journal-actions";
 import { computeReportCard } from "@/lib/report-card/metrics";
 import { trainPunterModel } from "@/lib/model/punter-model";
@@ -44,7 +44,8 @@ export default async function ReportCardPage({ searchParams }: Props) {
   const range: "all" | "30d" = rawRange === "30d" ? "30d" : "all";
 
   const profile = await requireAuth();
-  const isPremium = hasTierAccess(profile, "premium");
+  const tier = await getEffectiveTierForProfile(profile);
+  const isPremium = hasPlanAccess(tier, "premium");
   const allBets = await getJournal();
   const bets = filterBetsByRange(allBets, range);
 

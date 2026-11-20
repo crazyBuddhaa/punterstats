@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { FlaskConical, TrendingUp, TrendingDown, Dices, BarChart2, Zap } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
+import { getEffectiveTierForProfile, hasPlanAccess } from "@/lib/auth/access";
 import { getSimulationSessions } from "@/lib/dashboard/queries";
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { PlanGate } from "@/components/billing/plan-gate";
 
 export const metadata: Metadata = { title: "Simulation History — Dashboard — PunterStat" };
 
@@ -19,6 +21,24 @@ function formatDate(str: string) {
 
 export default async function SimulationHistoryPage() {
   const profile = await requireAuth();
+  const tier = await getEffectiveTierForProfile(profile);
+
+  if (!hasPlanAccess(tier, "pro")) {
+    return (
+      <PlanGate
+        requiredPlan="pro"
+        currentTier={tier}
+        toolName="Simulation Engine History"
+        description="Save and compare your Monte Carlo bet simulations and probability runs over time to stress-test bankroll drawdowns and variance."
+        highlights={[
+          "Persistent log of all Bet Simulator & Probability Simulator sessions",
+          "Track virtual P/L, ROI, and variance runs across strategies",
+          "Includes Match Breakdown Analyzer and Spot The Value access",
+        ]}
+      />
+    );
+  }
+
   const sessions = await getSimulationSessions(profile.userId);
 
   const betSessions = sessions.filter((s) => s.type === "bet");

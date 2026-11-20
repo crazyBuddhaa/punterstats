@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BarChart2, ArrowRight } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
+import { getEffectiveTierForProfile, hasPlanAccess } from "@/lib/auth/access";
 import { getSavedMatchAnalyses } from "@/lib/dashboard/queries";
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { PlanGate } from "@/components/billing/plan-gate";
 
 export const metadata: Metadata = { title: "Match Analyses — Dashboard — PunterStat" };
 
@@ -22,6 +24,24 @@ function ProbBar({ prob, color }: { prob: number; color: string }) {
 
 export default async function MatchAnalysesPage() {
   const profile = await requireAuth();
+  const tier = await getEffectiveTierForProfile(profile);
+
+  if (!hasPlanAccess(tier, "pro")) {
+    return (
+      <PlanGate
+        requiredPlan="pro"
+        currentTier={tier}
+        toolName="Saved Match Analyses"
+        description="Save and review every Match Breakdown analysis you run — track your pre-match fair probabilities alongside actual outcomes."
+        highlights={[
+          "Full access to the 39-league Dixon-Coles v2.0 Match Breakdown Analyzer",
+          "Permanent archive of all saved match probability breakdowns",
+          "Review Home/Draw/Away fair odds & expected goals history",
+        ]}
+      />
+    );
+  }
+
   const analyses = await getSavedMatchAnalyses(profile.userId);
 
   return (

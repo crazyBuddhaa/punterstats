@@ -2,14 +2,15 @@
  * Subscription-tier access control helpers.
  *
  * Tier hierarchy (lowest → highest):
- *   free (role = "user")  <  premium (role = "premium")  <  admin
+ *   free (0)  <  pro (1)  <  premium (2)  <  admin (99)
  *
- * Design notes:
- *   • Source of truth for tier is profiles.role, not subscriptions.plan.
- *     The admin panel's updateUserRole action keeps the two in sync.
- *   • All helpers are async Server-only (import from server components /
- *     Server Actions only — they call cookies() internally via createClient).
- *   • Admins pass every tier check automatically.
+ * Resolution order:
+ *   1. profiles.role === "admin" -> "admin" (always passes every check)
+ *   2. Active row in public.subscriptions (status in active/trialing):
+ *        plan === "premium" -> "premium"
+ *        plan === "pro"     -> "pro"
+ *   3. Fallback to profiles.role ("premium" | "pro") for admin-granted upgrades
+ *   4. Otherwise -> "free"
  */
 
 import { redirect } from "next/navigation";
@@ -18,17 +19,19 @@ import type { UserProfile } from "@/types";
 
 // ── Tier definition ────────────────────────────────────────────────────────
 
-export type SubscriptionTier = "free" | "premium" | "admin";
+export type SubscriptionTier = "free" | "pro" | "premium" | "admin";
 
 const TIER_RANK: Record<SubscriptionTier, number> = {
   free: 0,
-  premium: 1,
+  pro: 1,
+  premium: 2,
   admin: 99,
 };
 
 function profileToTier(role: string): SubscriptionTier {
   if (role === "admin") return "admin";
   if (role === "premium") return "premium";
+  if (role === "pro") return "pro";
   return "free";
 }
 
@@ -36,7 +39,59 @@ function tierRank(tier: SubscriptionTier): number {
   return TIER_RANK[tier] ?? 0;
 }
 
-// ── Public helpers ─────────────────────────────────────────────────────────
+/**
+ * Pure tier resolver combining profile role and optional subscription record.
+ * Safe to unit test with zero I/O.
+ */
+export function resolveUserTier(
+  profile: Pick<UserProfile, "role"> | null,
+  subscription?: { plan?: string | null; status?: string | null } | null,
+): SubscriptionTier {
+  if (!profile) return "free";
+  if (profile.role === "admin") return "admin";
+
+  const isActiveSub =
+    subscription?.status === "active" || subscription?.status === "trialing";
+
+  if (isActiveSub) {
+    if (subscription?.plan === "premium") return "premium";
+    if (subscription?.plan === "pro") return "pro";
+  }
+
+  return profileToTier(profile.role ?? "user");
+}
+
+/**
+ * Pure comparison helper between two resolved tiers.
+ */
+export function hasPlanAccess(
+  current: SubscriptionTier,
+  required: SubscriptionTier,
+): boolean {
+  return tierRank(current) >= tierRank(required);
+}
+
+// ── Server helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Resolves the effective tier for an already-loaded UserProfile by checking
+ * `profiles.role` and any active row in `public.subscriptions`.
+ */
+export async function getEffectiveTierForProfile(
+  profile: UserProfile | null,
+): Promise<SubscriptionTier> {
+  if (!profile) return "free";
+  if (profile.role === "admin") return "admin";
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("subscriptions")
+    .select("plan, status")
+    .eq("user_id", profile.userId)
+    .maybeSingle();
+
+  return resolveUserTier(profile, data);
+}
 
 /**
  * Returns the subscription tier for the currently authenticated user,
@@ -44,25 +99,28 @@ function tierRank(tier: SubscriptionTier): number {
  */
 export async function getCurrentTier(): Promise<SubscriptionTier | null> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("user_id", user.id)
-    .single();
+  const [{ data: prof }, { data: sub }] = await Promise.all([
+    supabase.from("profiles").select("role").eq("user_id", user.id).single(),
+    supabase
+      .from("subscriptions")
+      .select("plan, status")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
 
-  if (!data) return null;
-  return profileToTier(data.role ?? "user");
+  if (!prof) return null;
+  return resolveUserTier({ role: prof.role ?? "user" }, sub);
 }
 
 /**
- * Returns true if the given profile has at least the required tier.
- * Use this for conditional rendering — does NOT redirect.
- *
- * @example
- *   const canAccess = hasTierAccess(profile, "premium");
+ * Synchronous role-only check (kept for backward compatibility where only
+ * UserProfile is available). For subscription-aware Pro/Premium checks, prefer
+ * `getEffectiveTierForProfile(profile)` + `hasPlanAccess(tier, required)`.
  */
 export function hasTierAccess(
   profile: UserProfile,
@@ -75,14 +133,14 @@ export function hasTierAccess(
 /**
  * Asserts the currently authenticated user has at least `required` tier.
  * Redirects to /pricing if not, /login if unauthenticated.
- *
- * @example
- *   // In a Server Component or Server Action:
- *   const profile = await requireTier("premium");
  */
-export async function requireTier(required: SubscriptionTier): Promise<UserProfile> {
+export async function requireTier(
+  required: SubscriptionTier,
+): Promise<UserProfile> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   const { data } = await supabase
@@ -104,8 +162,9 @@ export async function requireTier(required: SubscriptionTier): Promise<UserProfi
     updatedAt: data.updated_at,
   };
 
-  if (!hasTierAccess(profile, required)) {
-    redirect("/pricing?reason=upgrade-required");
+  const tier = await getEffectiveTierForProfile(profile);
+  if (!hasPlanAccess(tier, required)) {
+    redirect(`/pricing?reason=upgrade-required&plan=${required}`);
   }
 
   return profile;
@@ -129,7 +188,6 @@ export function canAccessPremiumContent(profile: UserProfile | null): boolean {
 
 /**
  * Build a tier-aware metadata description suffix for SEO.
- * Attaches "(Premium)" to the description when the resource is gated.
  */
 export function tierLabel(isPremium: boolean): string {
   return isPremium ? " · Premium" : "";

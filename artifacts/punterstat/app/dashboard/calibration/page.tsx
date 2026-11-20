@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Target, CheckCircle2, ListChecks, Gauge, TrendingUp, TrendingDown, Minus, ClipboardCheck } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
+import { getEffectiveTierForProfile, hasPlanAccess } from "@/lib/auth/access";
 import { getResolvedPredictions, getPredictionRecords } from "@/lib/dashboard/queries";
 import { scoreCalibration, scoreCalibrationTrend } from "@/lib/calibration/scorer";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { ResolvePredictionButton } from "@/components/dashboard/resolve-prediction-button";
 import { CalibrationTrainer } from "@/components/calibration/calibration-trainer";
+import { PlanGate } from "@/components/billing/plan-gate";
 
 export const metadata: Metadata = { title: "Calibration — Dashboard — PunterStat" };
 
@@ -31,6 +33,24 @@ function formatDate(str: string | null) {
 
 export default async function CalibrationPage() {
   const profile = await requireAuth();
+  const tier = await getEffectiveTierForProfile(profile);
+
+  if (!hasPlanAccess(tier, "premium")) {
+    return (
+      <PlanGate
+        requiredPlan="premium"
+        currentTier={tier}
+        toolName="Calibration Trainer & Brier Score Audit"
+        description="Train your probability estimation accuracy using strict proper scoring rules (Brier Score), reliability curves, and trend diagnostics."
+        highlights={[
+          "Interactive Calibration Trainer with real historical fixtures",
+          "3-way Brier Score tracking & overconfidence diagnostics",
+          "Full Betting Report Card (CLV, behavioural flags & structural leak detector)",
+        ]}
+      />
+    );
+  }
+
   const [resolved, records] = await Promise.all([
     getResolvedPredictions(profile.userId),
     getPredictionRecords(profile.userId),

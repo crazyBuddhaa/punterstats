@@ -1,7 +1,9 @@
 /**
  * Pure CSV parser and column mapper for Bet Tracker history uploads.
- * Supports PunterStat's own Export CSV format plus common exports/spreadsheets
- * from SportyBet, Bet9ja, Football.com, BetKing, 1xBet, etc.
+ * Supports PunterStat's own Export CSV format plus arbitrary bookmaker exports
+ * (with or without an explicit Odds column, currency-suffixed headers like
+ * "Stake (NGN)" / "Return (USD)", combined selection strings, and truncated
+ * multi-leg summaries).
  */
 
 import { type BetStatus } from "./journal";
@@ -41,19 +43,64 @@ export const SAMPLE_BETS_CSV = [
 ].join("\n");
 
 const HEADER_ALIASES: Record<string, string[]> = {
-  placedAt: ["date", "placed_at", "placed at", "time", "datetime", "created_at", "bet_date"],
+  placedAt: ["date", "placed at", "time", "datetime", "created at", "bet date", "timestamp"],
   sport: ["sport", "category"],
-  eventName: ["event", "event_name", "event name", "match", "fixture", "game", "teams", "description"],
-  market: ["market", "market_type", "market type", "bet_type", "bet type", "type"],
-  selection: ["selection", "pick", "outcome", "tip", "bet"],
+  eventName: [
+    "event",
+    "event name",
+    "match",
+    "matches",
+    "fixture",
+    "fixtures",
+    "game",
+    "teams",
+    "description",
+    "visible selections",
+    "events",
+  ],
+  market: ["market", "market type", "bet type", "type"],
+  selection: ["selection", "pick", "outcome", "tip", "bet", "selections", "visible selections"],
   bookmaker: ["bookmaker", "bookie", "site", "platform", "sportsbook"],
-  odds: ["odds", "price", "decimal_odds", "decimal odds", "total_odds", "total odds"],
-  stake: ["stake", "amount", "wager", "bet_amount", "bet amount", "staked"],
-  status: ["status", "result", "state", "settled", "outcome_status"],
-  cashoutAmount: ["cashout", "cashout_amount", "cashout amount", "cash_out", "return", "payout"],
-  closingOdds: ["closing_odds", "closing odds", "close_odds", "clv_odds"],
-  legCount: ["legs", "leg_count", "leg count", "selections", "events"],
-  notes: ["notes", "note", "comment", "comments", "booking_code", "betcode", "code"],
+  odds: ["odds", "price", "decimal odds", "total odds", "combined odds"],
+  stake: ["stake", "amount", "wager", "bet amount", "staked", "total stake"],
+  status: ["status", "result", "state", "settled", "outcome status"],
+  cashoutAmount: [
+    "cashout",
+    "cashout amount",
+    "cash out",
+    "return",
+    "total return",
+    "payout",
+    "payout amount",
+    "winnings",
+  ],
+  closingOdds: ["closing odds", "close odds", "clv odds"],
+  legCount: [
+    "legs",
+    "leg count",
+    "visible selection count",
+    "selection count",
+    "number of legs",
+    "num legs",
+    "picks",
+    "selections",
+    "events",
+  ],
+  notes: [
+    "notes",
+    "note",
+    "comment",
+    "comments",
+    "ticket reference",
+    "ticket ref",
+    "ticket id",
+    "reference",
+    "order id",
+    "bet id",
+    "booking code",
+    "betcode",
+    "code",
+  ],
 };
 
 /** RFC-4180 CSV tokeniser supporting quoted fields, escaped quotes, and CRLF/LF. */
@@ -119,13 +166,82 @@ export function normalizeBetStatus(raw: string | undefined): BetStatus {
   return "pending";
 }
 
-function findColumnIndex(headers: string[], aliases: string[]): number {
-  const lower = headers.map((h) => h.toLowerCase().trim());
+/**
+ * Normalize CSV header names by stripping parenthetical units like "(NGN)" or "(USD)",
+ * replacing underscores/hyphens with spaces, and collapsing whitespace.
+ */
+function normalizeHeader(header: string): string {
+  return header
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function findColumnIndex(headers: string[], aliases: string[], excludeIndices?: Set<number>): number {
+  const normalized = headers.map(normalizeHeader);
   for (const alias of aliases) {
-    const idx = lower.indexOf(alias);
+    const idx = normalized.findIndex((h, i) => h === alias && !excludeIndices?.has(i));
     if (idx !== -1) return idx;
   }
   return -1;
+}
+
+/**
+ * Infer true leg count when a selection summary includes truncated items like
+ * "Match A | Match B | Match C | ...(and 12 other matches)".
+ */
+function inferLegCountFromText(text: string): number {
+  if (!text) return 1;
+  const parts = text
+    .split(/\s*\|\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  let visibleCount = 0;
+  let hiddenCount = 0;
+
+  for (const part of parts) {
+    const extraMatch = part.match(/(?:and|\+)\s*(\d+)\s*(?:other|more)/i);
+    if (extraMatch) {
+      hiddenCount += Number(extraMatch[1]) || 0;
+    } else if (!/^\.{2,}$/.test(part)) {
+      visibleCount += 1;
+    }
+  }
+
+  const total = visibleCount + hiddenCount;
+  return total >= 1 ? total : 1;
+}
+
+function normalizeMarketLabel(rawMarket: string, legCount: number): string {
+  const cleaned = rawMarket.trim();
+  const lower = cleaned.toLowerCase();
+  if (
+    lower === "multiple" ||
+    lower === "multiples" ||
+    lower === "combo" ||
+    lower === "parlay" ||
+    lower === "acca" ||
+    lower === "accumulator" ||
+    lower === "system"
+  ) {
+    return legCount > 1 ? "Accumulator" : "Single";
+  }
+  if (lower === "singles" || lower === "single") {
+    return "Single";
+  }
+  if (!cleaned) {
+    return legCount > 1 ? "Accumulator" : "1X2";
+  }
+  return cleaned.slice(0, 80);
+}
+
+function sanitizeText(raw: string, maxLen: number): string {
+  const cleaned = raw.replace(/\uFFFD+/g, "'").replace(/\s+/g, " ").trim();
+  if (cleaned.length <= maxLen) return cleaned;
+  return `${cleaned.slice(0, maxLen - 3)}...`;
 }
 
 /**
@@ -145,10 +261,14 @@ export function parseBetsCsv(
   }
 
   const headers = matrix[0];
+  const eventIdx = findColumnIndex(headers, HEADER_ALIASES.eventName);
+  const legExcluded = new Set<number>();
+  if (eventIdx !== -1) legExcluded.add(eventIdx);
+
   const col = {
     placedAt: findColumnIndex(headers, HEADER_ALIASES.placedAt),
     sport: findColumnIndex(headers, HEADER_ALIASES.sport),
-    eventName: findColumnIndex(headers, HEADER_ALIASES.eventName),
+    eventName: eventIdx,
     market: findColumnIndex(headers, HEADER_ALIASES.market),
     selection: findColumnIndex(headers, HEADER_ALIASES.selection),
     bookmaker: findColumnIndex(headers, HEADER_ALIASES.bookmaker),
@@ -157,18 +277,20 @@ export function parseBetsCsv(
     status: findColumnIndex(headers, HEADER_ALIASES.status),
     cashoutAmount: findColumnIndex(headers, HEADER_ALIASES.cashoutAmount),
     closingOdds: findColumnIndex(headers, HEADER_ALIASES.closingOdds),
-    legCount: findColumnIndex(headers, HEADER_ALIASES.legCount),
+    legCount: findColumnIndex(headers, HEADER_ALIASES.legCount, legExcluded),
     notes: findColumnIndex(headers, HEADER_ALIASES.notes),
   };
 
-  if (col.odds === -1 || col.stake === -1 || (col.eventName === -1 && col.selection === -1)) {
+  const hasOddsOrReturn = col.odds !== -1 || col.cashoutAmount !== -1;
+
+  if (!hasOddsOrReturn || col.stake === -1 || (col.eventName === -1 && col.selection === -1)) {
     return {
       rows: [],
       skipped: [
         {
           line: 1,
           reason:
-            "Missing required columns. Include at least: event (or selection), odds, and stake.",
+            "Missing required columns. Include at least: event (or selection), stake, and odds (or return/payout).",
         },
       ],
       totalDataRows: matrix.length - 1,
@@ -188,18 +310,11 @@ export function parseBetsCsv(
     const get = (idx: number) => (idx >= 0 ? (cells[idx] ?? "").trim() : "");
 
     const rawEvent = get(col.eventName);
-    const rawSelection = get(col.selection);
-    const eventName = (rawEvent || rawSelection).slice(0, 200);
-    const selection = (rawSelection || rawEvent).slice(0, 200);
+    const rawSelection = col.selection !== col.eventName ? get(col.selection) : "";
+    const eventName = sanitizeText(rawEvent || rawSelection, 195);
 
-    if (!eventName || !selection) {
+    if (!eventName) {
       skipped.push({ line: lineNum, reason: "Missing event / selection" });
-      continue;
-    }
-
-    const odds = parseMoneyOrNumber(get(col.odds));
-    if (odds === null || odds <= 1 || odds >= 10000) {
-      skipped.push({ line: lineNum, reason: `Invalid odds ("${get(col.odds)}")` });
       continue;
     }
 
@@ -209,22 +324,65 @@ export function parseBetsCsv(
       continue;
     }
 
-    const status = normalizeBetStatus(get(col.status));
-    const rawCashout = parseMoneyOrNumber(get(col.cashoutAmount));
-    const cashoutAmount =
-      status === "cashed_out" ? Math.max(0, rawCashout ?? 0) : null;
+    const rawLegs = parseMoneyOrNumber(get(col.legCount));
+    const inferredLegs = inferLegCountFromText(rawEvent || rawSelection);
+    const rawMarket = get(col.market);
+    const baseLegs = Math.max(
+      rawLegs !== null && rawLegs >= 1 ? Math.round(rawLegs) : 1,
+      inferredLegs,
+    );
+    const legCount = Math.min(
+      50,
+      baseLegs > 1
+        ? baseLegs
+        : rawMarket.toLowerCase().includes("accum") || rawMarket.toLowerCase() === "multiple"
+          ? 2
+          : 1,
+    );
+
+    const market = normalizeMarketLabel(rawMarket, legCount);
+    const selection = sanitizeText(
+      rawSelection || (legCount > 1 ? `${market} (${legCount} legs)` : rawEvent),
+      195,
+    );
+
+    let status = normalizeBetStatus(get(col.status));
+    const rawReturn = parseMoneyOrNumber(get(col.cashoutAmount));
+    let odds = parseMoneyOrNumber(get(col.odds));
+    let cashoutAmount: number | null =
+      status === "cashed_out" ? Math.max(0, rawReturn ?? 0) : null;
+
+    if (odds === null || odds <= 1 || odds >= 10000) {
+      if (col.odds !== -1 && get(col.odds) !== "") {
+        skipped.push({ line: lineNum, reason: `Invalid odds ("${get(col.odds)}")` });
+        continue;
+      }
+      // CSV has no explicit Odds column — derive realized odds from Return / Stake
+      if (status === "won" && rawReturn !== null && rawReturn > stake) {
+        const derived = Math.round((rawReturn / stake) * 100) / 100;
+        odds = Math.min(9999, Math.max(1.01, derived));
+      } else if (
+        (status === "won" || status === "cashed_out") &&
+        rawReturn !== null &&
+        rawReturn > 0 &&
+        rawReturn <= stake
+      ) {
+        // Partial return / Flexi-cut / Cash-out where return <= stake: record exact return
+        status = "cashed_out";
+        cashoutAmount = rawReturn;
+        odds = 1.5;
+      } else {
+        // Lost / Void / Pending without an odds column: profit is exact (-stake or 0)
+        // regardless of odds; use a neutral leg-scaled placeholder so row is preserved.
+        odds =
+          legCount === 1
+            ? 1.8
+            : Math.min(25, Math.round(Math.pow(1.45, Math.min(legCount, 10)) * 100) / 100);
+      }
+    }
 
     const rawClosing = parseMoneyOrNumber(get(col.closingOdds));
     const closingOdds = rawClosing !== null && rawClosing > 1 ? rawClosing : null;
-
-    const market = (get(col.market) || "1X2").slice(0, 80);
-    const rawLegs = parseMoneyOrNumber(get(col.legCount));
-    const legCount =
-      rawLegs !== null && rawLegs >= 1
-        ? Math.min(50, Math.round(rawLegs))
-        : market.toLowerCase().includes("accum")
-          ? 2
-          : 1;
 
     const rawDate = get(col.placedAt);
     const placedAt =
@@ -232,11 +390,11 @@ export function parseBetsCsv(
         ? new Date(rawDate).toISOString()
         : undefined;
 
-    const bookmaker = (
-      (overrideBookie ? defaultBookie : get(col.bookmaker) || defaultBookie) || ""
-    ).slice(0, 80) || null;
+    const bookmaker =
+      ((overrideBookie ? defaultBookie : get(col.bookmaker) || defaultBookie) || "").slice(0, 80) ||
+      null;
     const sport = (get(col.sport) || "football").slice(0, 40).toLowerCase();
-    const notes = get(col.notes).slice(0, 1000) || null;
+    const notes = sanitizeText(get(col.notes), 1000) || null;
 
     rows.push({
       placedAt,

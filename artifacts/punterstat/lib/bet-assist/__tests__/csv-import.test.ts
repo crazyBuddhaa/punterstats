@@ -42,4 +42,51 @@ describe("bet-assist csv-import", () => {
     expect(normalizeBetStatus("Cashed Out")).toBe("cashed_out");
     expect(normalizeBetStatus("open")).toBe("pending");
   });
+
+  it("handles currency-suffixed headers, missing odds column, partial returns, and truncated multi-leg counts", () => {
+    const csv = [
+      "Date,Ticket reference,Bet type,Status,Stake (NGN),Return (NGN),Visible selections,Visible selection count",
+      "2026-10-16,ord001,Multiple,Won,143.00,231.10,Team A v Team B | Team C v Team D,2",
+      "2026-08-15,ord002,Multiple,Won,49.00,29.14,Team E v Team F | Team G v Team H,2",
+      "2026-08-16,ord003,Multiple,Lost,400.00,0.00,Celtic v LASK | Benfica v AGF | Porto v Braga | ...(and 20 other matches),4",
+      "2026-08-06,ord004,Singles,Won,300.00,450.00,Benfica v Hearts,1",
+    ].join("\n");
+
+    const res = parseBetsCsv(csv, { defaultBookmaker: "SportyBet", overrideBookmaker: true });
+    expect(res.skipped).toHaveLength(0);
+    expect(res.rows).toHaveLength(4);
+
+    // Row 0: Won with Return > Stake -> derived odds 231.10 / 143 = 1.62
+    expect(res.rows[0]).toMatchObject({
+      status: "won",
+      odds: 1.62,
+      stake: 143,
+      market: "Accumulator",
+      legCount: 2,
+      notes: "ord001",
+    });
+
+    // Row 1: Partial return (0 < Return <= Stake) -> reclassified as cashed_out with exact return
+    expect(res.rows[1]).toMatchObject({
+      status: "cashed_out",
+      cashoutAmount: 29.14,
+      stake: 49,
+    });
+
+    // Row 2: Truncated 3 visible + 20 other matches -> true legCount = 23
+    expect(res.rows[2]).toMatchObject({
+      status: "lost",
+      legCount: 23,
+      market: "Accumulator",
+      stake: 400,
+    });
+
+    // Row 3: Single won -> derived odds 450 / 300 = 1.50
+    expect(res.rows[3]).toMatchObject({
+      status: "won",
+      odds: 1.5,
+      market: "Single",
+      legCount: 1,
+    });
+  });
 });

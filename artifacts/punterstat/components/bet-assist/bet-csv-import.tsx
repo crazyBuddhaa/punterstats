@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Download, FileSpreadsheet, Loader2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   parseBetsCsv,
@@ -13,23 +14,60 @@ import {
 import { bulkImportBets } from "@/lib/bet-assist/journal-actions";
 import { STATUS_LABELS } from "@/lib/bet-assist/journal";
 
-const BOOKIE_DEFAULTS = ["", "SportyBet", "Bet9ja", "Football.com", "BetKing", "1xBet", "MSport"];
+const BOOKMAKER_SOURCES = [
+  { value: "SportyBet", label: "SportyBet" },
+  { value: "Bet9ja", label: "Bet9ja" },
+  { value: "Football.com", label: "Football.com" },
+  { value: "BetKing", label: "BetKing" },
+  { value: "1xBet", label: "1xBet" },
+  { value: "MSport", label: "MSport" },
+  { value: "Betway", label: "Betway" },
+  { value: "Pinnacle", label: "Pinnacle" },
+  { value: "__csv__", label: "Mixed (use CSV bookmaker column)" },
+  { value: "__other__", label: "Other bookmaker..." },
+];
 
-export function BetCsvImportPanel({ onClose }: { onClose: () => void }) {
+export interface BookmakerSummary {
+  bookmaker: string;
+  count: number;
+}
+
+export function BetCsvImportPanel({
+  onClose,
+  bookmakerCounts,
+  className,
+}: {
+  onClose?: () => void;
+  bookmakerCounts?: BookmakerSummary[];
+  className?: string;
+}) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [pending, start] = useTransition();
-  const [defaultBookmaker, setDefaultBookmaker] = useState("SportyBet");
+  const [sourceChoice, setSourceChoice] = useState("SportyBet");
+  const [customBookie, setCustomBookie] = useState("");
   const [rawText, setRawText] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [parsed, setParsed] = useState<CsvImportParseResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [importedCount, setImportedCount] = useState<number | null>(null);
+  const [importedMsg, setImportedMsg] = useState<string | null>(null);
 
-  const reparse = (text: string, bookie: string) => {
+  const resolveBookieConfig = (choice: string, custom: string) => {
+    if (choice === "__csv__") {
+      return { defaultBookmaker: undefined, overrideBookmaker: false };
+    }
+    const name = choice === "__other__" ? custom.trim() : choice;
+    return {
+      defaultBookmaker: name || undefined,
+      overrideBookmaker: Boolean(name),
+    };
+  };
+
+  const reparse = (text: string, choice: string, custom: string) => {
     setError(null);
-    setImportedCount(null);
-    setParsed(parseBetsCsv(text, { defaultBookmaker: bookie || undefined }));
+    setImportedMsg(null);
+    const cfg = resolveBookieConfig(choice, custom);
+    setParsed(parseBetsCsv(text, cfg));
   };
 
   const handleFile = async (file: File | undefined) => {
@@ -41,7 +79,7 @@ export function BetCsvImportPanel({ onClose }: { onClose: () => void }) {
     const text = await file.text();
     setFileName(file.name);
     setRawText(text);
-    reparse(text, defaultBookmaker);
+    reparse(text, sourceChoice, customBookie);
   };
 
   const downloadSample = () => {
@@ -57,13 +95,18 @@ export function BetCsvImportPanel({ onClose }: { onClose: () => void }) {
   const handleImport = () => {
     if (!parsed || parsed.rows.length === 0) return;
     setError(null);
+    const cfg = resolveBookieConfig(sourceChoice, customBookie);
     start(async () => {
       const res = await bulkImportBets(parsed.rows);
       if (!res.success) {
         setError(res.error ?? "Failed to import bets.");
         return;
       }
-      setImportedCount(res.imported ?? parsed.rows.length);
+      const n = res.imported ?? parsed.rows.length;
+      const tag = cfg.defaultBookmaker ? ` (${cfg.defaultBookmaker})` : "";
+      setImportedMsg(
+        `Imported ${n} bet${n === 1 ? "" : "s"}${tag} — now live across Bet Tracker, Report Card, and Recommendations.`
+      );
       setParsed(null);
       setRawText(null);
       setFileName(null);
@@ -72,47 +115,85 @@ export function BetCsvImportPanel({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="rounded-2xl border border-teal-200 bg-white p-5 shadow-sm space-y-4">
+    <div
+      className={
+        className ??
+        "rounded-2xl border border-teal-200 bg-white p-5 shadow-sm space-y-4"
+      }
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="flex items-center gap-2 text-sm font-bold text-[#0f172a]">
             <FileSpreadsheet className="h-4 w-4 text-teal-600" />
-            Upload Bet History (CSV)
+            Betting History &amp; Bookmaker Data (CSV)
           </h3>
           <p className="mt-0.5 text-xs text-[#1e293b]/60">
-            Import past bets from SportyBet, Bet9ja, Football.com, or any spreadsheet into Bet Tracker &amp; Report Card (up to 500 rows per upload).
+            Upload your betting history per bookmaker (SportyBet, Bet9ja, Football.com, etc.). Your uploaded data powers{" "}
+            <span className="font-medium text-[#0f172a]">Bet Tracker</span>,{" "}
+            <span className="font-medium text-[#0f172a]">Weekly Report Card &amp; Leak Detector</span>, and{" "}
+            <span className="font-medium text-[#0f172a]">Learning Recommendations</span>.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-lg p-1 text-[#1e293b]/45 hover:bg-slate-100 hover:text-[#0f172a]"
-          aria-label="Close import panel"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1 text-[#1e293b]/45 hover:bg-slate-100 hover:text-[#0f172a]"
+            aria-label="Close import panel"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
+
+      {/* Connected bookmakers summary */}
+      {bookmakerCounts && bookmakerCounts.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] font-medium text-[#1e293b]/50 mr-1">Synced bookies:</span>
+          {bookmakerCounts.map((b) => (
+            <span
+              key={b.bookmaker}
+              className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50/70 px-2.5 py-0.5 text-[11px] font-semibold text-teal-800"
+            >
+              {b.bookmaker}
+              <span className="text-teal-600/80 tabular-nums">· {b.count}</span>
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="default-bookie" className="text-xs">
-            Default Bookmaker (used if CSV has no bookmaker column)
+          <Label htmlFor="bookie-source" className="text-xs">
+            Bookmaker Source
           </Label>
           <select
-            id="default-bookie"
-            value={defaultBookmaker}
+            id="bookie-source"
+            value={sourceChoice}
             onChange={(e) => {
-              setDefaultBookmaker(e.target.value);
-              if (rawText) reparse(rawText, e.target.value);
+              const next = e.target.value;
+              setSourceChoice(next);
+              if (rawText) reparse(rawText, next, customBookie);
             }}
             className="h-9 w-full rounded-lg border border-border bg-white px-2.5 text-xs text-[#0f172a] focus:border-teal-600 focus:outline-none"
           >
-            {BOOKIE_DEFAULTS.map((b) => (
-              <option key={b || "none"} value={b}>
-                {b || "None (leave blank)"}
+            {BOOKMAKER_SOURCES.map((b) => (
+              <option key={b.value} value={b.value}>
+                {b.label}
               </option>
             ))}
           </select>
+          {sourceChoice === "__other__" && (
+            <Input
+              value={customBookie}
+              onChange={(e) => {
+                setCustomBookie(e.target.value);
+                if (rawText) reparse(rawText, sourceChoice, e.target.value);
+              }}
+              placeholder="Enter bookmaker name (e.g. BetPawa)"
+              className="h-8 text-xs"
+            />
+          )}
         </div>
 
         <div className="flex items-end justify-start sm:justify-end gap-2">
@@ -147,10 +228,10 @@ export function BetCsvImportPanel({ onClose }: { onClose: () => void }) {
         </p>
       )}
 
-      {importedCount !== null && (
+      {importedMsg && (
         <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-medium text-emerald-800">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-          Imported {importedCount} bet{importedCount === 1 ? "" : "s"} into your Bet Tracker &amp; Report Card.
+          {importedMsg}
         </div>
       )}
 
@@ -195,7 +276,11 @@ export function BetCsvImportPanel({ onClose }: { onClose: () => void }) {
                     <tr key={`${r.eventName}-${i}`}>
                       <td className="px-2.5 py-1.5 font-medium text-[#0f172a] max-w-[160px] truncate">{r.eventName}</td>
                       <td className="px-2.5 py-1.5 text-[#1e293b]/75 max-w-[120px] truncate">{r.selection}</td>
-                      <td className="px-2.5 py-1.5 text-[#1e293b]/60">{r.bookmaker ?? "—"}</td>
+                      <td className="px-2.5 py-1.5">
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-[#0f172a]">
+                          {r.bookmaker ?? "—"}
+                        </span>
+                      </td>
                       <td className="px-2.5 py-1.5 text-right tabular-nums">{r.odds.toFixed(2)}</td>
                       <td className="px-2.5 py-1.5 text-right tabular-nums">₦{r.stake.toLocaleString()}</td>
                       <td className="px-2.5 py-1.5">{STATUS_LABELS[r.status]}</td>

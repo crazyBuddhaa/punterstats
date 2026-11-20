@@ -272,6 +272,7 @@ export async function bulkImportBets(
 
   revalidatePath(TRACKER_PATH);
   revalidatePath(REPORT_CARD_PATH);
+  revalidatePath("/dashboard/profile");
   return { success: true, imported: payload.length };
 }
 

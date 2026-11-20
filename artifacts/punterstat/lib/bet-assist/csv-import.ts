@@ -133,7 +133,7 @@ function findColumnIndex(headers: string[], aliases: string[]): number {
  */
 export function parseBetsCsv(
   rawCsv: string,
-  options?: { defaultBookmaker?: string; maxRows?: number }
+  options?: { defaultBookmaker?: string; overrideBookmaker?: boolean; maxRows?: number }
 ): CsvImportParseResult {
   const matrix = parseCsvMatrix(rawCsv);
   if (matrix.length < 2) {
@@ -177,6 +177,7 @@ export function parseBetsCsv(
 
   const maxRows = options?.maxRows ?? 500;
   const defaultBookie = options?.defaultBookmaker?.trim() || null;
+  const overrideBookie = Boolean(options?.overrideBookmaker && defaultBookie);
   const dataRows = matrix.slice(1, 1 + maxRows);
   const rows: ParsedImportBet[] = [];
   const skipped: CsvSkippedRow[] = [];
@@ -231,7 +232,9 @@ export function parseBetsCsv(
         ? new Date(rawDate).toISOString()
         : undefined;
 
-    const bookmaker = (get(col.bookmaker) || defaultBookie || "").slice(0, 80) || null;
+    const bookmaker = (
+      (overrideBookie ? defaultBookie : get(col.bookmaker) || defaultBookie) || ""
+    ).slice(0, 80) || null;
     const sport = (get(col.sport) || "football").slice(0, 40).toLowerCase();
     const notes = get(col.notes).slice(0, 1000) || null;
 

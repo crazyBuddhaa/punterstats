@@ -5,6 +5,8 @@ import { requireAuth } from "@/lib/auth/helpers";
 import { ProfileForm } from "@/components/dashboard/profile-form";
 import { AvatarUpload } from "@/components/dashboard/avatar-upload";
 import { WeeklyReportToggle } from "@/components/dashboard/weekly-report-toggle";
+import { BetCsvImportPanel, type BookmakerSummary } from "@/components/bet-assist/bet-csv-import";
+import { getJournal } from "@/lib/bet-assist/journal-actions";
 import { getWeeklyReportPreference } from "@/lib/report-card/actions";
 import { createClient } from "@/lib/supabase/server";
 
@@ -13,24 +15,34 @@ export const metadata: Metadata = { title: "Profile Settings — Dashboard — P
 export default async function ProfilePage() {
   const profile = await requireAuth();
 
-  // Fetch avatar_url from users table and weekly report email preference
+  // Fetch avatar_url, weekly report email preference, and bet counts per bookmaker
   const supabase = await createClient();
-  const [{ data: userData }, weeklyReportEnabled] = await Promise.all([
+  const [{ data: userData }, weeklyReportEnabled, bets] = await Promise.all([
     supabase
       .from("users")
       .select("avatar_url")
       .eq("id", profile.userId)
       .single(),
     getWeeklyReportPreference(),
+    getJournal(),
   ]);
   const avatarUrl = userData?.avatar_url ?? null;
+
+  const bookieMap = new Map<string, number>();
+  for (const b of bets) {
+    const label = b.bookmaker?.trim() || "Unspecified";
+    bookieMap.set(label, (bookieMap.get(label) ?? 0) + 1);
+  }
+  const bookmakerCounts: BookmakerSummary[] = Array.from(bookieMap.entries())
+    .map(([bookmaker, count]) => ({ bookmaker, count }))
+    .sort((a, b) => b.count - a.count);
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-[#0f172a]">Profile Settings</h1>
         <p className="mt-1 text-sm text-[#1e293b]/60">
-          Update your display name, bio, profile photo, and email preferences.
+          Manage your profile, betting history data by bookmaker, and email preferences.
         </p>
       </div>
 
@@ -50,6 +62,14 @@ export default async function ProfilePage() {
         <div className="mb-6 border-t border-border" />
 
         <ProfileForm profile={profile} />
+      </div>
+
+      {/* Betting History & Bookmaker Data (shared across Bet Tracker, Report Card & Recommendations) */}
+      <div className="max-w-xl">
+        <BetCsvImportPanel
+          bookmakerCounts={bookmakerCounts}
+          className="rounded-2xl border border-border bg-white p-6 shadow-sm space-y-4"
+        />
       </div>
 
       {/* Email preferences */}

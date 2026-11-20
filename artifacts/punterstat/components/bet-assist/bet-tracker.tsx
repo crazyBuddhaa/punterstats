@@ -11,8 +11,10 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
+import { BetCsvImportPanel } from "./bet-csv-import";
 
 const BetTrackerChart = dynamic(() => import("./bet-tracker-chart"), {
   ssr: false,
@@ -734,6 +736,7 @@ function exportBetsCsv(bets: JournalBet[]) {
 export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: TrackerPrefill }) {
   const hasPrefill = Boolean(prefill.event || prefill.selection || prefill.odds);
   const [formOpen, setFormOpen] = useState(bets.length === 0 || hasPrefill);
+  const [importOpen, setImportOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [now] = useState(() => Date.now());
@@ -778,27 +781,41 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
 
   return (
     <div className="space-y-6">
-      {/* Collapsible Log Bet bar */}
-      {bets.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      {/* Action bar: Log bet + Import CSV + Export CSV */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {bets.length > 0 && (
+            <Button
+              type="button"
+              variant={formOpen ? "outline" : "teal"}
+              size="sm"
+              onClick={() => setFormOpen((v) => !v)}
+              className="gap-1.5"
+            >
+              {formOpen ? (
+                <>
+                  <ChevronUp className="h-4 w-4" /> Hide bet form
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" /> Log a bet
+                  <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                </>
+              )}
+            </Button>
+          )}
           <Button
             type="button"
-            variant={formOpen ? "outline" : "teal"}
+            variant={importOpen ? "teal" : "outline"}
             size="sm"
-            onClick={() => setFormOpen((v) => !v)}
+            onClick={() => setImportOpen((v) => !v)}
             className="gap-1.5"
           >
-            {formOpen ? (
-              <>
-                <ChevronUp className="h-4 w-4" /> Hide bet form
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4" /> Log a bet
-                <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-              </>
-            )}
+            <Upload className="h-3.5 w-3.5" /> Import CSV
           </Button>
+        </div>
+
+        {bets.length > 0 && (
           <Button
             type="button"
             variant="outline"
@@ -808,8 +825,10 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
           >
             <Download className="h-3.5 w-3.5" /> Export CSV
           </Button>
-        </div>
-      )}
+        )}
+      </div>
+
+      {importOpen && <BetCsvImportPanel onClose={() => setImportOpen(false)} />}
 
       {formOpen && (
         <AddBetForm

@@ -205,3 +205,73 @@ export async function deleteBet(id: string): Promise<ActionResult> {
   revalidatePath(REPORT_CARD_PATH);
   return { success: true };
 }
+
+const importRowSchema = betSchema.extend({
+  status: z.enum(BET_STATUSES).default("pending"),
+  cashoutAmount: optionalNumber.optional(),
+});
+
+const bulkImportSchema = z
+  .array(importRowSchema)
+  .min(1, "No valid bets found to import.")
+  .max(500, "You can import up to 500 bets per CSV upload.");
+
+export interface BulkImportResult extends ActionResult {
+  imported?: number;
+}
+
+export async function bulkImportBets(
+  rows: z.input<typeof importRowSchema>[]
+): Promise<BulkImportResult> {
+  const parsed = bulkImportSchema.safeParse(rows);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid CSV rows" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Sign in to import your bet history." };
+
+  const nowIso = new Date().toISOString();
+  const payload = parsed.data.map((b) => {
+    const placedAt =
+      b.placedAt && !Number.isNaN(Date.parse(b.placedAt))
+        ? new Date(b.placedAt).toISOString()
+        : nowIso;
+    const legCount = b.legCount ?? (b.market.toLowerCase().includes("accum") ? 2 : 1);
+    const settledAt = b.status === "pending" ? null : placedAt;
+
+    return {
+      user_id: user.id,
+      event_name: b.eventName,
+      market: b.market,
+      selection: b.selection,
+      bookmaker: b.bookmaker || null,
+      sport: b.sport,
+      odds: b.odds,
+      stake: b.stake,
+      your_prob: b.yourProb ?? null,
+      closing_odds: b.closingOdds ?? null,
+      leg_count: legCount,
+      status: b.status,
+      cashout_amount: b.status === "cashed_out" ? (b.cashoutAmount ?? 0) : null,
+      settled_at: settledAt,
+      placed_at: placedAt,
+      notes: b.notes || null,
+    };
+  });
+
+  // Insert in chunks of 100 to stay well within PostgREST payload limits
+  for (let i = 0; i < payload.length; i += 100) {
+    const chunk = payload.slice(i, i + 100);
+    const { error } = await supabase.from("bet_journal").insert(chunk);
+    if (error) return { success: false, error: error.message };
+  }
+
+  revalidatePath(TRACKER_PATH);
+  revalidatePath(REPORT_CARD_PATH);
+  return { success: true, imported: payload.length };
+}
+

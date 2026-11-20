@@ -264,18 +264,6 @@ export default async function proxy(request: NextRequest) {
       assistUrl.pathname = "/dashboard/bet-tracker";
       return NextResponse.redirect(assistUrl);
     }
-
-    if (pathname === "/match-breakdown" || pathname.startsWith("/match-breakdown/")) {
-      const matchUrl = request.nextUrl.clone();
-      matchUrl.pathname = "/dashboard/match-analyses";
-      return NextResponse.redirect(matchUrl);
-    }
-
-    if (pathname === "/simulation-engine" || pathname.startsWith("/simulation-engine/")) {
-      const simUrl = request.nextUrl.clone();
-      simUrl.pathname = "/dashboard/simulation-history";
-      return NextResponse.redirect(simUrl);
-    }
   }
 
   return supabaseResponse;

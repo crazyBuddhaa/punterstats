@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { betFingerprint } from "@/lib/model/punter-model";
 import { BET_STATUSES, type BetStatus, type JournalBet } from "./journal";
 
 export interface ActionResult {
@@ -218,6 +219,7 @@ const bulkImportSchema = z
 
 export interface BulkImportResult extends ActionResult {
   imported?: number;
+  skippedDuplicates?: number;
 }
 
 export async function bulkImportBets(
@@ -234,16 +236,55 @@ export async function bulkImportBets(
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Sign in to import your bet history." };
 
+  // Fetch existing fingerprints for this user to avoid duplicate rows on re-upload
+  const { data: existingRows } = await supabase
+    .from("bet_journal")
+    .select("placed_at, event_name, selection, odds, stake, bookmaker")
+    .eq("user_id", user.id)
+    .order("placed_at", { ascending: false })
+    .limit(2000);
+
+  const seenFingerprints = new Set<string>();
+  for (const r of existingRows ?? []) {
+    seenFingerprints.add(
+      betFingerprint({
+        placedAt: r.placed_at as string | null,
+        eventName: String(r.event_name ?? ""),
+        selection: String(r.selection ?? ""),
+        odds: Number(r.odds ?? 0),
+        stake: Number(r.stake ?? 0),
+        bookmaker: (r.bookmaker as string | null) ?? null,
+      }),
+    );
+  }
+
   const nowIso = new Date().toISOString();
-  const payload = parsed.data.map((b) => {
+  const payload: Record<string, unknown>[] = [];
+  let skippedDuplicates = 0;
+
+  for (const b of parsed.data) {
     const placedAt =
       b.placedAt && !Number.isNaN(Date.parse(b.placedAt))
         ? new Date(b.placedAt).toISOString()
         : nowIso;
+    const fp = betFingerprint({
+      placedAt,
+      eventName: b.eventName,
+      selection: b.selection,
+      odds: b.odds,
+      stake: b.stake,
+      bookmaker: b.bookmaker || null,
+    });
+    if (seenFingerprints.has(fp)) {
+      skippedDuplicates += 1;
+      continue;
+    }
+    seenFingerprints.add(fp);
+
     const legCount = b.legCount ?? (b.market.toLowerCase().includes("accum") ? 2 : 1);
     const settledAt = b.status === "pending" ? null : placedAt;
 
-    return {
+    payload.push({
       user_id: user.id,
       event_name: b.eventName,
       market: b.market,
@@ -260,8 +301,8 @@ export async function bulkImportBets(
       settled_at: settledAt,
       placed_at: placedAt,
       notes: b.notes || null,
-    };
-  });
+    });
+  }
 
   // Insert in chunks of 100 to stay well within PostgREST payload limits
   for (let i = 0; i < payload.length; i += 100) {
@@ -273,6 +314,7 @@ export async function bulkImportBets(
   revalidatePath(TRACKER_PATH);
   revalidatePath(REPORT_CARD_PATH);
   revalidatePath("/dashboard/profile");
-  return { success: true, imported: payload.length };
+  revalidatePath("/bet-assist/slip-checker");
+  return { success: true, imported: payload.length, skippedDuplicates };
 }
 

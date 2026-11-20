@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { ClipboardCheck } from "lucide-react";
 import { getUserProfile } from "@/lib/auth/helpers";
+import { getJournal } from "@/lib/bet-assist/journal-actions";
+import { trainPunterModel } from "@/lib/model/punter-model";
 import { ToolHero } from "@/components/bet-assist/tool-hero";
 import { ResponsibleGamblingNote, ResponsibleGamblingStrip } from "@/components/bet-assist/responsible-gambling";
 import { SlipChecker } from "@/components/bet-assist/slip-checker";
@@ -14,6 +16,7 @@ export const metadata: Metadata = {
 export default async function SlipCheckerPage() {
   const profile = await getUserProfile();
   const isLoggedIn = Boolean(profile);
+  const punterModel = isLoggedIn ? trainPunterModel(await getJournal()) : null;
 
   return (
     <div className={isLoggedIn ? "" : "min-h-screen bg-[#f8fafc]"}>
@@ -32,11 +35,11 @@ export default async function SlipCheckerPage() {
           <div>
             <h1 className="text-xl font-bold text-[#0f172a] sm:text-2xl">Bet Slip Checker</h1>
             <p className="mt-1 text-xs text-[#1e293b]/55">
-              Quick-paste leg odds or build your ticket to check true probability, compounded margin, and acca bonus impact.
+              Quick-paste leg odds, decode a booking code, or build your ticket to check true probability, compounded margin, and your personal history fit.
             </p>
           </div>
         )}
-        <SlipChecker isAuthenticated={isLoggedIn} />
+        <SlipChecker isAuthenticated={isLoggedIn} punterModel={punterModel} />
         {!isLoggedIn && <ResponsibleGamblingNote />}
       </div>
     </div>

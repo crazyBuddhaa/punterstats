@@ -2,12 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Check, CheckCircle2, Copy, Loader2, Plus, Share2, Ticket, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, Copy, Loader2, Plus, Share2, Sparkles, Ticket, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { assessSlip, type SlipAssessment, type SlipRisk } from "@/lib/bet-assist/slip";
 import { pct } from "@/lib/bet-assist/calculators";
+import {
+  scoreSlipWithPunterModel,
+  type PunterBehaviorModel,
+} from "@/lib/model/punter-model";
 import { cn } from "@/lib/utils";
 
 const CODE_BOOKMAKERS = [
@@ -69,7 +73,13 @@ function Metric({ label, value, sub, tone }: { label: string; value: string; sub
   );
 }
 
-export function SlipChecker({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
+export function SlipChecker({
+  isAuthenticated = false,
+  punterModel = null,
+}: {
+  isAuthenticated?: boolean;
+  punterModel?: PunterBehaviorModel | null;
+}) {
   const [inputMode, setInputMode] = useState<"quick" | "detailed">("detailed");
   const [quickOddsText, setQuickOddsText] = useState("1.30, 1.55, 1.62, 1.70");
   const [legs, setLegs] = useState<LegDraft[]>([{ ...EMPTY_LEG }, { ...EMPTY_LEG }]);
@@ -250,6 +260,17 @@ export function SlipChecker({ isAuthenticated = false }: { isAuthenticated?: boo
 
   const trackerHref = `/dashboard/bet-tracker?${trackerQuery}`;
   const logHref = isAuthenticated ? trackerHref : `/login?next=${encodeURIComponent(trackerHref)}`;
+
+  const numericStake = Number(stake) || 0;
+  const personalInsight =
+    result && punterModel
+      ? scoreSlipWithPunterModel(punterModel, {
+          combinedOdds: result.combinedOdds,
+          legCount: result.legs.length,
+          stake: numericStake,
+          bookmaker: decodeNotice ? codeBookie : null,
+        })
+      : null;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
@@ -471,6 +492,72 @@ export function SlipChecker({ isAuthenticated = false }: { isAuthenticated?: boo
                 </div>
               </div>
             </div>
+
+            {personalInsight && (
+              <div
+                className={cn(
+                  "rounded-2xl border p-4 space-y-2.5",
+                  personalInsight.maturity === "cold"
+                    ? "border-slate-200 bg-slate-50"
+                    : personalInsight.riskLevel === "high_leak"
+                      ? "border-rose-200 bg-rose-50/70"
+                      : personalInsight.riskLevel === "caution"
+                        ? "border-amber-200 bg-amber-50/70"
+                        : "border-teal-200 bg-teal-50/60",
+                )}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#0f172a]">
+                    <Sparkles className="h-3.5 w-3.5 text-teal-600" />
+                    Personal History Model
+                    <span className="rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-semibold text-[#1e293b]/70 border border-border">
+                      {personalInsight.settledBets} settled bet{personalInsight.settledBets === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                  {personalInsight.maturity !== "cold" && (
+                    <span
+                      className={cn(
+                        "text-xs font-bold tabular-nums",
+                        personalInsight.predictedRoi >= 0 ? "text-emerald-700" : "text-rose-700",
+                      )}
+                    >
+                      Est. Personal ROI: {personalInsight.predictedRoi >= 0 ? "+" : ""}
+                      {(personalInsight.predictedRoi * 100).toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+
+                {personalInsight.maturity === "cold" ? (
+                  <p className="text-xs text-[#1e293b]/70">
+                    Upload at least 10 settled bets via{" "}
+                    <Link href="/dashboard/profile" className="font-semibold text-teal-700 underline">
+                      Profile CSV Import
+                    </Link>{" "}
+                    to train your personal Empirical Bayes leak &amp; tilt model on this slip checker.
+                  </p>
+                ) : (
+                  <div className="space-y-1.5 text-xs">
+                    {personalInsight.warnings.map((w) => (
+                      <p key={w} className="flex gap-1.5 text-rose-900">
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-600" />
+                        {w}
+                      </p>
+                    ))}
+                    {personalInsight.strengths.map((s) => (
+                      <p key={s} className="flex gap-1.5 text-emerald-900">
+                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                        {s}
+                      </p>
+                    ))}
+                    {personalInsight.warnings.length === 0 && personalInsight.strengths.length === 0 && (
+                      <p className="text-[#1e293b]/70">
+                        No personal leak or tilt flags triggered for this slip profile. Estimates will sharpen as you upload more settled history.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <Metric label="Combined odds" value={result.combinedOdds.toFixed(2)} />

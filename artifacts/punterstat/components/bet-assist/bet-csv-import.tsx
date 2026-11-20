@@ -103,9 +103,13 @@ export function BetCsvImportPanel({
         return;
       }
       const n = res.imported ?? parsed.rows.length;
+      const skipped = res.skippedDuplicates ?? 0;
       const tag = cfg.defaultBookmaker ? ` (${cfg.defaultBookmaker})` : "";
+      const dupNote = skipped > 0 ? ` (${skipped} duplicate${skipped === 1 ? "" : "s"} skipped)` : "";
       setImportedMsg(
-        `Imported ${n} bet${n === 1 ? "" : "s"}${tag} — now live across Bet Tracker, Report Card, and Recommendations.`
+        n > 0
+          ? `Imported ${n} bet${n === 1 ? "" : "s"}${tag}${dupNote} — your personal model, Report Card, and Slip Checker are updated.`
+          : `All ${skipped} row${skipped === 1 ? " was" : "s were"} already in your journal — nothing new imported.`
       );
       setParsed(null);
       setRawText(null);

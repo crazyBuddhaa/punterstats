@@ -25,6 +25,25 @@ export const STATUS_LABELS: Record<BetStatus, string> = {
   cashed_out: "Cashed out",
 };
 
+export const LEG_STATUSES = ["pending", "won", "lost", "void"] as const;
+export type LegStatus = (typeof LEG_STATUSES)[number];
+
+export interface JournalBetLeg {
+  id: string;
+  betId: string;
+  position: number;
+  eventName: string;
+  homeTeam: string | null;
+  awayTeam: string | null;
+  matchDate: string | null;
+  market: string;
+  selection: string;
+  odds: number;
+  status: LegStatus;
+  resultScore: string | null;
+  settledAt: string | null;
+}
+
 export interface JournalBet {
   id: string;
   placedAt: string;
@@ -43,6 +62,8 @@ export interface JournalBet {
   settledAt: string | null;
   /** Number of legs in the bet (1 = single, >=2 = accumulator, >=4 = long accumulator). Defaults to 1 when omitted. */
   legCount?: number;
+  /** Individual selections for accumulators (and tracked legs). */
+  legs?: JournalBetLeg[];
 }
 
 /** Total amount returned to the bettor (stake included) for a settled bet. */
@@ -90,6 +111,12 @@ export interface JournalStats {
   /** Cumulative profit after each settled bet, oldest first. */
   curve: { label: string; profit: number }[];
   byMarket: { market: string; bets: number; staked: number; profit: number; roi: number }[];
+  /** Individual selection (leg) performance across all tracked accumulator legs. */
+  totalLegs: number;
+  settledLegs: number;
+  wonLegs: number;
+  lostLegs: number;
+  legStrikeRate: number | null;
 }
 
 export function journalStats(bets: JournalBet[]): JournalStats {
@@ -142,6 +169,20 @@ export function journalStats(bets: JournalBet[]): JournalStats {
     markets.set(b.market, m);
   }
 
+  let totalLegs = 0;
+  let wonLegs = 0;
+  let lostLegs = 0;
+  for (const b of bets) {
+    if (b.legs && b.legs.length > 0) {
+      totalLegs += b.legs.length;
+      for (const leg of b.legs) {
+        if (leg.status === "won") wonLegs++;
+        else if (leg.status === "lost") lostLegs++;
+      }
+    }
+  }
+  const settledLegs = wonLegs + lostLegs;
+
   const clvBets = bets.filter((b) => b.closingOdds && b.closingOdds > 1);
   const avgClv =
     clvBets.length > 0
@@ -169,5 +210,10 @@ export function journalStats(bets: JournalBet[]): JournalStats {
     byMarket: [...markets.entries()]
       .map(([market, m]) => ({ market, ...m, roi: m.staked > 0 ? m.profit / m.staked : 0 }))
       .sort((a, b) => b.bets - a.bets),
+    totalLegs,
+    settledLegs,
+    wonLegs,
+    lostLegs,
+    legStrikeRate: settledLegs > 0 ? wonLegs / settledLegs : null,
   };
 }

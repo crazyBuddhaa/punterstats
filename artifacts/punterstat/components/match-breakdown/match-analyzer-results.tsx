@@ -33,7 +33,7 @@ function OddsComparisonCard({
   ];
 
   return (
-    <div className="rounded-2xl border border-teal-200 bg-teal-50/40 p-5 space-y-4">
+    <div className="space-y-4 border-t border-slate-200 pt-6">
       <div>
         <h3 className="text-sm font-bold text-[#0f172a]">Compare vs Bookmaker Odds &amp; Log Bet</h3>
         <p className="mt-0.5 text-xs text-[#1e293b]/60">
@@ -41,7 +41,7 @@ function OddsComparisonCard({
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         {rows.map((r) => {
           const offered = parseFloat(r.oddsStr);
           const hasOdds = Number.isFinite(offered) && offered > 1;
@@ -50,7 +50,7 @@ function OddsComparisonCard({
           const positive = ev !== null && ev > 0;
 
           return (
-            <div key={r.label} className="rounded-xl border border-border bg-white p-3.5 space-y-2">
+            <div key={r.label} className="space-y-2 rounded-xl bg-slate-50/80 p-3.5">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-semibold text-[#0f172a] truncate">{r.label}</p>
                 <span className="text-[11px] text-[#1e293b]/50 tabular-nums shrink-0">
@@ -62,7 +62,7 @@ function OddsComparisonCard({
                 value={r.oddsStr}
                 onChange={(e) => r.set(e.target.value)}
                 placeholder={`Book odds (e.g. ${fairOdds.toFixed(2)})`}
-                className="h-9 w-full rounded-lg border border-border bg-slate-50 px-2.5 text-sm tabular-nums text-[#0f172a] focus:border-teal-600 focus:bg-white focus:outline-none"
+                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm tabular-nums text-[#0f172a] focus:border-teal-600 focus:outline-none"
               />
               {ev !== null ? (
                 <div className="flex items-center justify-between gap-2 pt-0.5">
@@ -117,12 +117,10 @@ export function StepAvailability({
 }) {
   return (
     <div className="space-y-6">
-      <div className="rounded-lg bg-slate-50 border border-border p-3">
-        <p className="text-xs text-[#1e293b]/60">
-          Estimate the overall impact of injuries and suspensions for each side. Consider the
-          quality and role of absent players, not just the count.
-        </p>
-      </div>
+      <p className="text-xs text-slate-500">
+        Estimate the overall impact of injuries and suspensions for each side. Consider the
+        quality and role of absent players, not just the count.
+      </p>
 
       {[
         {
@@ -157,7 +155,7 @@ export function StepAvailability({
                   className={`rounded-lg border-2 px-1 py-2 text-center text-[10px] font-semibold capitalize transition ${
                     injuries.impactRating === opt
                       ? optColors[opt]
-                      : "border-border bg-white text-[#1e293b]/50 hover:border-slate-300"
+                      : "border-slate-200 bg-white text-[#1e293b]/50 hover:border-slate-300"
                   }`}
                 >
                   {opt}
@@ -168,8 +166,8 @@ export function StepAvailability({
         </div>
       ))}
 
-      <div className="rounded-lg border border-border bg-white p-4 text-xs text-[#1e293b]/60 leading-relaxed">
-        <p className="mb-1 font-semibold text-[#0f172a] text-sm">Impact guide</p>
+      <div className="border-t border-slate-200 pt-4 text-xs text-slate-500 leading-relaxed">
+        <p className="mb-1.5 font-semibold text-slate-800">Impact guide</p>
         <ul className="space-y-1">
           <li>
             <span className="font-medium text-emerald-700">None</span> — Full squad available

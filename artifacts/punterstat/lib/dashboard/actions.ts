@@ -71,11 +71,14 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
 }
 
 export async function updateAvatar(avatarUrl: string): Promise<ActionResult> {
-  // Only accept Cloudinary URLs to prevent arbitrary URL injection
-  if (
-    !avatarUrl ||
-    !avatarUrl.startsWith("https://res.cloudinary.com/")
-  ) {
+  // Accept Supabase Storage avatar URLs or legacy Cloudinary URLs only
+  const supabaseOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+  const isSupabaseAvatar =
+    Boolean(supabaseOrigin) &&
+    avatarUrl.startsWith(`${supabaseOrigin}/storage/v1/object/public/avatars/`);
+  const isCloudinaryAvatar = avatarUrl.startsWith("https://res.cloudinary.com/");
+
+  if (!avatarUrl || (!isSupabaseAvatar && !isCloudinaryAvatar)) {
     return { success: false, error: "Invalid avatar URL." };
   }
 

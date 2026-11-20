@@ -120,58 +120,128 @@ export async function getH2H(
   };
 }
 
-export async function getTeams(league?: string, season?: string): Promise<string[]> {
+export async function getTeams(
+  league?: string,
+  season?: string,
+  search?: string,
+): Promise<string[]> {
   const supabase = createAdminClient();
 
-  let hq = supabase
-    .from("historical_matches")
-    .select("home_team");
-  let aq = supabase
-    .from("historical_matches")
-    .select("away_team");
+  const { data: rpcData, error: rpcError } = await supabase.rpc(
+    "get_distinct_historical_teams",
+    {
+      p_league_code: league || null,
+      p_season: season || null,
+      p_search: search || null,
+    },
+  );
 
-  if (league) { hq = hq.eq("league_code", league); aq = aq.eq("league_code", league); }
-  if (season) { hq = hq.eq("season", season);       aq = aq.eq("season", season); }
+  if (!rpcError && Array.isArray(rpcData)) {
+    return (rpcData as Array<{ team_name: string }>)
+      .map((r) => r.team_name)
+      .filter(Boolean);
+  }
 
-  const [{ data: hd }, { data: ad }] = await Promise.all([hq, aq]);
-
+  // Fallback if migration 063 RPC is not yet applied: paginate across pages
   const names = new Set<string>();
-  (hd ?? []).forEach((r) => names.add(r.home_team));
-  (ad ?? []).forEach((r) => names.add(r.away_team));
+  const pageSize = 1000;
+  for (let offset = 0; offset < 30000; offset += pageSize) {
+    let q = supabase
+      .from("historical_matches")
+      .select("home_team, away_team")
+      .range(offset, offset + pageSize - 1);
+    if (league) q = q.eq("league_code", league);
+    if (season) q = q.eq("season", season);
+    if (search) {
+      q = q.or(`home_team.ilike.%${search}%,away_team.ilike.%${search}%`);
+    }
+    const { data, error } = await q;
+    if (error || !data || data.length === 0) break;
+    for (const r of data) {
+      if (r.home_team) names.add(r.home_team);
+      if (r.away_team) names.add(r.away_team);
+    }
+    if (data.length < pageSize) break;
+  }
 
-  return [...names].sort();
+  let list = [...names];
+  if (search) {
+    const qLower = search.toLowerCase();
+    list = list.filter((t) => t.toLowerCase().includes(qLower));
+  }
+  return list.sort();
 }
 
 export async function getSeasons(league?: string): Promise<string[]> {
   const supabase = createAdminClient();
 
-  let q = supabase
-    .from("historical_matches")
-    .select("season");
-  if (league) q = q.eq("league_code", league);
-
-  const { data } = await q;
-  const seasons = [...new Set((data ?? []).map((r) => r.season))].sort(
-    (a, b) => b.localeCompare(a)
+  const { data: rpcData, error: rpcError } = await supabase.rpc(
+    "get_distinct_historical_seasons",
+    { p_league_code: league || null },
   );
-  return seasons;
+
+  if (!rpcError && Array.isArray(rpcData)) {
+    return (rpcData as Array<{ season: string }>)
+      .map((r) => r.season)
+      .filter(Boolean);
+  }
+
+  // Fallback if migration 063 RPC is not yet applied
+  const seasons = new Set<string>();
+  const pageSize = 1000;
+  for (let offset = 0; offset < 30000; offset += pageSize) {
+    let q = supabase
+      .from("historical_matches")
+      .select("season")
+      .range(offset, offset + pageSize - 1);
+    if (league) q = q.eq("league_code", league);
+    const { data, error } = await q;
+    if (error || !data || data.length === 0) break;
+    for (const r of data) {
+      if (r.season) seasons.add(r.season);
+    }
+    if (data.length < pageSize) break;
+  }
+
+  return [...seasons].sort((a, b) => b.localeCompare(a));
 }
 
 export async function getLeagues(): Promise<LeagueOption[]> {
   const supabase = createAdminClient();
-  const { data } = await supabase
-    .from("historical_matches")
-    .select("league_code, league_name");
+
+  const { data: rpcData, error: rpcError } = await supabase.rpc(
+    "get_distinct_historical_leagues",
+  );
 
   const seen = new Map<string, string>();
-  for (const r of data ?? []) {
-    if (!seen.has(r.league_code)) seen.set(r.league_code, r.league_name);
+  if (!rpcError && Array.isArray(rpcData)) {
+    for (const r of rpcData as Array<{ league_code: string; league_name: string }>) {
+      if (r.league_code && !seen.has(r.league_code)) {
+        seen.set(r.league_code, r.league_name || LEAGUE_MAP[r.league_code]?.name || r.league_code);
+      }
+    }
+  } else {
+    // Fallback if migration 063 RPC is not yet applied
+    const pageSize = 1000;
+    for (let offset = 0; offset < 30000; offset += pageSize) {
+      const { data, error } = await supabase
+        .from("historical_matches")
+        .select("league_code, league_name")
+        .range(offset, offset + pageSize - 1);
+      if (error || !data || data.length === 0) break;
+      for (const r of data) {
+        if (r.league_code && !seen.has(r.league_code)) {
+          seen.set(r.league_code, r.league_name || LEAGUE_MAP[r.league_code]?.name || r.league_code);
+        }
+      }
+      if (data.length < pageSize) break;
+    }
   }
 
   return [...seen.entries()]
     .map(([code, name]) => ({
       code,
-      name,
+      name: LEAGUE_MAP[code]?.name ?? name,
       country: LEAGUE_MAP[code]?.country ?? "",
     }))
     .sort((a, b) => a.country.localeCompare(b.country) || a.name.localeCompare(b.name));

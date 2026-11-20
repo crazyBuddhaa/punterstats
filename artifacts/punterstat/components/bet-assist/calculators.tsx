@@ -567,21 +567,28 @@ function ArbCalc() {
 
 export function BetCalculators() {
   return (
-    <Tabs defaultValue="kelly" className="w-full">
-      <TabsList className="mb-6 flex h-auto flex-wrap justify-start gap-1">
-        <TabsTrigger value="kelly">EV &amp; Kelly</TabsTrigger>
-        <TabsTrigger value="acca">Accumulator &amp; Bonus</TabsTrigger>
-        <TabsTrigger value="cashout">Cash-Out Evaluator</TabsTrigger>
-        <TabsTrigger value="margin">Margin &amp; Fair Odds</TabsTrigger>
-        <TabsTrigger value="convert">Odds Converter</TabsTrigger>
-        <TabsTrigger value="arb">Arbitrage</TabsTrigger>
-      </TabsList>
-      <TabsContent value="kelly"><KellyCalc /></TabsContent>
-      <TabsContent value="acca"><AccaCalc /></TabsContent>
-      <TabsContent value="cashout"><CashOutCalc /></TabsContent>
-      <TabsContent value="margin"><MarginCalc /></TabsContent>
-      <TabsContent value="convert"><OddsConverter /></TabsContent>
-      <TabsContent value="arb"><ArbCalc /></TabsContent>
-    </Tabs>
+    <div className="space-y-4">
+      <p className="text-xs leading-relaxed text-slate-600">
+        Pick the calculator that matches what you&apos;re checking: <strong>Accumulator &amp; Bonus</strong> for multi-leg payouts,{" "}
+        <strong>Cash-Out Evaluator</strong> to test a bookmaker&apos;s cash-out offer, <strong>Margin &amp; Fair Odds</strong> to see hidden bookmaker fees, or{" "}
+        <strong>EV &amp; Kelly</strong> for stake sizing.
+      </p>
+      <Tabs defaultValue="acca" className="w-full">
+        <TabsList className="mb-6 flex h-auto flex-wrap justify-start gap-1">
+          <TabsTrigger value="acca">Accumulator &amp; Bonus</TabsTrigger>
+          <TabsTrigger value="cashout">Cash-Out Evaluator</TabsTrigger>
+          <TabsTrigger value="margin">Margin &amp; Fair Odds</TabsTrigger>
+          <TabsTrigger value="convert">Odds Converter</TabsTrigger>
+          <TabsTrigger value="kelly">EV &amp; Kelly</TabsTrigger>
+          <TabsTrigger value="arb">Arbitrage</TabsTrigger>
+        </TabsList>
+        <TabsContent value="acca"><AccaCalc /></TabsContent>
+        <TabsContent value="cashout"><CashOutCalc /></TabsContent>
+        <TabsContent value="margin"><MarginCalc /></TabsContent>
+        <TabsContent value="convert"><OddsConverter /></TabsContent>
+        <TabsContent value="kelly"><KellyCalc /></TabsContent>
+        <TabsContent value="arb"><ArbCalc /></TabsContent>
+      </Tabs>
+    </div>
   );
 }

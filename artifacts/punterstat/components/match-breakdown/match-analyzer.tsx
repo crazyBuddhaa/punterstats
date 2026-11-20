@@ -111,63 +111,90 @@ export function MatchAnalyzer({ isAuthenticated }: MatchAnalyzerProps) {
     };
   }
 
+  async function loadTeamData(opts: {
+    homeName: string;
+    awayName: string;
+    matchId?: string;
+    homeTeamId?: number | null;
+    awayTeamId?: number | null;
+  }) {
+    const h = opts.homeName.trim();
+    const a = opts.awayName.trim();
+    if (h.length < 2 || a.length < 2) return;
+
+    const params = new URLSearchParams({
+      homeTeamName: h,
+      awayTeamName: a,
+    });
+    if (opts.matchId) params.set("matchId", opts.matchId);
+    if (opts.homeTeamId != null) params.set("homeTeamId", String(opts.homeTeamId));
+    if (opts.awayTeamId != null) params.set("awayTeamId", String(opts.awayTeamId));
+
+    setEnriching(true);
+    setEnrichedFrom(null);
+    try {
+      const res = await fetch(`/api/fixtures/enrich?${params.toString()}`);
+      const json = await res.json();
+      if (!json.success) return;
+
+      if (json.homeForm) {
+        setHomeTeam((p) => ({
+          ...p,
+          last5: json.homeForm.last5,
+          goalsScored: json.homeForm.goalsScored,
+          goalsConceded: json.homeForm.goalsConceded,
+          gs: String(json.homeForm.goalsScored),
+          gc: String(json.homeForm.goalsConceded),
+        }));
+      }
+      if (json.awayForm) {
+        setAwayTeam((p) => ({
+          ...p,
+          last5: json.awayForm.last5,
+          goalsScored: json.awayForm.goalsScored,
+          goalsConceded: json.awayForm.goalsConceded,
+          gs: String(json.awayForm.goalsScored),
+          gc: String(json.awayForm.goalsConceded),
+        }));
+      }
+      if (json.headToHead) {
+        const avgG = json.headToHead.avgGoals ?? 2.5;
+        setH2H((p) => ({
+          ...p,
+          homeWins: json.headToHead.homeWins,
+          draws: json.headToHead.draws,
+          awayWins: json.headToHead.awayWins,
+          avgGoals: avgG,
+          avg: String(avgG),
+        }));
+      }
+      if (json.homeForm || json.awayForm || json.headToHead) {
+        const sourceTag =
+          json.source === "live"
+            ? "Live API"
+            : json.source === "mixed"
+              ? "Live API + Historical DB"
+              : "Historical DB";
+        setEnrichedFrom(`${h} vs ${a} (${sourceTag})`);
+      }
+    } catch {
+      // Enrichment is optional; manual entry remains available.
+    } finally {
+      setEnriching(false);
+    }
+  }
+
   function handleFixtureSelect(fixture: Fixture) {
     setHomeTeam((p) => ({ ...p, name: fixture.homeTeam }));
     setAwayTeam((p) => ({ ...p, name: fixture.awayTeam }));
     setSelectedFixtureId(fixture.id);
-    setEnrichedFrom(null);
-
-    if (fixture.homeTeamId == null || fixture.awayTeamId == null) return;
-
-    const params = new URLSearchParams({
+    loadTeamData({
+      homeName: fixture.homeTeam,
+      awayName: fixture.awayTeam,
       matchId: fixture.externalId,
-      homeTeamId: String(fixture.homeTeamId),
-      awayTeamId: String(fixture.awayTeamId),
-      homeTeamName: fixture.homeTeam,
-      awayTeamName: fixture.awayTeam,
+      homeTeamId: fixture.homeTeamId,
+      awayTeamId: fixture.awayTeamId,
     });
-
-    setEnriching(true);
-    fetch(`/api/fixtures/enrich?${params.toString()}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (!json.success) return;
-        if (json.homeForm) {
-          setHomeTeam((p) => ({
-            ...p,
-            last5: json.homeForm.last5,
-            goalsScored: json.homeForm.goalsScored,
-            goalsConceded: json.homeForm.goalsConceded,
-            gs: String(json.homeForm.goalsScored),
-            gc: String(json.homeForm.goalsConceded),
-          }));
-        }
-        if (json.awayForm) {
-          setAwayTeam((p) => ({
-            ...p,
-            last5: json.awayForm.last5,
-            goalsScored: json.awayForm.goalsScored,
-            goalsConceded: json.awayForm.goalsConceded,
-            gs: String(json.awayForm.goalsScored),
-            gc: String(json.awayForm.goalsConceded),
-          }));
-        }
-        if (json.headToHead) {
-          setH2H((p) => ({
-            ...p,
-            homeWins: json.headToHead.homeWins,
-            draws: json.headToHead.draws,
-            awayWins: json.headToHead.awayWins,
-          }));
-        }
-        if (json.homeForm || json.awayForm || json.headToHead) {
-          setEnrichedFrom(`${fixture.homeTeam} vs ${fixture.awayTeam}`);
-        }
-      })
-      .catch(() => {
-        // Silent — enrichment is optional, manual entry remains available.
-      })
-      .finally(() => setEnriching(false));
   }
 
   function updateHomeResult(index: number, r: MatchResult) {
@@ -248,6 +275,7 @@ export function MatchAnalyzer({ isAuthenticated }: MatchAnalyzerProps) {
         awayTeamName={awayTeam.name}
         onHomeNameChange={(name) => setHomeTeam((p) => ({ ...p, name }))}
         onAwayNameChange={(name) => setAwayTeam((p) => ({ ...p, name }))}
+        onLoadTeamData={(homeName, awayName) => loadTeamData({ homeName, awayName })}
         leagueImportance={leagueImportance}
         onImportanceChange={setLeagueImportance}
         onFixtureSelect={handleFixtureSelect}
@@ -326,20 +354,20 @@ export function MatchAnalyzer({ isAuthenticated }: MatchAnalyzerProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-white shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
         <div className="flex items-center gap-2">
           <BarChart2 className="h-5 w-5 text-teal-600" />
-          <span className="font-semibold text-[#0f172a]">Match Breakdown Analyzer</span>
+          <span className="text-base font-bold text-slate-900">Match Breakdown Analyzer</span>
         </div>
 
         {step < 5 && (
-          <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
+          <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
             <button
               type="button"
               onClick={() => setQuickMode(false)}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
-                !quickMode ? "bg-[#0f172a] text-white" : "text-[#1e293b]/60 hover:text-[#0f172a]"
+              className={`rounded-md px-3 py-1 text-xs font-medium transition ${
+                !quickMode ? "bg-slate-900 text-white" : "text-slate-600 hover:text-slate-900"
               }`}
             >
               Guided (6 steps)
@@ -347,8 +375,8 @@ export function MatchAnalyzer({ isAuthenticated }: MatchAnalyzerProps) {
             <button
               type="button"
               onClick={() => setQuickMode(true)}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
-                quickMode ? "bg-[#0f172a] text-white" : "text-[#1e293b]/60 hover:text-[#0f172a]"
+              className={`rounded-md px-3 py-1 text-xs font-medium transition ${
+                quickMode ? "bg-slate-900 text-white" : "text-slate-600 hover:text-slate-900"
               }`}
             >
               Quick 1-Page
@@ -357,32 +385,32 @@ export function MatchAnalyzer({ isAuthenticated }: MatchAnalyzerProps) {
         )}
       </div>
 
-      <div className="p-6">
+      <div>
         {step === 5 ? (
           steps[5]
         ) : quickMode ? (
           <div className="space-y-8">
             <div>
-              <h3 className="mb-3 text-sm font-semibold text-[#0f172a]">1. Match &amp; Context</h3>
+              <h3 className="mb-3 text-sm font-semibold text-slate-900">1. Match &amp; Context</h3>
               {steps[0]}
             </div>
-            <div className="border-t border-border pt-6">
-              <h3 className="mb-3 text-sm font-semibold text-[#0f172a]">2. Home Team Form</h3>
+            <div className="border-t border-slate-200 pt-6">
+              <h3 className="mb-3 text-sm font-semibold text-slate-900">2. Home Team Form</h3>
               {steps[1]}
             </div>
-            <div className="border-t border-border pt-6">
-              <h3 className="mb-3 text-sm font-semibold text-[#0f172a]">3. Away Team Form</h3>
+            <div className="border-t border-slate-200 pt-6">
+              <h3 className="mb-3 text-sm font-semibold text-slate-900">3. Away Team Form</h3>
               {steps[2]}
             </div>
-            <div className="border-t border-border pt-6">
-              <h3 className="mb-3 text-sm font-semibold text-[#0f172a]">4. Head-to-Head</h3>
+            <div className="border-t border-slate-200 pt-6">
+              <h3 className="mb-3 text-sm font-semibold text-slate-900">4. Head-to-Head</h3>
               {steps[3]}
             </div>
-            <div className="border-t border-border pt-6">
-              <h3 className="mb-3 text-sm font-semibold text-[#0f172a]">5. Squad Availability</h3>
+            <div className="border-t border-slate-200 pt-6">
+              <h3 className="mb-3 text-sm font-semibold text-slate-900">5. Squad Availability</h3>
               {steps[4]}
             </div>
-            <div className="flex justify-end border-t border-border pt-4">
+            <div className="flex justify-end border-t border-slate-200 pt-4">
               <button
                 type="button"
                 disabled={!canRunQuick}

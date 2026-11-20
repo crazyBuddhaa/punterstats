@@ -136,8 +136,8 @@ export function ProbabilitySimulator({ isAuthenticated = false }: { isAuthentica
       {/* Input card */}
       <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
         <h3 className="mb-1 text-sm font-semibold text-[#0f172a]">Simulation Parameters</h3>
-        <p className="mb-4 text-xs text-[#1e293b]/50">
-          Pick a realistic scenario preset or enter your own assumptions to run {RUNS.toLocaleString()} Monte Carlo trials.
+        <p className="mb-4 text-xs leading-relaxed text-[#1e293b]/60">
+          This tool stress-tests your <strong>bankroll over 100–500 bets</strong> (running {RUNS.toLocaleString()} simulated seasons) to show your risk of going broke, worst losing streak, and likely ending balance — pick a preset or enter your own numbers.
         </p>
 
         {/* Scenario presets */}

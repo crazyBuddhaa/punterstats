@@ -31,6 +31,38 @@ function ManualOddsChecker() {
   const [homeProb, setHomeProb] = useState("54");
   const [drawProb, setDrawProb] = useState("24");
   const [awayProb, setAwayProb] = useState("22");
+  const [loadingModel, setLoadingModel] = useState(false);
+  const [modelNote, setModelNote] = useState<string | null>(null);
+
+  const loadPunterStatModel = async () => {
+    const h = homeTeam.trim();
+    const a = awayTeam.trim();
+    if (h.length < 2 || a.length < 2) return;
+    setLoadingModel(true);
+    setModelNote(null);
+    try {
+      const res = await fetch(
+        `/api/football/match-intel?home=${encodeURIComponent(h)}&away=${encodeURIComponent(a)}`,
+      );
+      const data = await res.json();
+      if (data.success && data.intel) {
+        const m = data.intel.markets;
+        const hp = Math.round(m.homeWin * 100);
+        const dp = Math.round(m.draw * 100);
+        const ap = Math.max(1, 100 - hp - dp);
+        setHomeProb(String(hp));
+        setDrawProb(String(dp));
+        setAwayProb(String(ap));
+        setModelNote(
+          `Loaded PunterStat football model (${data.intel.strengthEdgeLabel} · xG ${data.intel.lambdaHome.toFixed(2)}–${data.intel.lambdaAway.toFixed(2)}). Adjust if you have late team news.`,
+        );
+      }
+    } catch {
+      setModelNote("Could not load model — enter your own probability estimates below.");
+    } finally {
+      setLoadingModel(false);
+    }
+  };
 
   const ho = parseFloat(homeOdds);
   const do_ = parseFloat(drawOdds);
@@ -59,12 +91,26 @@ function ManualOddsChecker() {
 
   return (
     <div className="space-y-5 rounded-2xl border border-border bg-white p-5 sm:p-6 shadow-sm">
-      <div>
-        <h3 className="font-semibold text-[#0f172a]">Manual Odds Checker</h3>
-        <p className="mt-0.5 text-xs text-[#1e293b]/55">
-          Paste 1X2 odds from SportyBet, Bet9ja, or any bookmaker to strip out the margin and check your model&apos;s edge.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="font-semibold text-[#0f172a]">Manual Odds Checker</h3>
+          <p className="mt-0.5 text-xs text-[#1e293b]/55">
+            Paste 1X2 odds from SportyBet, Bet9ja, or any bookmaker, then auto-fill PunterStat&apos;s football model (or enter your own %) to check if the price has value.
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={loadingModel}
+          onClick={loadPunterStatModel}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[#3D2DFF] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#3D2DFF]/90 disabled:opacity-50"
+        >
+          {loadingModel ? "Loading model…" : "Auto-fill PunterStat Model"}
+        </button>
       </div>
+
+      {modelNote && (
+        <p className="rounded-lg bg-teal-50 px-3 py-2 text-xs font-medium text-teal-800">{modelNote}</p>
+      )}
 
       {/* Bookmaker chips */}
       <div className="flex flex-wrap gap-1.5">
@@ -127,7 +173,7 @@ function ManualOddsChecker() {
 
         <div className="space-y-2 rounded-xl border border-[#3D2DFF]/20 bg-[#3D2DFF]/5 p-3.5">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-[#3D2DFF]">Your probability estimates (%)</p>
+            <p className="text-xs font-semibold text-[#3D2DFF]">Football probability estimates (%)</p>
             <span className={`text-[11px] font-medium ${modelValid ? "text-emerald-600" : "text-amber-600"}`}>
               {totalPct.toFixed(0)}% {modelValid ? "✓" : "(aim for 100%)"}
             </span>

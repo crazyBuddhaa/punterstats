@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { getResults, getLeagues, getSeasons } from "@/lib/historical-stats/queries";
 import { ResultsFilters } from "@/components/stats/results-filters";
 import { ResultsTable } from "@/components/stats/results-table";
@@ -20,23 +22,23 @@ async function ResultsSection({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const sp       = await searchParams;
-  const league   = firstString(sp.league);
-  const season   = firstString(sp.season);
-  const team     = firstString(sp.team);
-  const result   = firstString(sp.result);
-  const page     = Math.max(1, parseInt(firstString(sp.page) || "1", 10));
+  const sp = await searchParams;
+  const league = firstString(sp.league);
+  const season = firstString(sp.season);
+  const team = firstString(sp.team);
+  const result = firstString(sp.result);
+  const page = Math.max(1, parseInt(firstString(sp.page) || "1", 10));
 
   const [paged, leagues, seasons] = await Promise.all([
     getResults(
       {
         league: league || undefined,
         season: season || undefined,
-        team:   team   || undefined,
+        team: team || undefined,
         result: (result as "H" | "D" | "A") || undefined,
       },
       page,
-      25
+      25,
     ),
     getLeagues(),
     getSeasons(league || undefined),
@@ -45,7 +47,7 @@ async function ResultsSection({
   const current = new URLSearchParams({
     ...(league ? { league } : {}),
     ...(season ? { season } : {}),
-    ...(team   ? { team   } : {}),
+    ...(team ? { team } : {}),
     ...(result ? { result } : {}),
   });
 
@@ -78,21 +80,23 @@ async function ResultsSection({
         selectedTeam={team}
         selectedResult={result}
       />
+
       {sampleStats && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 divide-x divide-slate-200 rounded-xl border border-slate-200 bg-slate-50/70 sm:grid-cols-4">
           {[
             { label: "BTTS (this page)", value: `${sampleStats.bttsPct}%` },
             { label: "Over 1.5 Goals", value: `${sampleStats.over15Pct}%` },
             { label: "Over 2.5 Goals", value: `${sampleStats.over25Pct}%` },
             { label: "Avg Goals / Match", value: sampleStats.avgGoals },
           ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
-              <p className="text-[11px] text-white/45">{s.label}</p>
-              <p className="mt-0.5 text-lg font-bold tabular-nums text-white">{s.value}</p>
+            <div key={s.label} className="px-4 py-3">
+              <p className="text-[11px] font-medium text-slate-500">{s.label}</p>
+              <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-900">{s.value}</p>
             </div>
           ))}
         </div>
       )}
+
       <ResultsTable
         matches={paged.data}
         total={paged.total}
@@ -105,28 +109,30 @@ async function ResultsSection({
 }
 
 export default async function ResultsPage({ searchParams }: Props) {
-  const { getUserProfile } = await import("@/lib/auth/helpers");
-  const profile = await getUserProfile();
-  const isLoggedIn = Boolean(profile);
-
   return (
-    <main className={isLoggedIn ? "rounded-2xl bg-[#0f172a] p-5 sm:p-6 shadow-sm" : "min-h-screen bg-[#0f172a] py-10 px-4"}>
-      <div className="mx-auto max-w-7xl">
+    <main className="py-4 sm:py-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         {/* Header */}
-        <div className="mb-8">
-          <a href="/stats" className="text-sm text-[#7B7BFF] hover:underline mb-2 inline-block">
-            ← Stats Centre
-          </a>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Match Results</h1>
-          <p className="mt-1 text-sm text-white/50">
-            Filter by league, season, or team to explore historical results and goal trends.
+        <div className="space-y-1.5">
+          <Link
+            href="/stats"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[#3D2DFF] hover:underline"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Stats Centre
+          </Link>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            Match Results
+          </h1>
+          <p className="text-sm text-slate-500">
+            Browse all available leagues and seasons, filter by team with autocomplete, and inspect goal &amp; odds trends.
           </p>
         </div>
 
         <Suspense
           fallback={
-            <div className="flex items-center justify-center py-24 text-white/40 text-sm">
-              Loading results…
+            <div className="flex items-center justify-center py-20 text-sm text-slate-400">
+              Loading match results…
             </div>
           }
         >

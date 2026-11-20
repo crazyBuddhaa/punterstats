@@ -105,6 +105,47 @@ export function TeamCard({ team }: TeamCardProps) {
         />
       </div>
 
+      {/* Live strength & recent form */}
+      {(team.eloRating != null || (team.recentForm && team.recentForm.length > 0)) && (
+        <div className="mb-4 space-y-2 border-y border-slate-100 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {team.recentForm && team.recentForm.length > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  Last 5
+                </span>
+                {team.recentForm.map((r, idx) => (
+                  <span
+                    key={idx}
+                    className={`inline-flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold ${
+                      r === "W"
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        : r === "D"
+                          ? "bg-amber-50 text-amber-700 border border-amber-200"
+                          : "bg-rose-50 text-rose-700 border border-rose-200"
+                    }`}
+                  >
+                    {r}
+                  </span>
+                ))}
+              </div>
+            )}
+            {team.eloRating != null && (
+              <span className="rounded-md bg-[#3D2DFF]/10 px-2 py-0.5 text-[10px] font-bold tabular-nums text-[#3D2DFF]">
+                Elo {team.eloRating}
+              </span>
+            )}
+          </div>
+          {(team.formSignal || team.latestMatchNote) && (
+            <p className="text-[11px] text-slate-600">
+              {team.formSignal && <strong className="text-slate-800">{team.formSignal}</strong>}
+              {team.formSignal && team.latestMatchNote && " · "}
+              {team.latestMatchNote}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Clean sheet rate */}
       {team.cleanSheetRate != null && (
         <div className="mb-4 flex items-center gap-2 rounded-lg bg-[#f8fafc] px-3 py-2">
@@ -119,7 +160,7 @@ export function TeamCard({ team }: TeamCardProps) {
 
       {/* Style note */}
       {team.styleNote && (
-        <p className="text-xs leading-relaxed text-[#1e293b]/60 line-clamp-4">
+        <p className="text-xs leading-relaxed text-[#1e293b]/70">
           {team.styleNote}
         </p>
       )}

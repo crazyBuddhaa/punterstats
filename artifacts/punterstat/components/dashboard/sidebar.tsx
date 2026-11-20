@@ -40,8 +40,16 @@ interface SidebarItem {
   label: string;
   icon: React.ElementType;
   exact?: boolean;
+  excludePrefixes?: string[];
   requiredPlan?: "pro" | "premium";
   badge?: number;
+}
+
+function isNavActive(pathname: string, href: string, exact = false, excludePrefixes?: string[]): boolean {
+  if (excludePrefixes?.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+    return false;
+  }
+  return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 }
 
 const assistItems: SidebarItem[] = [
@@ -62,7 +70,12 @@ const topItems: SidebarItem[] = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/continue-learning", label: "Continue Learning", icon: BookOpen },
   { href: "/sports-university", label: "Sports University", icon: GraduationCap },
-  { href: "/betting-academy", label: "Betting Academy", icon: Library },
+  {
+    href: "/betting-academy",
+    label: "Betting Academy",
+    icon: Library,
+    excludePrefixes: ["/betting-academy/option-glossary"],
+  },
   { href: "/league-glossary", label: "League Glossary", icon: Globe },
   { href: "/betting-academy/option-glossary", label: "Option Glossary", icon: BookMarked },
   { href: "/dashboard/bookmarks", label: "Saved Lessons", icon: Bookmark },
@@ -90,6 +103,7 @@ function NavItem({
   label,
   icon: Icon,
   exact = false,
+  excludePrefixes,
   badge,
   lockedPlan,
 }: {
@@ -97,11 +111,12 @@ function NavItem({
   label: string;
   icon: React.ElementType;
   exact?: boolean;
+  excludePrefixes?: string[];
   badge?: number;
   lockedPlan?: "pro" | "premium" | null;
 }) {
   const pathname = usePathname();
-  const active = exact ? pathname === href : pathname.startsWith(href);
+  const active = isNavActive(pathname, href, exact, excludePrefixes);
 
   return (
     <Link
@@ -147,13 +162,14 @@ export function DashboardSidebar({
       <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-[#1e293b]/40">
         Learning
       </p>
-      {topItems.map(({ href, label, icon, exact, requiredPlan }) => (
+      {topItems.map(({ href, label, icon, exact, excludePrefixes, requiredPlan }) => (
         <NavItem
           key={href}
           href={href}
           label={label}
           icon={icon}
           exact={exact}
+          excludePrefixes={excludePrefixes}
           lockedPlan={isLocked(requiredPlan, userTier) ? requiredPlan : null}
         />
       ))}
@@ -219,8 +235,8 @@ function MobileNavInner({
 
   return (
     <div className="flex gap-1 py-2">
-      {items.map(({ href, label, icon: Icon, exact, badge, requiredPlan }) => {
-        const active = exact ? pathname === href : pathname.startsWith(href);
+      {items.map(({ href, label, icon: Icon, exact, excludePrefixes, badge, requiredPlan }) => {
+        const active = isNavActive(pathname, href, exact, excludePrefixes);
         const locked = isLocked(requiredPlan, userTier);
         return (
           <Link

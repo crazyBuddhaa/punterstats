@@ -179,9 +179,14 @@ export function CalibrationTrainer() {
   return (
     <section className="rounded-2xl border border-border bg-white p-5 sm:p-6 shadow-sm space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-[#3D2DFF]" />
-          <h2 className="font-semibold text-[#0f172a]">Calibration Practice &amp; Quick Forecast</h2>
+        <div>
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-[#3D2DFF]" />
+            <h2 className="font-semibold text-[#0f172a]">Calibration Practice &amp; Quick Forecast</h2>
+          </div>
+          <p className="mt-1 text-xs text-[#1e293b]/60">
+            Calibration checks whether your confidence matches reality — if you feel &ldquo;80% sure&rdquo; on 10 picks, ~8 should win. Lower Brier score means sharper, less overconfident picks.
+          </p>
         </div>
         <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
           <button

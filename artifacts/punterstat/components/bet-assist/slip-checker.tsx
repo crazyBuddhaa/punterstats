@@ -2,7 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Check, CheckCircle2, Copy, Loader2, Plus, Share2, Sparkles, Ticket, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  CheckCircle2,
+  Copy,
+  Loader2,
+  Plus,
+  Share2,
+  ShieldAlert,
+  Sparkles,
+  Ticket,
+  Trash2,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -12,6 +24,8 @@ import {
   scoreSlipWithPunterModel,
   type PunterBehaviorModel,
 } from "@/lib/model/punter-model";
+import type { CompetitionStage, LineupStatus } from "@/lib/football/match-intel";
+import type { FootballLegReview } from "@/app/api/bet-assist/analyze-slip/route";
 import { cn } from "@/lib/utils";
 
 const CODE_BOOKMAKERS = [
@@ -29,49 +43,55 @@ const CODE_BOOKMAKERS = [
   { key: "sportybet_tz", label: "SportyBet (TZ)" },
 ];
 
+const STAGE_OPTIONS: Array<{ value: CompetitionStage; label: string }> = [
+  { value: "league", label: "League" },
+  { value: "cup_knockout", label: "Cup / Knockout" },
+  { value: "cup_group", label: "Cup Group" },
+  { value: "derby", label: "Derby" },
+  { value: "relegation_or_title", label: "Title / Relegation" },
+];
+
+const LINEUP_OPTIONS: Array<{ value: LineupStatus; label: string }> = [
+  { value: "full_strength", label: "Full strength" },
+  { value: "minor_absences", label: "Minor absences" },
+  { value: "key_starters_out", label: "Key starters out" },
+  { value: "heavy_rotation", label: "Heavy rotation" },
+];
+
 interface LegDraft {
   event: string;
   selection: string;
   odds: string;
-  yourProb: string;
+  competitionStage: CompetitionStage;
+  homeLineup: LineupStatus;
+  awayLineup: LineupStatus;
 }
 
-const EMPTY_LEG: LegDraft = { event: "", selection: "", odds: "", yourProb: "" };
+const EMPTY_LEG: LegDraft = {
+  event: "",
+  selection: "",
+  odds: "",
+  competitionStage: "league",
+  homeLineup: "full_strength",
+  awayLineup: "full_strength",
+};
 
 const SAMPLE: LegDraft[] = [
-  { event: "Arsenal v Everton", selection: "Arsenal to win", odds: "1.30", yourProb: "" },
-  { event: "Chelsea v Fulham", selection: "Chelsea to win", odds: "1.55", yourProb: "" },
-  { event: "Liverpool v Brentford", selection: "Over 2.5 goals", odds: "1.62", yourProb: "" },
-  { event: "Newcastle v Wolves", selection: "Newcastle to win", odds: "1.70", yourProb: "" },
+  { event: "Arsenal vs Everton", selection: "Arsenal to win", odds: "1.30", competitionStage: "league", homeLineup: "full_strength", awayLineup: "full_strength" },
+  { event: "Chelsea vs Fulham", selection: "Chelsea to win", odds: "1.55", competitionStage: "derby", homeLineup: "full_strength", awayLineup: "full_strength" },
+  { event: "Liverpool vs Brentford", selection: "Over 2.5 goals", odds: "1.62", competitionStage: "league", homeLineup: "full_strength", awayLineup: "minor_absences" },
+  { event: "Newcastle vs Wolves", selection: "Newcastle to win", odds: "1.70", competitionStage: "league", homeLineup: "full_strength", awayLineup: "full_strength" },
 ];
 
 const RISK_STYLE: Record<SlipRisk, { label: string; className: string; blurb: string }> = {
-  low: { label: "Low risk", className: "bg-emerald-50 text-emerald-700 border-emerald-200", blurb: "More likely to win than lose." },
-  moderate: { label: "Moderate risk", className: "bg-sky-50 text-sky-700 border-sky-200", blurb: "Wins roughly one time in two to four." },
-  high: { label: "High risk", className: "bg-amber-50 text-amber-800 border-amber-200", blurb: "Expect to lose this most of the time." },
-  very_high: { label: "Very high risk", className: "bg-rose-50 text-rose-700 border-rose-200", blurb: "A long shot — it will usually lose." },
+  low: { label: "Low risk", className: "bg-emerald-50 text-emerald-700 border-emerald-200", blurb: "Solid probability profile." },
+  moderate: { label: "Moderate risk", className: "bg-sky-50 text-sky-700 border-sky-200", blurb: "Lands roughly 1 in 2 to 4 tries." },
+  high: { label: "High risk", className: "bg-amber-50 text-amber-800 border-amber-200", blurb: "Longer accumulator — protect against trap legs." },
+  very_high: { label: "Very high risk", className: "bg-rose-50 text-rose-700 border-rose-200", blurb: "Long shot — trim weak legs to boost survival." },
 };
 
 const naira = (n: number) =>
   `${n < 0 ? "-" : ""}₦${Math.abs(n).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-
-function Metric({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "good" | "bad" }) {
-  return (
-    <div className="rounded-xl border border-border bg-white p-4">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-[#1e293b]/50">{label}</p>
-      <p
-        className={cn(
-          "mt-1 text-xl font-bold tabular-nums text-[#0f172a]",
-          tone === "good" && "text-emerald-600",
-          tone === "bad" && "text-rose-600",
-        )}
-      >
-        {value}
-      </p>
-      {sub && <p className="mt-0.5 text-[11px] text-[#1e293b]/50">{sub}</p>}
-    </div>
-  );
-}
 
 export function SlipChecker({
   isAuthenticated = false,
@@ -80,12 +100,12 @@ export function SlipChecker({
   isAuthenticated?: boolean;
   punterModel?: PunterBehaviorModel | null;
 }) {
-  const [inputMode, setInputMode] = useState<"quick" | "detailed">("detailed");
-  const [quickOddsText, setQuickOddsText] = useState("1.30, 1.55, 1.62, 1.70");
-  const [legs, setLegs] = useState<LegDraft[]>([{ ...EMPTY_LEG }, { ...EMPTY_LEG }]);
+  const [legs, setLegs] = useState<LegDraft[]>([{ ...EMPTY_LEG }, { ...EMPTY_LEG }, { ...EMPTY_LEG }]);
   const [stake, setStake] = useState("1000");
   const [bonusPct, setBonusPct] = useState("0");
   const [result, setResult] = useState<SlipAssessment | null>(null);
+  const [footballReviews, setFootballReviews] = useState<FootballLegReview[]>([]);
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedVerdict, setCopiedVerdict] = useState(false);
 
@@ -93,6 +113,82 @@ export function SlipChecker({
   const [codeBookie, setCodeBookie] = useState("sportybet");
   const [decoding, setDecoding] = useState(false);
   const [decodeNotice, setDecodeNotice] = useState<string | null>(null);
+
+  const runFullAnalysis = async (drafts: LegDraft[], stakeVal: number) => {
+    const valid = drafts
+      .filter((l) => l.odds.trim() !== "")
+      .map((l) => ({
+        event: l.event.trim(),
+        selection: l.selection.trim() || "Selection",
+        decimalOdds: Number(l.odds),
+        competitionStage: l.competitionStage,
+        homeLineup: l.homeLineup,
+        awayLineup: l.awayLineup,
+      }));
+
+    if (valid.length === 0) {
+      setError("Add at least one leg with decimal odds greater than 1.00.");
+      return;
+    }
+    if (valid.some((l) => !(l.decimalOdds > 1))) {
+      setError("Every leg needs decimal odds greater than 1.00.");
+      return;
+    }
+    if (!(stakeVal > 0)) {
+      setError("Enter a stake above ₦0.");
+      return;
+    }
+
+    setError(null);
+    setAnalyzing(true);
+    try {
+      let reviews: FootballLegReview[] = [];
+      const res = await fetch("/api/bet-assist/analyze-slip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ legs: valid }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { success?: boolean; reviews?: FootballLegReview[] };
+        if (data.success && Array.isArray(data.reviews)) {
+          reviews = data.reviews;
+        }
+      }
+
+      setFootballReviews(reviews);
+
+      const assessment = assessSlip(
+        valid.map((l, idx) => ({
+          event: l.event || undefined,
+          selection: l.selection,
+          decimalOdds: l.decimalOdds,
+          yourProb: reviews[idx]?.footballProb ?? null,
+        })),
+        stakeVal,
+      );
+
+      if (!assessment) {
+        setError("Could not evaluate slip — check your odds and stake.");
+        return;
+      }
+      setResult(assessment);
+    } catch {
+      // Fallback to local assessment if network hiccups
+      const assessment = assessSlip(
+        valid.map((l) => ({
+          event: l.event || undefined,
+          selection: l.selection,
+          decimalOdds: l.decimalOdds,
+          yourProb: null,
+        })),
+        stakeVal,
+      );
+      setFootballReviews([]);
+      if (assessment) setResult(assessment);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   const decodeBookingCode = async () => {
     const clean = bookingCode.trim().toUpperCase();
@@ -105,7 +201,7 @@ export function SlipChecker({
     setDecodeNotice(null);
     try {
       const res = await fetch(
-        `/api/bet-assist/decode-slip?code=${encodeURIComponent(clean)}&bookmaker=${encodeURIComponent(codeBookie)}`
+        `/api/bet-assist/decode-slip?code=${encodeURIComponent(clean)}&bookmaker=${encodeURIComponent(codeBookie)}`,
       );
       const data = await res.json();
       if (!res.ok) {
@@ -113,35 +209,22 @@ export function SlipChecker({
         return;
       }
       const decodedLegs: LegDraft[] = (data.legs ?? []).map(
-        (l: { event: string; selection: string; odds: number; modelProb: number | null }) => ({
+        (l: { event: string; selection: string; odds: number }) => ({
           event: l.event ?? "",
           selection: l.selection ?? "",
           odds: Number(l.odds).toFixed(2),
-          yourProb: l.modelProb !== null ? String(Math.round(l.modelProb * 1000) / 10) : "",
-        })
+          competitionStage: "league",
+          homeLineup: "full_strength",
+          awayLineup: "full_strength",
+        }),
       );
       if (decodedLegs.length === 0) {
         setError("No readable selections with decimal odds found in that booking code.");
         return;
       }
       setLegs(decodedLegs);
-      setInputMode("detailed");
-      const matchedCount = decodedLegs.filter((l) => l.yourProb !== "").length;
-      setDecodeNotice(
-        `Loaded ${decodedLegs.length} leg${decodedLegs.length === 1 ? "" : "s"} from ${data.bookmaker} (${data.code})${
-          matchedCount > 0 ? ` · ${matchedCount} auto-priced with Dixon-Coles v2.0` : ""
-        }.`
-      );
-      const assessment = assessSlip(
-        decodedLegs.map((l) => ({
-          selection: l.selection || "Selection",
-          event: l.event || undefined,
-          decimalOdds: Number(l.odds),
-          yourProb: l.yourProb ? Number(l.yourProb) / 100 : null,
-        })),
-        Number(stake) || 1000
-      );
-      if (assessment) setResult(assessment);
+      setDecodeNotice(`Loaded ${decodedLegs.length} legs from ${data.bookmaker} (${data.code}). Running football analysis…`);
+      await runFullAnalysis(decodedLegs, Number(stake) || 1000);
     } catch {
       setError("Network error while decoding booking code. Please try again.");
     } finally {
@@ -149,72 +232,36 @@ export function SlipChecker({
     }
   };
 
-  const update = (i: number, patch: Partial<LegDraft>) => {
-    setLegs(legs.map((l, j) => (j === i ? { ...l, ...patch } : l)));
+  const updateLeg = (i: number, patch: Partial<LegDraft>) => {
+    setLegs((prev) => prev.map((l, j) => (j === i ? { ...l, ...patch } : l)));
     setResult(null);
-  };
-
-  const check = () => {
-    let parsed: Array<{ selection: string; event?: string; decimalOdds: number; yourProb: number | null }> = [];
-
-    if (inputMode === "quick") {
-      // Extract decimal numbers > 1 from pasted odds text (comma, space, slash, newline separated)
-      const tokens = quickOddsText.match(/\d+(?:\.\d+)?/g) ?? [];
-      parsed = tokens
-        .map((t) => Number(t))
-        .filter((n) => Number.isFinite(n))
-        .map((n, i) => ({
-          selection: `Leg ${i + 1}`,
-          decimalOdds: n,
-          yourProb: null,
-        }));
-      if (parsed.length === 0) {
-        setError("Paste at least one decimal odd greater than 1.00 (e.g. 1.45, 1.80, 2.10).");
-        return;
-      }
-    } else {
-      parsed = legs
-        .filter((l) => l.odds.trim() !== "")
-        .map((l) => ({
-          selection: l.selection.trim() || "Selection",
-          event: l.event.trim() || undefined,
-          decimalOdds: Number(l.odds),
-          yourProb: l.yourProb.trim() ? Number(l.yourProb) / 100 : null,
-        }));
-    }
-
-    if (parsed.some((l) => !(l.decimalOdds > 1))) {
-      setError("Every leg needs decimal odds greater than 1.00.");
-      return;
-    }
-    const r = assessSlip(parsed, Number(stake));
-    if (!r) {
-      setError("Add at least one leg with odds and a stake above 0.");
-      return;
-    }
-    setError(null);
-    setResult(r);
   };
 
   const bonus = Math.max(0, Number.isFinite(Number(bonusPct)) ? Number(bonusPct) : 0);
   const stakeNum = Number(stake) || 0;
   const boostedProfit = result ? result.potentialProfit * (1 + bonus / 100) : 0;
   const boostedReturn = result ? stakeNum + boostedProfit : 0;
-  const boostedEv =
-    result && stakeNum > 0
-      ? ((result.yourProb ?? result.fairProb) * boostedReturn) / stakeNum - 1
-      : 0;
+  const trapLegs = footballReviews.filter((r) => r.isTrapLeg);
+  const matchedFootballLegs = footballReviews.filter((r) => r.matchedTeams).length;
+
+  const personalScore =
+    result && punterModel
+      ? scoreSlipWithPunterModel(punterModel, {
+          legCount: result.legs.length,
+          combinedOdds: result.combinedOdds,
+          stake: stakeNum,
+        })
+      : null;
 
   function buildVerdictText(r: SlipAssessment): string {
     const chance = pct(r.yourProb ?? r.fairProb, 1);
-    const lines = [
+    return [
       `PunterStat Slip Check (${r.legs.length}-leg ${r.legs.length > 1 ? "acca" : "single"})`,
       `• Risk: ${RISK_STYLE[r.risk].label} (lands ~1 in ${r.oneWinEvery})`,
       `• Combined odds: ${r.combinedOdds.toFixed(2)} | Stake: ${naira(stakeNum)} -> ${naira(bonus > 0 ? boostedReturn : r.potentialReturn)}`,
-      `• Est. true chance: ${chance} | Margin drag: ${pct(r.compoundedMargin)}`,
+      `• Football-adjusted chance: ${chance} | Trap legs flagged: ${trapLegs.length}`,
       `• Checked on punterstat.site/bet-assist/slip-checker`,
-    ];
-    return lines.join("\n");
+    ].join("\n");
   }
 
   function copyVerdict() {
@@ -230,8 +277,7 @@ export function SlipChecker({
 
   function shareVerdictWhatsApp() {
     if (!result) return;
-    const text = encodeURIComponent(buildVerdictText(result));
-    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+    window.open(`https://wa.me/?text=${encodeURIComponent(buildVerdictText(result))}`, "_blank", "noopener,noreferrer");
   }
 
   const trackerQuery = result
@@ -249,407 +295,435 @@ export function SlipChecker({
           .join(" + ")
           .slice(0, 180),
         odds: result.combinedOdds.toFixed(2),
+        stake: String(stakeNum),
         market: result.legs.length > 1 ? "Accumulator" : "1X2",
         legs: String(result.legs.length),
-        stake: stake.trim() || "1000",
-        ...(result.yourProb !== null
-          ? { prob: String(Math.round(result.yourProb * 1000) / 10) }
-          : {}),
       }).toString()
     : "";
 
-  const trackerHref = `/dashboard/bet-tracker?${trackerQuery}`;
-  const logHref = isAuthenticated ? trackerHref : `/login?next=${encodeURIComponent(trackerHref)}`;
-
-  const numericStake = Number(stake) || 0;
-  const personalInsight =
-    result && punterModel
-      ? scoreSlipWithPunterModel(punterModel, {
-          combinedOdds: result.combinedOdds,
-          legCount: result.legs.length,
-          stake: numericStake,
-          bookmaker: decodeNotice ? codeBookie : null,
-        })
-      : null;
-
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-      {/* Input */}
-      <div className="space-y-4 rounded-2xl border border-border bg-white p-6 shadow-sm">
-        {/* Load by Booking Code bar */}
-        <div className="rounded-xl border border-teal-200 bg-teal-50/40 p-3.5 space-y-2.5">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#0f172a]">
-            <Ticket className="h-3.5 w-3.5 text-teal-600" />
-            Load by Booking Code
-          </div>
-          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-            <select
-              value={codeBookie}
-              onChange={(e) => setCodeBookie(e.target.value)}
-              aria-label="Select bookmaker"
-              className="h-9 rounded-lg border border-border bg-white px-2.5 text-xs text-[#0f172a] focus:border-teal-600 focus:outline-none"
-            >
-              {CODE_BOOKMAKERS.map((b) => (
-                <option key={b.key} value={b.key}>
-                  {b.label}
-                </option>
-              ))}
-            </select>
-            <Input
-              value={bookingCode}
-              onChange={(e) => setBookingCode(e.target.value.toUpperCase())}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void decodeBookingCode();
-                }
-              }}
-              placeholder="Paste code (e.g. JQW6XN)"
-              className="h-9 bg-white text-xs font-mono uppercase tracking-wider"
-            />
-            <Button
-              type="button"
-              variant="teal"
-              size="sm"
-              disabled={decoding}
-              onClick={() => void decodeBookingCode()}
-              className="h-9 gap-1.5"
-            >
-              {decoding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Load Slip"}
-            </Button>
-          </div>
-          {decodeNotice && (
-            <p className="text-[11px] font-medium text-teal-800">{decodeNotice}</p>
-          )}
-        </div>
-
+    <div className="space-y-8">
+      {/* 1. Booking Code Import (Flat section, no box-in-box) */}
+      <section className="space-y-3 border-b border-slate-200 pb-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold text-[#0f172a]">Your slip</h2>
-          <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">
-            <button
-              type="button"
-              onClick={() => {
-                setInputMode("quick");
-                setResult(null);
-              }}
-              className={cn(
-                "rounded-md px-2.5 py-1 text-xs font-medium transition",
-                inputMode === "quick" ? "bg-[#3D2DFF] text-white" : "text-[#1e293b]/60 hover:text-[#0f172a]",
-              )}
-            >
-              Quick Paste Odds
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setInputMode("detailed");
-                setResult(null);
-              }}
-              className={cn(
-                "rounded-md px-2.5 py-1 text-xs font-medium transition",
-                inputMode === "detailed" ? "bg-[#3D2DFF] text-white" : "text-[#1e293b]/60 hover:text-[#0f172a]",
-              )}
-            >
-              Detailed Legs
-            </button>
+          <div className="flex items-center gap-2">
+            <Ticket className="h-4 w-4 text-teal-600" />
+            <h2 className="text-sm font-bold text-slate-900">Import by Booking Code</h2>
           </div>
+          <span className="text-xs text-slate-500">
+            Paste a SportyBet, Bet9ja, Football.com, or BetKing code to audit every leg
+          </span>
         </div>
 
-        {inputMode === "quick" ? (
-          <div className="space-y-2">
-            <Label className="text-xs text-[#1e293b]/65">
-              Paste or type leg odds (separated by commas, spaces, or new lines)
-            </Label>
-            <textarea
-              rows={4}
-              value={quickOddsText}
-              onChange={(e) => {
-                setQuickOddsText(e.target.value);
-                setResult(null);
-              }}
-              placeholder="e.g. 1.35, 1.60, 1.85, 2.10, 1.45"
-              className="w-full rounded-xl border border-input bg-[#f8fafc] p-3 font-mono text-sm text-[#0f172a] focus:border-[#3D2DFF] focus:bg-white focus:outline-none"
-            />
-            <p className="text-[11px] text-[#1e293b]/50">
-              Fastest way to check a 5–15 leg SportyBet or Bet9ja booking code ticket before staking.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                className="text-xs font-medium text-[#3D2DFF] hover:underline"
-                onClick={() => {
-                  setLegs(SAMPLE.map((l) => ({ ...l })));
-                  setResult(null);
-                }}
-              >
-                Load example acca
-              </button>
-            </div>
-
-            {legs.map((l, i) => (
-              <div key={i} className="rounded-xl border border-border bg-[#f8fafc] p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-xs font-semibold text-[#1e293b]/60">Leg {i + 1}</p>
-                  {legs.length > 1 && (
-                    <button
-                      type="button"
-                      aria-label={`Remove leg ${i + 1}`}
-                      className="text-[#1e293b]/40 hover:text-rose-600"
-                      onClick={() => {
-                        setLegs(legs.filter((_, j) => j !== i));
-                        setResult(null);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <Label className="text-[11px] text-[#1e293b]/60">Match / event</Label>
-                    <Input value={l.event} placeholder="Arsenal v Everton" onChange={(e) => update(i, { event: e.target.value })} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-[11px] text-[#1e293b]/60">Selection</Label>
-                    <Input value={l.selection} placeholder="Arsenal to win" onChange={(e) => update(i, { selection: e.target.value })} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-[11px] text-[#1e293b]/60">Decimal odds</Label>
-                    <Input inputMode="decimal" value={l.odds} placeholder="1.80" onChange={(e) => update(i, { odds: e.target.value })} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-[11px] text-[#1e293b]/60">Your chance % (optional)</Label>
-                    <Input inputMode="decimal" value={l.yourProb} placeholder="e.g. 60" onChange={(e) => update(i, { yourProb: e.target.value })} />
-                  </div>
-                </div>
-              </div>
+        <div className="grid gap-2.5 sm:grid-cols-[190px_1fr_auto]">
+          <select
+            aria-label="Bookmaker"
+            value={codeBookie}
+            onChange={(e) => setCodeBookie(e.target.value)}
+            className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+          >
+            {CODE_BOOKMAKERS.map((b) => (
+              <option key={b.key} value={b.key}>
+                {b.label}
+              </option>
             ))}
-
-            {legs.length < 20 && (
-              <Button type="button" variant="outline" size="sm" onClick={() => setLegs([...legs, { ...EMPTY_LEG }])}>
-                <Plus className="mr-1 h-4 w-4" /> Add leg
-              </Button>
-            )}
-          </>
-        )}
-
-        <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-          <div className="space-y-1">
-            <Label className="text-[11px] text-[#1e293b]/60">Stake (₦)</Label>
-            <Input inputMode="decimal" value={stake} onChange={(e) => { setStake(e.target.value); setResult(null); }} />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[11px] text-[#1e293b]/60">Acca bonus % (optional)</Label>
-            <Input inputMode="decimal" value={bonusPct} placeholder="0" onChange={(e) => setBonusPct(e.target.value)} />
-          </div>
-          <Button type="button" variant="teal" onClick={check}>
-            Check slip
+          </select>
+          <Input
+            value={bookingCode}
+            onChange={(e) => setBookingCode(e.target.value.toUpperCase())}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                decodeBookingCode();
+              }
+            }}
+            placeholder="Booking code (e.g. JQW6XN)"
+            className="h-10 bg-white font-mono uppercase tracking-wider"
+          />
+          <Button
+            type="button"
+            variant="teal"
+            disabled={decoding || analyzing}
+            onClick={decodeBookingCode}
+            className="h-10 gap-1.5"
+          >
+            {decoding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ticket className="h-4 w-4" />}
+            {decoding ? "Decoding…" : "Load & Check"}
           </Button>
         </div>
-        {error && <p className="text-sm text-rose-600">{error}</p>}
-      </div>
 
-      {/* Result */}
-      <div className="space-y-4">
-        {!result ? (
-          <div className="flex h-full min-h-[240px] items-center justify-center rounded-2xl border border-dashed border-border bg-white p-8 text-center text-sm text-[#1e293b]/50">
-            Enter or paste your leg odds and press <strong className="mx-1">Check slip</strong> to see what the price really
-            implies.
+        {decodeNotice && <p className="text-xs font-medium text-teal-700">{decodeNotice}</p>}
+      </section>
+
+      {/* 2. Accumulator Leg Builder (Flat table/list layout) */}
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">
+              Your Slip Selections ({legs.length} {legs.length === 1 ? "leg" : "legs"})
+            </h2>
+            <p className="text-xs text-slate-500">
+              We evaluate each leg using team strength (Elo/Dixon-Coles), recent form, H2H history, competition stage, lineup status, and bookmaker odds.
+            </p>
           </div>
-        ) : (
-          <>
-            <div className={cn("rounded-2xl border p-5", RISK_STYLE[result.risk].className)}>
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <p className="text-lg font-bold">{RISK_STYLE[result.risk].label}</p>
-                  <p className="text-sm opacity-80">
-                    {RISK_STYLE[result.risk].blurb}{" "}
-                    {Number.isFinite(result.oneWinEvery) && result.oneWinEvery > 1 && (
-                      <>Expect it to land about <strong>1 time in {result.oneWinEvery}</strong>.</>
-                    )}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={copyVerdict}
-                    className="inline-flex items-center gap-1 rounded-lg bg-white/80 px-2.5 py-1 text-xs font-semibold text-[#0f172a] hover:bg-white"
-                  >
-                    {copiedVerdict ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                    {copiedVerdict ? "Copied" : "Copy"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={shareVerdictWhatsApp}
-                    className="inline-flex items-center gap-1 rounded-lg bg-white/80 px-2.5 py-1 text-xs font-semibold text-[#0f172a] hover:bg-white"
-                  >
-                    <Share2 className="h-3.5 w-3.5" />
-                    WhatsApp
-                  </button>
-                </div>
-              </div>
-            </div>
+          <button
+            type="button"
+            onClick={() => {
+              setLegs(SAMPLE);
+              setResult(null);
+              setFootballReviews([]);
+            }}
+            className="text-xs font-semibold text-[#3D2DFF] hover:underline"
+          >
+            Load 4-leg sample
+          </button>
+        </div>
 
-            {personalInsight && (
-              <div
+        <div className="divide-y divide-slate-200 border-y border-slate-200">
+          {legs.map((leg, i) => (
+            <div key={i} className="grid gap-2.5 py-3.5 md:grid-cols-[1.3fr_1.1fr_86px_130px_135px_auto] md:items-center">
+              <Input
+                value={leg.event}
+                onChange={(e) => updateLeg(i, { event: e.target.value })}
+                placeholder={`Match ${i + 1} (e.g. Arsenal vs Chelsea)`}
+                className="h-9 bg-white text-xs"
+              />
+              <Input
+                value={leg.selection}
+                onChange={(e) => updateLeg(i, { selection: e.target.value })}
+                placeholder="Pick (e.g. Arsenal to win, Over 2.5, 1X)"
+                className="h-9 bg-white text-xs"
+              />
+              <Input
+                inputMode="decimal"
+                value={leg.odds}
+                onChange={(e) => updateLeg(i, { odds: e.target.value })}
+                placeholder="Odds"
+                className="h-9 bg-white text-xs tabular-nums"
+              />
+              <select
+                aria-label={`Leg ${i + 1} competition stage`}
+                value={leg.competitionStage}
+                onChange={(e) => updateLeg(i, { competitionStage: e.target.value as CompetitionStage })}
+                className="h-9 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700"
+              >
+                {STAGE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label={`Leg ${i + 1} lineup status`}
+                value={leg.homeLineup}
+                onChange={(e) => updateLeg(i, { homeLineup: e.target.value as LineupStatus })}
+                className="h-9 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700"
+                title="Squad / lineup strength for your backed side"
+              >
+                {LINEUP_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              {legs.length > 1 ? (
+                <button
+                  type="button"
+                  aria-label={`Remove leg ${i + 1}`}
+                  onClick={() => {
+                    setLegs((prev) => prev.filter((_, j) => j !== i));
+                    setResult(null);
+                  }}
+                  className="inline-flex h-9 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              ) : (
+                <span className="w-8" />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-end justify-between gap-4 pt-1">
+          <div className="flex flex-wrap items-end gap-3">
+            {legs.length < 25 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setLegs((prev) => [...prev, { ...EMPTY_LEG }])}
+                className="h-10 gap-1.5"
+              >
+                <Plus className="h-4 w-4" /> Add leg
+              </Button>
+            )}
+            <div className="space-y-1">
+              <Label htmlFor="slip-stake" className="text-[11px] uppercase tracking-wide text-slate-500">
+                Stake (₦)
+              </Label>
+              <Input
+                id="slip-stake"
+                inputMode="decimal"
+                value={stake}
+                onChange={(e) => {
+                  setStake(e.target.value);
+                  setResult(null);
+                }}
+                className="h-10 w-32 bg-white tabular-nums"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="slip-bonus" className="text-[11px] uppercase tracking-wide text-slate-500">
+                Acca Bonus (%)
+              </Label>
+              <Input
+                id="slip-bonus"
+                inputMode="decimal"
+                value={bonusPct}
+                onChange={(e) => setBonusPct(e.target.value)}
+                placeholder="0"
+                className="h-10 w-24 bg-white tabular-nums"
+              />
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            disabled={analyzing}
+            onClick={() => runFullAnalysis(legs, Number(stake))}
+            className="h-10 gap-2 bg-[#3D2DFF] px-6 text-white hover:bg-[#3D2DFF]/90"
+          >
+            {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {analyzing ? "Analyzing football data…" : "Check Slip"}
+          </Button>
+        </div>
+
+        {error && <p className="text-sm font-medium text-rose-600">{error}</p>}
+      </section>
+
+      {/* 3. Verdict & Leg-by-Leg Football Audit (Flat layout) */}
+      {result && (
+        <section className="space-y-6 border-t border-slate-200 pt-6">
+          {/* Top verdict header */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span
                 className={cn(
-                  "rounded-2xl border p-4 space-y-2.5",
-                  personalInsight.maturity === "cold"
-                    ? "border-slate-200 bg-slate-50"
-                    : personalInsight.riskLevel === "high_leak"
-                      ? "border-rose-200 bg-rose-50/70"
-                      : personalInsight.riskLevel === "caution"
-                        ? "border-amber-200 bg-amber-50/70"
-                        : "border-teal-200 bg-teal-50/60",
+                  "inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold",
+                  RISK_STYLE[result.risk].className,
                 )}
               >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#0f172a]">
-                    <Sparkles className="h-3.5 w-3.5 text-teal-600" />
-                    Personal History Model
-                    <span className="rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-semibold text-[#1e293b]/70 border border-border">
-                      {personalInsight.settledBets} settled bet{personalInsight.settledBets === 1 ? "" : "s"}
-                    </span>
-                  </div>
-                  {personalInsight.maturity !== "cold" && (
-                    <span
-                      className={cn(
-                        "text-xs font-bold tabular-nums",
-                        personalInsight.predictedRoi >= 0 ? "text-emerald-700" : "text-rose-700",
-                      )}
-                    >
-                      Est. Personal ROI: {personalInsight.predictedRoi >= 0 ? "+" : ""}
-                      {(personalInsight.predictedRoi * 100).toFixed(1)}%
-                    </span>
-                  )}
-                </div>
+                {RISK_STYLE[result.risk].label}
+              </span>
+              <span className="text-sm font-medium text-slate-700">
+                {RISK_STYLE[result.risk].blurb}
+              </span>
+              {matchedFootballLegs > 0 && (
+                <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold text-teal-700">
+                  {matchedFootballLegs}/{result.legs.length} legs scored with live team strength &amp; H2H
+                </span>
+              )}
+            </div>
 
-                {personalInsight.maturity === "cold" ? (
-                  <p className="text-xs text-[#1e293b]/70">
-                    Upload at least 10 settled bets via{" "}
-                    <Link href="/dashboard/profile" className="font-semibold text-teal-700 underline">
-                      Profile CSV Import
-                    </Link>{" "}
-                    to train your personal Empirical Bayes leak &amp; tilt model on this slip checker.
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={copyVerdict} className="gap-1.5">
+                {copiedVerdict ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                {copiedVerdict ? "Copied" : "Copy verdict"}
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={shareVerdictWhatsApp} className="gap-1.5">
+                <Share2 className="h-3.5 w-3.5" /> WhatsApp
+              </Button>
+              {isAuthenticated && (
+                <Button size="sm" variant="teal" asChild>
+                  <Link href={`/dashboard/bet-tracker?${trackerQuery}`}>Track this slip</Link>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Flat horizontal KPI strip (no box-in-box) */}
+          <div className="grid grid-cols-2 divide-x divide-slate-200 rounded-xl border border-slate-200 bg-slate-50/60 sm:grid-cols-4">
+            <div className="px-4 py-3.5">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Combined Odds</p>
+              <p className="mt-0.5 text-xl font-bold tabular-nums text-slate-900">
+                {result.combinedOdds.toFixed(2)}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                Return: {naira(bonus > 0 ? boostedReturn : result.potentialReturn)}
+              </p>
+            </div>
+            <div className="px-4 py-3.5">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                Football-Adjusted Chance
+              </p>
+              <p className="mt-0.5 text-xl font-bold tabular-nums text-slate-900">
+                {pct(result.yourProb ?? result.fairProb, 1)}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                ~1 win in {Number.isFinite(result.oneWinEvery) ? result.oneWinEvery : "∞"} slips
+              </p>
+            </div>
+            <div className="px-4 py-3.5">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Trap / Weak Legs</p>
+              <p
+                className={cn(
+                  "mt-0.5 text-xl font-bold tabular-nums",
+                  trapLegs.length > 0 ? "text-rose-600" : "text-emerald-600",
+                )}
+              >
+                {trapLegs.length}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                {trapLegs.length > 0 ? "Review highlighted legs below" : "No obvious trap legs"}
+              </p>
+            </div>
+            <div className="px-4 py-3.5">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Margin Drag</p>
+              <p className="mt-0.5 text-xl font-bold tabular-nums text-slate-900">
+                {pct(result.compoundedMargin, 0)}
+              </p>
+              <p className="text-[11px] text-slate-500">Bookmaker cut across {result.legs.length} legs</p>
+            </div>
+          </div>
+
+          {/* Personalized behavior insight if logged in with history */}
+          {personalScore && (
+            <div className="flex items-start gap-2.5 border-l-4 border-[#3D2DFF] bg-slate-50/70 px-4 py-3 text-xs text-slate-700">
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#3D2DFF]" />
+              <div>
+                <p className="font-semibold text-slate-900">
+                  Personal Habit Check:{" "}
+                  {personalScore.riskLevel === "high_leak"
+                    ? "High-leak profile"
+                    : personalScore.riskLevel === "caution"
+                      ? "Caution"
+                      : "Aligned with your strengths"}{" "}
+                  (est. historical ROI {personalScore.predictedRoi >= 0 ? "+" : ""}
+                  {(personalScore.predictedRoi * 100).toFixed(1)}%)
+                </p>
+                {(personalScore.warnings.length > 0 || personalScore.strengths.length > 0) && (
+                  <p className="mt-0.5 text-slate-600">
+                    {[...personalScore.warnings, ...personalScore.strengths].join(" · ")}
                   </p>
-                ) : (
-                  <div className="space-y-1.5 text-xs">
-                    {personalInsight.warnings.map((w) => (
-                      <p key={w} className="flex gap-1.5 text-rose-900">
-                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-600" />
-                        {w}
-                      </p>
-                    ))}
-                    {personalInsight.strengths.map((s) => (
-                      <p key={s} className="flex gap-1.5 text-emerald-900">
-                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
-                        {s}
-                      </p>
-                    ))}
-                    {personalInsight.warnings.length === 0 && personalInsight.strengths.length === 0 && (
-                      <p className="text-[#1e293b]/70">
-                        No personal leak or tilt flags triggered for this slip profile. Estimates will sharpen as you upload more settled history.
-                      </p>
-                    )}
-                  </div>
                 )}
               </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
-              <Metric label="Combined odds" value={result.combinedOdds.toFixed(2)} />
-              <Metric
-                label={bonus > 0 ? `Return (+${bonus}% bonus)` : "Potential return"}
-                value={naira(bonus > 0 ? boostedReturn : result.potentialReturn)}
-                sub={`Profit ${naira(bonus > 0 ? boostedProfit : result.potentialProfit)}`}
-              />
-              <Metric label="Price implies" value={pct(result.impliedProb, 2)} sub="1 ÷ combined odds" />
-              <Metric
-                label={result.evSource === "yours" ? "Your estimate" : "Est. true chance"}
-                value={pct(result.yourProb ?? result.fairProb, 2)}
-                sub={result.evSource === "yours" ? "From your leg probabilities" : "After removing ~5% margin per leg"}
-              />
-              <Metric
-                label={bonus > 0 ? "EV after acca bonus" : "Expected value (illustrative)"}
-                value={`${(bonus > 0 ? boostedEv : result.ev) >= 0 ? "+" : ""}${pct(bonus > 0 ? boostedEv : result.ev)}`}
-                sub={`≈ ${naira(result.expectedReturnOnStake)} expected return per slip`}
-                tone={(bonus > 0 ? boostedEv : result.ev) >= 0 ? "good" : "bad"}
-              />
-              <Metric
-                label="Margin you're paying"
-                value={pct(result.compoundedMargin)}
-                sub={`${result.legs.length} leg${result.legs.length > 1 ? "s" : ""} compounded`}
-                tone={result.compoundedMargin > 0.15 ? "bad" : undefined}
-              />
             </div>
+          )}
 
-            {result.warnings.length > 0 && (
-              <div className="space-y-2 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-                {result.warnings.map((w) => (
-                  <p key={w} className="flex gap-2 text-sm text-amber-900">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                    {w}
+          {/* Leg-by-leg football breakdown */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Leg-by-Leg Football &amp; Odds Audit
+            </h3>
+            <ul className="divide-y divide-slate-200 border-y border-slate-200">
+              {result.legs.map((leg, idx) => {
+                const review = footballReviews[idx];
+                const modelPct = review?.footballProb != null ? `${(review.footballProb * 100).toFixed(0)}%` : "—";
+                const impliedPct = `${(leg.impliedProb * 100).toFixed(0)}%`;
+                return (
+                  <li
+                    key={idx}
+                    className={cn(
+                      "py-3.5",
+                      review?.isTrapLeg && "bg-rose-50/40 px-3 -mx-3 rounded-lg",
+                    )}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-bold text-slate-900">{leg.selection}</span>
+                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-slate-700">
+                            @ {leg.decimalOdds.toFixed(2)}
+                          </span>
+                          {review?.isTrapLeg && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                              <ShieldAlert className="h-3 w-3" /> Trap / Upset Risk
+                            </span>
+                          )}
+                          {review?.strengthEdgeLabel && (
+                            <span className="text-xs font-medium text-teal-700">
+                              {review.strengthEdgeLabel}
+                            </span>
+                          )}
+                        </div>
+                        {leg.event && <p className="text-xs text-slate-500">{leg.event}</p>}
+                        {review?.factors && review.factors.length > 0 && (
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 text-[11px] text-slate-600">
+                            {review.homeForm && <span>Home last 5: <strong>{review.homeForm}</strong></span>}
+                            {review.awayForm && <span>Away last 5: <strong>{review.awayForm}</strong></span>}
+                            {review.h2hSummary && <span>H2H: <strong>{review.h2hSummary}</strong></span>}
+                          </div>
+                        )}
+                        {review?.riskNotes && review.riskNotes.length > 0 && (
+                          <p className="text-[11px] font-medium text-amber-800">
+                            ⚠ {review.riskNotes.join(" · ")}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-4 text-right text-xs tabular-nums">
+                        <div>
+                          <p className="text-[10px] uppercase text-slate-400">Book Implied</p>
+                          <p className="font-semibold text-slate-700">{impliedPct}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase text-slate-400">Football Model</p>
+                          <p className="font-bold text-slate-900">{modelPct}</p>
+                        </div>
+                        {review?.edgePct != null && (
+                          <div>
+                            <p className="text-[10px] uppercase text-slate-400">Edge</p>
+                            <p
+                              className={cn(
+                                "font-bold",
+                                review.edgePct >= 0 ? "text-emerald-600" : "text-rose-600",
+                              )}
+                            >
+                              {review.edgePct >= 0 ? "+" : ""}
+                              {review.edgePct.toFixed(1)}%
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          {/* Warnings & Positives (flat list, no nested boxes) */}
+          {(result.warnings.length > 0 || result.positives.length > 0) && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {result.warnings.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-amber-700">
+                    <AlertTriangle className="h-3.5 w-3.5" /> Watch-outs
                   </p>
-                ))}
-              </div>
-            )}
-            {result.positives.length > 0 && (
-              <div className="space-y-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                {result.positives.map((w) => (
-                  <p key={w} className="flex gap-2 text-sm text-emerald-900">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                    {w}
+                  <ul className="space-y-1 text-xs text-slate-600">
+                    {result.warnings.map((w, i) => (
+                      <li key={i}>• {w}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {result.positives.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-emerald-700">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Strengths
                   </p>
-                ))}
-              </div>
-            )}
-
-            <div className="overflow-x-auto rounded-2xl border border-border bg-white p-5">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-[#1e293b]/50">
-                    <th className="pb-2">Leg</th>
-                    <th className="pb-2 text-right">Odds</th>
-                    <th className="pb-2 text-right">Implied</th>
-                    <th className="pb-2 text-right">EV (illustrative)</th>
-                  </tr>
-                </thead>
-                <tbody className="tabular-nums">
-                  {result.legs.map((l, i) => (
-                    <tr key={i} className="border-t border-border">
-                      <td className="py-2">
-                        <p className="font-medium text-[#0f172a]">{l.selection}</p>
-                        {l.event && <p className="text-xs text-[#1e293b]/50">{l.event}</p>}
-                      </td>
-                      <td className="py-2 text-right">{l.decimalOdds.toFixed(2)}</td>
-                      <td className="py-2 text-right">{pct(l.impliedProb)}</td>
-                      <td className={cn("py-2 text-right", l.ev !== null && (l.ev >= 0 ? "text-emerald-600" : "text-rose-600"))}>
-                        {l.ev === null ? "—" : `${l.ev >= 0 ? "+" : ""}${pct(l.ev)}`}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                  <ul className="space-y-1 text-xs text-slate-600">
+                    {result.positives.map((p, i) => (
+                      <li key={i}>• {p}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-white p-4">
-              <p className="text-xs text-[#1e293b]/65">
-                {isAuthenticated
-                  ? "Placing this slip? Log it in your Bet Tracker in one click to measure your real results over time."
-                  : "Sign in to log this slip in your Bet Tracker — your legs and odds will stay prefilled."}
-              </p>
-              <Button variant="teal" size="sm" asChild>
-                <Link href={logHref}>
-                  {isAuthenticated ? "Log this slip →" : "Sign in & log slip →"}
-                </Link>
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }

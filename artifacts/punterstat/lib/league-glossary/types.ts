@@ -51,6 +51,11 @@ export interface LeagueTeam {
   xgAgainst: number | null;
   cleanSheetRate: number | null;
   styleNote: string | null;
+  eloRating?: number | null;
+  recentForm?: ("W" | "D" | "L")[];
+  formSignal?: string | null;
+  latestMatchNote?: string | null;
+  dataUpdatedAt?: string | null;
   isPublished: boolean;
   sortOrder: number;
   createdAt: string;

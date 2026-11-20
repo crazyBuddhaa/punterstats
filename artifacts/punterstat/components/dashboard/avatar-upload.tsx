@@ -1,10 +1,10 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Loader2, Upload, Camera } from "lucide-react";
-import { uploadToCloudinary, type UploadSignature } from "@/lib/cloudinary/upload";
-import { updateAvatar } from "@/lib/dashboard/actions";
+import { Loader2, Upload, Camera, CheckCircle2 } from "lucide-react";
+import { useAuthStore } from "@/store/auth";
 
 interface AvatarUploadProps {
   currentUrl?: string | null;
@@ -12,10 +12,14 @@ interface AvatarUploadProps {
 }
 
 export function AvatarUpload({ currentUrl, displayName }: AvatarUploadProps) {
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(currentUrl ?? null);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
   const initials = (displayName || "U").slice(0, 1).toUpperCase();
 
   async function handleFile(file: File, objectUrl: string) {
@@ -30,30 +34,32 @@ export function AvatarUpload({ currentUrl, displayName }: AvatarUploadProps) {
       return;
     }
     setError(null);
+    setSaved(false);
 
     startTransition(async () => {
       try {
-        // Get signed upload params from our API
-        const res = await fetch("/api/upload?folder=avatars");
-        if (!res.ok) {
-          const data = await res.json() as { error?: string };
-          throw new Error(data.error ?? "Failed to get upload signature");
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("/api/upload/avatar", {
+          method: "POST",
+          body: formData,
+        });
+        const data = (await res.json()) as { success?: boolean; url?: string; error?: string };
+
+        if (!res.ok || !data.success || !data.url) {
+          throw new Error(data.error ?? "Upload failed. Please try again.");
         }
-        const sig = await res.json() as UploadSignature;
 
-        // Upload directly to Cloudinary
-        const secureUrl = await uploadToCloudinary(file, sig);
-
-        // Swap optimistic blob URL for the real Cloudinary URL
+        // Swap optimistic blob URL for the persisted Supabase Storage URL
         URL.revokeObjectURL(objectUrl);
-        setPreview(secureUrl);
+        setPreview(data.url);
+        setSaved(true);
 
-        // Persist to Supabase
-        const result = await updateAvatar(secureUrl);
-        if (!result.success) {
-          setError(result.error);
-          setPreview(currentUrl ?? null);
+        if (user) {
+          setUser({ ...user, avatarUrl: data.url });
         }
+        router.refresh();
       } catch (err) {
         URL.revokeObjectURL(objectUrl);
         setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
@@ -114,6 +120,12 @@ export function AvatarUpload({ currentUrl, displayName }: AvatarUploadProps) {
           {isPending ? "Uploading…" : "Change photo"}
         </button>
         <p className="text-[11px] text-[#1e293b]/40">JPG, PNG or WebP · max 5 MB</p>
+        {saved && !error && (
+          <p className="flex items-center gap-1 text-[11px] font-medium text-emerald-600">
+            <CheckCircle2 className="h-3 w-3" />
+            Display picture updated
+          </p>
+        )}
         {error && <p className="text-[11px] text-red-600">{error}</p>}
       </div>
 

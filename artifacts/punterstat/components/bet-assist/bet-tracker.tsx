@@ -11,6 +11,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  RefreshCw,
   Ticket,
   Trash2,
   X,
@@ -30,8 +31,17 @@ import {
   STATUS_LABELS,
   type BetStatus,
   type JournalBet,
+  type JournalBetLeg,
+  type LegStatus,
 } from "@/lib/bet-assist/journal";
-import { addBet, deleteBet, settleBet, updateBet } from "@/lib/bet-assist/journal-actions";
+import {
+  addBet,
+  autoSettlePendingBets,
+  deleteBet,
+  settleBet,
+  settleLeg,
+  updateBet,
+} from "@/lib/bet-assist/journal-actions";
 import { pct } from "@/lib/bet-assist/calculators";
 import { cn } from "@/lib/utils";
 
@@ -316,6 +326,16 @@ function AddBetForm({
     }
 
     start(async () => {
+      const legsPayload =
+        betType === "accumulator" && validLegs.length >= 2
+          ? validLegs.map((l, idx) => ({
+              eventName: l.event.trim() || `Leg ${idx + 1}`,
+              market: "1X2",
+              selection: l.selection.trim() || `Selection ${idx + 1}`,
+              odds: Number(l.odds),
+            }))
+          : undefined;
+
       const res = await addBet({
         eventName,
         selection,
@@ -325,6 +345,7 @@ function AddBetForm({
         stake: Number(form.stake),
         yourProb: form.yourProb.trim() ? Number(form.yourProb) / 100 : null,
         legCount,
+        legs: legsPayload,
         notes: form.notes || null,
       });
       if (!res.success) {
@@ -899,10 +920,93 @@ function exportBetsCsv(bets: JournalBet[]) {
   URL.revokeObjectURL(url);
 }
 
+const LEG_BADGE_STYLE: Record<LegStatus, string> = {
+  pending: "bg-slate-100 text-slate-600 border-slate-200",
+  won: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  lost: "bg-rose-50 text-rose-700 border-rose-200",
+  void: "bg-amber-50 text-amber-700 border-amber-200",
+};
+
+function AccumulatorLegsPanel({ legs }: { legs: JournalBetLeg[] }) {
+  const router = useRouter();
+  const [busyLegId, setBusyLegId] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const handleSettleLeg = async (legId: string, status: LegStatus) => {
+    setBusyLegId(legId);
+    setErr(null);
+    const res = await settleLeg({ legId, status });
+    setBusyLegId(null);
+    if (!res.success) {
+      setErr(res.error ?? "Failed to update leg");
+      return;
+    }
+    router.refresh();
+  };
+
+  return (
+    <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-3">
+      <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+        <span>Individual Selections ({legs.length})</span>
+        <span>1+ lost leg marks slip lost</span>
+      </div>
+      <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200/80 bg-slate-50/50">
+        {legs.map((leg) => (
+          <li
+            key={leg.id}
+            className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-xs"
+          >
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="font-semibold text-slate-900">{leg.selection}</span>
+                <span className="tabular-nums text-slate-500">@ {leg.odds.toFixed(2)}</span>
+                {leg.resultScore && (
+                  <span className="rounded bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-slate-700">
+                    FT {leg.resultScore}
+                  </span>
+                )}
+              </div>
+              <p className="truncate text-[11px] text-slate-500">{leg.eventName}</p>
+            </div>
+            <div className="flex items-center gap-1">
+              {(["won", "lost", "void", "pending"] as const).map((st) => {
+                const active = leg.status === st;
+                const label = st === "won" ? "W" : st === "lost" ? "L" : st === "void" ? "V" : "P";
+                return (
+                  <button
+                    key={st}
+                    type="button"
+                    disabled={busyLegId === leg.id}
+                    title={`Mark leg ${st}`}
+                    onClick={() => handleSettleLeg(leg.id, st)}
+                    className={cn(
+                      "h-6 w-6 rounded border text-[10px] font-bold transition",
+                      active
+                        ? LEG_BADGE_STYLE[st]
+                        : "border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:text-slate-700",
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </li>
+        ))}
+      </ul>
+      {err && <p className="text-xs text-rose-600">{err}</p>}
+    </div>
+  );
+}
+
 export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: TrackerPrefill }) {
+  const router = useRouter();
   const hasPrefill = Boolean(prefill.event || prefill.selection || prefill.odds);
   const [formOpen, setFormOpen] = useState(bets.length === 0 || hasPrefill);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [expandedLegs, setExpandedLegs] = useState<Record<string, boolean>>({});
+  const [autoSettling, startAutoSettle] = useTransition();
+  const [autoSettleMsg, setAutoSettleMsg] = useState<string | null>(null);
 
   const [now] = useState(() => Date.now());
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "settled">("all");
@@ -943,10 +1047,24 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
   }, [bets, now, statusFilter, rangeFilter, bookmakerFilter, marketFilter]);
 
   const stats = useMemo(() => journalStats(filtered), [filtered]);
+  const totalPendingCount = useMemo(() => bets.filter((b) => b.status === "pending").length, [bets]);
+
+  const handleAutoSettle = () => {
+    setAutoSettleMsg(null);
+    startAutoSettle(async () => {
+      const res = await autoSettlePendingBets(false);
+      if (!res.success) {
+        setAutoSettleMsg(res.error ?? "Auto-settle failed.");
+        return;
+      }
+      setAutoSettleMsg(res.message ?? "Checked pending bets.");
+      router.refresh();
+    });
+  };
 
   return (
     <div className="space-y-6">
-      {/* Action bar: Log bet + Load Betcode + Export CSV */}
+      {/* Action bar: Log bet + Load Betcode + Auto-Settle + Export CSV */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           {bets.length > 0 && (
@@ -980,6 +1098,23 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
               <Ticket className="h-3.5 w-3.5 text-teal-600" /> Load Betcode
             </Button>
           )}
+          {totalPendingCount > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={autoSettling}
+              onClick={handleAutoSettle}
+              className="gap-1.5 border-[#3D2DFF]/30 text-[#3D2DFF] hover:bg-[#3D2DFF]/5"
+            >
+              {autoSettling ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              {autoSettling ? "Checking results…" : `Auto-Settle (${totalPendingCount})`}
+            </Button>
+          )}
         </div>
 
         {bets.length > 0 && (
@@ -995,6 +1130,20 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
         )}
       </div>
 
+      {autoSettleMsg && (
+        <div className="flex items-center justify-between rounded-xl border border-[#3D2DFF]/20 bg-[#3D2DFF]/5 px-4 py-2.5 text-xs font-medium text-slate-800">
+          <span>{autoSettleMsg}</span>
+          <button
+            type="button"
+            onClick={() => setAutoSettleMsg(null)}
+            className="ml-3 text-slate-400 hover:text-slate-700"
+            aria-label="Dismiss"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
       {formOpen && (
         <AddBetForm
           key={JSON.stringify(prefill)}
@@ -1007,7 +1156,7 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
 
       {bets.length > 0 && (
         <>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className={cn("grid grid-cols-2 gap-4", stats.totalLegs > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4")}>
             <StatTile
               label="Profit / loss"
               value={signedMoney(stats.profit)}
@@ -1021,10 +1170,18 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
               tone={stats.roi >= 0 ? "good" : "bad"}
             />
             <StatTile
-              label="Strike rate"
+              label="Slip strike rate"
               value={pct(stats.strikeRate)}
               sub={stats.avgOdds ? `Break-even at avg odds ${stats.avgOdds.toFixed(2)}: ${pct(stats.breakEvenRate)}` : undefined}
             />
+            {stats.totalLegs > 0 && (
+              <StatTile
+                label="Leg accuracy"
+                value={stats.legStrikeRate === null ? "—" : pct(stats.legStrikeRate)}
+                sub={`${stats.wonLegs}W–${stats.lostLegs}L of ${stats.totalLegs} tracked legs`}
+                tone={stats.legStrikeRate === null ? undefined : stats.legStrikeRate >= 0.55 ? "good" : undefined}
+              />
+            )}
             <StatTile
               label="Closing-line value"
               value={stats.avgClv === null ? "—" : `${stats.avgClv >= 0 ? "+" : ""}${pct(stats.avgClv)}`}
@@ -1156,31 +1313,62 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
                   );
                 }
                 const p = betProfit(b);
+                const hasLegs = Boolean(b.legs && b.legs.length > 0);
+                const legsOpen = Boolean(expandedLegs[b.id]);
+                const wonLegs = b.legs?.filter((l) => l.status === "won").length ?? 0;
+                const lostLegs = b.legs?.filter((l) => l.status === "lost").length ?? 0;
+                const pendingLegs = b.legs?.filter((l) => l.status === "pending").length ?? 0;
+
                 return (
-                  <li key={b.id} className="grid gap-3 px-6 py-4 md:grid-cols-[1fr_auto] md:items-center">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-[#0f172a]">{b.selection}</p>
-                      <p className="truncate text-xs text-[#1e293b]/50">
-                        {b.eventName} · {b.market}
-                        {(b.legCount ?? 1) > 1 && ` (${b.legCount} legs)`}
-                        {b.bookmaker && ` · ${b.bookmaker}`} ·{" "}
-                        {new Date(b.placedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                      </p>
-                      <p className="mt-1 text-xs tabular-nums text-[#1e293b]/70">
-                        {money(b.stake)} @ {b.odds.toFixed(2)}
-                        {b.yourProb !== null && ` · your chance ${pct(b.yourProb, 0)}`}
-                        {b.status !== "pending" && (
-                          <span className={cn("ml-2 font-semibold", p >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                            {signedMoney(p)}
-                          </span>
-                        )}
-                      </p>
+                  <li key={b.id} className="px-6 py-4">
+                    <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="truncate font-medium text-[#0f172a]">{b.selection}</p>
+                          {hasLegs && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedLegs((prev) => ({ ...prev, [b.id]: !prev[b.id] }))
+                              }
+                              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                            >
+                              {wonLegs}/{b.legs!.length} won
+                              {lostLegs > 0 && <span className="text-rose-600">· {lostLegs} lost</span>}
+                              {lostLegs === 0 && pendingLegs > 0 && (
+                                <span className="text-slate-400">· {pendingLegs} pending</span>
+                              )}
+                              {legsOpen ? (
+                                <ChevronUp className="h-3 w-3" />
+                              ) : (
+                                <ChevronDown className="h-3 w-3" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                        <p className="truncate text-xs text-[#1e293b]/50">
+                          {b.eventName} · {b.market}
+                          {(b.legCount ?? 1) > 1 && ` (${b.legCount} legs)`}
+                          {b.bookmaker && ` · ${b.bookmaker}`} ·{" "}
+                          {new Date(b.placedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                        </p>
+                        <p className="mt-1 text-xs tabular-nums text-[#1e293b]/70">
+                          {money(b.stake)} @ {b.odds.toFixed(2)}
+                          {b.yourProb !== null && ` · your chance ${pct(b.yourProb, 0)}`}
+                          {b.status !== "pending" && (
+                            <span className={cn("ml-2 font-semibold", p >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                              {signedMoney(p)}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <SettleControls
+                        key={`${b.status}-${b.closingOdds}-${b.cashoutAmount}`}
+                        bet={b}
+                        onEdit={() => setEditingId(b.id)}
+                      />
                     </div>
-                    <SettleControls
-                      key={`${b.status}-${b.closingOdds}-${b.cashoutAmount}`}
-                      bet={b}
-                      onEdit={() => setEditingId(b.id)}
-                    />
+                    {hasLegs && legsOpen && <AccumulatorLegsPanel legs={b.legs!} />}
                   </li>
                 );
               })}

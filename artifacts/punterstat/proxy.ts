@@ -259,7 +259,7 @@ export default async function proxy(request: NextRequest) {
       return NextResponse.redirect(stvUrl);
     }
 
-    if (pathname === "/bet-assist" || pathname === "/bet-assist/slip-checker" || pathname === "/bet-assist/calculators") {
+    if (pathname === "/bet-assist") {
       const assistUrl = request.nextUrl.clone();
       assistUrl.pathname = "/dashboard/bet-tracker";
       return NextResponse.redirect(assistUrl);

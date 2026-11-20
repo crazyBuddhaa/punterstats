@@ -2,13 +2,28 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Check, CheckCircle2, Copy, Plus, Share2, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, Copy, Loader2, Plus, Share2, Ticket, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { assessSlip, type SlipAssessment, type SlipRisk } from "@/lib/bet-assist/slip";
 import { pct } from "@/lib/bet-assist/calculators";
 import { cn } from "@/lib/utils";
+
+const CODE_BOOKMAKERS = [
+  { key: "sportybet", label: "SportyBet (NG)" },
+  { key: "bet9ja", label: "Bet9ja" },
+  { key: "football.com", label: "Football.com" },
+  { key: "betking", label: "BetKing" },
+  { key: "onexbet", label: "1xBet" },
+  { key: "msport", label: "MSport" },
+  { key: "betway", label: "Betway" },
+  { key: "22bet", label: "22Bet" },
+  { key: "sportybet_gh", label: "SportyBet (GH)" },
+  { key: "sportybet_ke", label: "SportyBet (KE)" },
+  { key: "sportybet_za", label: "SportyBet (ZA)" },
+  { key: "sportybet_tz", label: "SportyBet (TZ)" },
+];
 
 interface LegDraft {
   event: string;
@@ -63,6 +78,66 @@ export function SlipChecker({ isAuthenticated = false }: { isAuthenticated?: boo
   const [result, setResult] = useState<SlipAssessment | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedVerdict, setCopiedVerdict] = useState(false);
+
+  const [bookingCode, setBookingCode] = useState("");
+  const [codeBookie, setCodeBookie] = useState("sportybet");
+  const [decoding, setDecoding] = useState(false);
+  const [decodeNotice, setDecodeNotice] = useState<string | null>(null);
+
+  const decodeBookingCode = async () => {
+    const clean = bookingCode.trim().toUpperCase();
+    if (!clean) {
+      setError("Enter a booking code first (e.g. JQW6XN).");
+      return;
+    }
+    setDecoding(true);
+    setError(null);
+    setDecodeNotice(null);
+    try {
+      const res = await fetch(
+        `/api/bet-assist/decode-slip?code=${encodeURIComponent(clean)}&bookmaker=${encodeURIComponent(codeBookie)}`
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error ?? "Could not decode booking code.");
+        return;
+      }
+      const decodedLegs: LegDraft[] = (data.legs ?? []).map(
+        (l: { event: string; selection: string; odds: number; modelProb: number | null }) => ({
+          event: l.event ?? "",
+          selection: l.selection ?? "",
+          odds: Number(l.odds).toFixed(2),
+          yourProb: l.modelProb !== null ? String(Math.round(l.modelProb * 1000) / 10) : "",
+        })
+      );
+      if (decodedLegs.length === 0) {
+        setError("No readable selections with decimal odds found in that booking code.");
+        return;
+      }
+      setLegs(decodedLegs);
+      setInputMode("detailed");
+      const matchedCount = decodedLegs.filter((l) => l.yourProb !== "").length;
+      setDecodeNotice(
+        `Loaded ${decodedLegs.length} leg${decodedLegs.length === 1 ? "" : "s"} from ${data.bookmaker} (${data.code})${
+          matchedCount > 0 ? ` · ${matchedCount} auto-priced with Dixon-Coles v2.0` : ""
+        }.`
+      );
+      const assessment = assessSlip(
+        decodedLegs.map((l) => ({
+          selection: l.selection || "Selection",
+          event: l.event || undefined,
+          decimalOdds: Number(l.odds),
+          yourProb: l.yourProb ? Number(l.yourProb) / 100 : null,
+        })),
+        Number(stake) || 1000
+      );
+      if (assessment) setResult(assessment);
+    } catch {
+      setError("Network error while decoding booking code. Please try again.");
+    } finally {
+      setDecoding(false);
+    }
+  };
 
   const update = (i: number, patch: Partial<LegDraft>) => {
     setLegs(legs.map((l, j) => (j === i ? { ...l, ...patch } : l)));
@@ -135,7 +210,7 @@ export function SlipChecker({ isAuthenticated = false }: { isAuthenticated?: boo
   function copyVerdict() {
     if (!result) return;
     navigator.clipboard
-      .writeText(buildVerdictText(result))
+      ?.writeText(buildVerdictText(result))
       .then(() => {
         setCopiedVerdict(true);
         setTimeout(() => setCopiedVerdict(false), 1800);
@@ -180,6 +255,53 @@ export function SlipChecker({ isAuthenticated = false }: { isAuthenticated?: boo
     <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
       {/* Input */}
       <div className="space-y-4 rounded-2xl border border-border bg-white p-6 shadow-sm">
+        {/* Load by Booking Code bar */}
+        <div className="rounded-xl border border-teal-200 bg-teal-50/40 p-3.5 space-y-2.5">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#0f172a]">
+            <Ticket className="h-3.5 w-3.5 text-teal-600" />
+            Load by Booking Code
+          </div>
+          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <select
+              value={codeBookie}
+              onChange={(e) => setCodeBookie(e.target.value)}
+              aria-label="Select bookmaker"
+              className="h-9 rounded-lg border border-border bg-white px-2.5 text-xs text-[#0f172a] focus:border-teal-600 focus:outline-none"
+            >
+              {CODE_BOOKMAKERS.map((b) => (
+                <option key={b.key} value={b.key}>
+                  {b.label}
+                </option>
+              ))}
+            </select>
+            <Input
+              value={bookingCode}
+              onChange={(e) => setBookingCode(e.target.value.toUpperCase())}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void decodeBookingCode();
+                }
+              }}
+              placeholder="Paste code (e.g. JQW6XN)"
+              className="h-9 bg-white text-xs font-mono uppercase tracking-wider"
+            />
+            <Button
+              type="button"
+              variant="teal"
+              size="sm"
+              disabled={decoding}
+              onClick={() => void decodeBookingCode()}
+              className="h-9 gap-1.5"
+            >
+              {decoding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Load Slip"}
+            </Button>
+          </div>
+          {decodeNotice && (
+            <p className="text-[11px] font-medium text-teal-800">{decodeNotice}</p>
+          )}
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-semibold text-[#0f172a]">Your slip</h2>
           <div className="inline-flex rounded-lg border border-border bg-slate-50 p-0.5">

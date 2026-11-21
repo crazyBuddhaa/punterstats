@@ -135,30 +135,30 @@ function BreakdownTable({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="-mx-2 overflow-x-auto px-2">
+      <table className="w-full min-w-[580px] text-sm">
         <thead className="border-b border-border text-left text-xs text-[#1e293b]/50">
           <tr>
-            <th className="pb-2.5 font-medium">{firstColLabel}</th>
-            <th className="pb-2.5 text-right font-medium">Settled</th>
-            <th className="pb-2.5 text-right font-medium">Strike vs B/E</th>
-            <th className="pb-2.5 text-right font-medium">Staked</th>
-            <th className="pb-2.5 text-right font-medium">Net P/L</th>
-            <th className="pb-2.5 text-right font-medium">ROI</th>
+            <th className="whitespace-nowrap pb-2.5 pr-4 font-medium">{firstColLabel}</th>
+            <th className="whitespace-nowrap pb-2.5 px-3 text-right font-medium">Settled</th>
+            <th className="whitespace-nowrap pb-2.5 px-3 text-right font-medium">Win % vs Target</th>
+            <th className="whitespace-nowrap pb-2.5 px-3 text-right font-medium">Staked</th>
+            <th className="whitespace-nowrap pb-2.5 px-3 text-right font-medium">Net P/L</th>
+            <th className="whitespace-nowrap pb-2.5 pl-3 text-right font-medium">ROI</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border tabular-nums">
           {rows.map((r) => (
             <tr key={r.key} className={cn(r.bets === 0 && "opacity-45")}>
-              <td className="py-2.5 font-medium text-[#0f172a]">{r.label}</td>
-              <td className="py-2.5 text-right text-[#1e293b]/80">{r.bets}</td>
-              <td className="py-2.5 text-right text-xs text-[#1e293b]/70">
+              <td className="whitespace-nowrap py-2.5 pr-4 font-medium text-[#0f172a]">{r.label}</td>
+              <td className="whitespace-nowrap py-2.5 px-3 text-right text-[#1e293b]/80">{r.bets}</td>
+              <td className="whitespace-nowrap py-2.5 px-3 text-right text-xs text-[#1e293b]/70">
                 {r.bets > 0 ? `${pct(r.strikeRate)} vs ${pct(r.breakEvenRate)}` : "—"}
               </td>
-              <td className="py-2.5 text-right text-[#1e293b]/80">{money(r.staked)}</td>
+              <td className="whitespace-nowrap py-2.5 px-3 text-right text-[#1e293b]/80">{money(r.staked)}</td>
               <td
                 className={cn(
-                  "py-2.5 text-right font-medium",
+                  "whitespace-nowrap py-2.5 px-3 text-right font-medium",
                   r.bets === 0
                     ? "text-[#1e293b]/40"
                     : r.profit >= 0
@@ -170,7 +170,7 @@ function BreakdownTable({
               </td>
               <td
                 className={cn(
-                  "py-2.5 text-right font-semibold",
+                  "whitespace-nowrap py-2.5 pl-3 text-right font-semibold",
                   r.bets === 0
                     ? "text-[#1e293b]/40"
                     : r.roi >= 0
@@ -668,7 +668,7 @@ export function ReportCardView({ freeData, premiumData }: ReportCardViewProps) {
               <div>
                 <h2 className="font-semibold text-[#0f172a]">Performance Breakdowns</h2>
                 <p className="mt-0.5 text-xs text-[#1e293b]/55">
-                  Slice your settled record by market, odds band, bookmaker, stake tertile, or bet type.
+                  See how you perform by market, odds range, bookmaker, stake size, or bet type.
                 </p>
               </div>
 
@@ -676,9 +676,9 @@ export function ReportCardView({ freeData, premiumData }: ReportCardViewProps) {
                 {(
                   [
                     { id: "market", label: "Market" },
-                    { id: "odds", label: "Odds Band" },
+                    { id: "odds", label: "Odds Range" },
                     { id: "bookmaker", label: "Bookmaker" },
-                    { id: "stake", label: "Stake Tertile" },
+                    { id: "stake", label: "Stake Size" },
                     { id: "type", label: "Single vs Acca" },
                   ] as const
                 ).map((t) => (
@@ -703,7 +703,7 @@ export function ReportCardView({ freeData, premiumData }: ReportCardViewProps) {
               <BreakdownTable rows={premiumData.breakdowns.byMarket} firstColLabel="Market" />
             )}
             {breakdownTab === "odds" && (
-              <BreakdownTable rows={premiumData.breakdowns.byOddsBand} firstColLabel="Odds Band" />
+              <BreakdownTable rows={premiumData.breakdowns.byOddsBand} firstColLabel="Odds Range" />
             )}
             {breakdownTab === "bookmaker" && (
               <BreakdownTable rows={premiumData.breakdowns.byBookmaker} firstColLabel="Bookmaker" />
@@ -711,7 +711,7 @@ export function ReportCardView({ freeData, premiumData }: ReportCardViewProps) {
             {breakdownTab === "stake" && (
               <BreakdownTable
                 rows={premiumData.breakdowns.byStakeTertile}
-                firstColLabel="Stake Tertile"
+                firstColLabel="Stake Size"
               />
             )}
             {breakdownTab === "type" && (

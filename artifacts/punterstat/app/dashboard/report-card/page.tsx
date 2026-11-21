@@ -137,7 +137,7 @@ export default async function ReportCardPage({ searchParams }: Props) {
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-teal-600" />
               <h2 className="text-sm font-bold text-[#0f172a]">
-                Personal Behavior Model (Empirical Bayes)
+                Your Betting Profile
               </h2>
               <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${maturityInfo.className}`}>
                 {maturityInfo.label}
@@ -145,7 +145,7 @@ export default async function ReportCardPage({ searchParams }: Props) {
             </div>
             <div className="flex items-center gap-2 text-xs">
               <Link href="/bet-assist/slip-checker" className="font-semibold text-teal-700 hover:underline">
-                Score a slip with this model →
+                Check a slip with your stats →
               </Link>
               <span className="text-slate-300">|</span>
               <Link href="/dashboard/profile" className="text-[#1e293b]/60 hover:text-[#0f172a] hover:underline">
@@ -157,7 +157,7 @@ export default async function ReportCardPage({ searchParams }: Props) {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl border border-border bg-slate-50/70 p-3.5">
               <p className="text-[11px] font-medium uppercase tracking-wide text-[#1e293b]/50">
-                Shrunk Expected ROI
+                Form-Adjusted ROI
               </p>
               <p
                 className={`mt-1 text-lg font-bold tabular-nums ${
@@ -167,13 +167,13 @@ export default async function ReportCardPage({ searchParams }: Props) {
                 {fmtSignedPct(punterModel.overallShrunkRoi)}
               </p>
               <p className="mt-0.5 text-[11px] text-[#1e293b]/55">
-                Raw: {fmtSignedPct(punterModel.overallRawRoi)} ({punterModel.settledBets} bets)
+                Overall: {fmtSignedPct(punterModel.overallRawRoi)} ({punterModel.settledBets} bets)
               </p>
             </div>
 
             <div className="rounded-xl border border-border bg-slate-50/70 p-3.5">
               <p className="text-[11px] font-medium uppercase tracking-wide text-[#1e293b]/50">
-                Tilt Risk Score
+                Loss-Chasing Risk
               </p>
               <p
                 className={`mt-1 text-lg font-bold tabular-nums ${
@@ -189,14 +189,14 @@ export default async function ReportCardPage({ searchParams }: Props) {
               </p>
               <p className="mt-0.5 text-[11px] text-[#1e293b]/55">
                 {punterModel.tilt.postLossStakeRatio !== null
-                  ? `Post-loss stake: ${punterModel.tilt.postLossStakeRatio.toFixed(2)}× median`
-                  : `Current loss streak: ${punterModel.tilt.currentLossStreak}`}
+                  ? `After a loss, you stake ${punterModel.tilt.postLossStakeRatio.toFixed(2)}× your usual bet`
+                  : `Current losing streak: ${punterModel.tilt.currentLossStreak}`}
               </p>
             </div>
 
             <div className="rounded-xl border border-border bg-slate-50/70 p-3.5">
               <p className="text-[11px] font-medium uppercase tracking-wide text-[#1e293b]/50">
-                Strongest Segment
+                Best Performing
               </p>
               {punterModel.bestSegment ? (
                 <>
@@ -204,17 +204,17 @@ export default async function ReportCardPage({ searchParams }: Props) {
                     {punterModel.bestSegment.label}
                   </p>
                   <p className="mt-0.5 text-[11px] font-semibold text-emerald-700 tabular-nums">
-                    {fmtSignedPct(punterModel.bestSegment.shrunkRoi)} shrunk ROI ({punterModel.bestSegment.bets} bets)
+                    {fmtSignedPct(punterModel.bestSegment.shrunkRoi)} adjusted ROI ({punterModel.bestSegment.bets} bets)
                   </p>
                 </>
               ) : (
-                <p className="mt-1 text-xs text-[#1e293b]/55">Needs 5+ bets in a segment</p>
+                <p className="mt-1 text-xs text-[#1e293b]/55">Needs 5+ bets in a category</p>
               )}
             </div>
 
             <div className="rounded-xl border border-border bg-slate-50/70 p-3.5">
               <p className="text-[11px] font-medium uppercase tracking-wide text-[#1e293b]/50">
-                Biggest Leak Segment
+                Biggest Leak
               </p>
               {punterModel.worstSegment ? (
                 <>
@@ -222,11 +222,11 @@ export default async function ReportCardPage({ searchParams }: Props) {
                     {punterModel.worstSegment.label}
                   </p>
                   <p className="mt-0.5 text-[11px] font-semibold text-rose-700 tabular-nums">
-                    {fmtSignedPct(punterModel.worstSegment.shrunkRoi)} shrunk ROI ({punterModel.worstSegment.bets} bets)
+                    {fmtSignedPct(punterModel.worstSegment.shrunkRoi)} adjusted ROI ({punterModel.worstSegment.bets} bets)
                   </p>
                 </>
               ) : (
-                <p className="mt-1 text-xs text-[#1e293b]/55">Needs 5+ bets in a segment</p>
+                <p className="mt-1 text-xs text-[#1e293b]/55">Needs 5+ bets in a category</p>
               )}
             </div>
           </div>

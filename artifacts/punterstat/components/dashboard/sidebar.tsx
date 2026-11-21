@@ -54,6 +54,7 @@ const assistItems: SidebarItem[] = [
   { href: "/dashboard/bet-tracker", label: "Bet Tracker", icon: NotebookPen },
   { href: "/dashboard/report-card", label: "Report Card", icon: ClipboardCheck },
   { href: "/bet-assist/slip-checker", label: "Slip Checker", icon: ClipboardCheck },
+  { href: "/bet-analysis/screener", label: "Match Screener", icon: Sliders },
   { href: "/stats", label: "Stats Centre", icon: Database },
   { href: "/match-breakdown/analyzer", label: "Match Breakdown", icon: Sliders, requiredPlan: "pro" },
   { href: "/dashboard/match-analyses", label: "Saved Analyses", icon: BarChart2, requiredPlan: "pro" },

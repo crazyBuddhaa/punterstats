@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { BarChart3, FlaskConical, History, LineChart, Search, SlidersHorizontal, Swords, Zap } from "lucide-react";
+import { BarChart3, FlaskConical, History, LineChart, Search, SlidersHorizontal, Swords } from "lucide-react";
 import { ToolHero } from "@/components/bet-assist/tool-hero";
 import { ResponsibleGamblingStrip } from "@/components/bet-assist/responsible-gambling";
 import { PillarGrid, type PillarItem } from "@/components/bet-assist/pillar-grid";
 
 export const metadata: Metadata = {
-  title: "Bet Analysis — Match Breakdown, Value, Stats & Simulations — PunterStat",
+  title: "Bet Analysis — Match Screener, Breakdown, Stats & Simulations — PunterStat",
   description:
-    "Analyse football matches and betting markets with data: Daily Match Screener, Quick 1-Page & 6-Step model probabilities, Spot The Value, 1,000-trial Monte Carlo simulations, historical league benchmarks and H2H records.",
+    "Analyse football matches and betting markets with data: Daily Match Screener, Quick 1-Page & 6-Step model probabilities, 1,000-trial Monte Carlo simulations, historical league benchmarks and H2H records.",
 };
 
 const ITEMS: PillarItem[] = [
@@ -24,13 +24,6 @@ const ITEMS: PillarItem[] = [
     description:
       "Quick 1-Page or 6-Step mode: turn form, H2H, goals and home advantage into 1X2, Over/Under and BTTS probabilities with live odds comparison.",
     icon: Search,
-  },
-  {
-    href: "/spot-the-value",
-    title: "Spot The Value",
-    description:
-      "Compare your probabilities against live market odds (EPL, UCL, Europa League, Championship & NBA) or use the Manual Odds Checker.",
-    icon: Zap,
   },
   {
     href: "/simulation-engine",

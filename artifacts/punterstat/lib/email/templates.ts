@@ -156,7 +156,7 @@ export function welcomeEmail(displayName: string): EmailTemplate {
                color:${BRAND.body};line-height:1.9;">
       <li>Take structured courses in Sports University</li>
       <li>Learn probability &amp; odds in Betting Academy</li>
-      <li>Analyse matches with the Breakdown Engine and Spot The Value</li>
+      <li>Analyse matches with the Breakdown Engine and Daily Match Screener</li>
       <li>Check your slips and run illustrative calculators in Bet Assist</li>
       <li>Log every bet in the Bet Tracker to see your real ROI</li>
     </ul>
@@ -182,7 +182,7 @@ export function welcomeEmail(displayName: string): EmailTemplate {
       "What you can do:",
       "• Structured courses in Sports University",
       "• Probability & odds in Betting Academy",
-      "• Match analysis with the Breakdown Engine and Spot The Value",
+      "• Match analysis with the Breakdown Engine and Daily Match Screener",
       "• Slip checker, calculators and bet tracker in Bet Assist",
       "• Track every bet and your ROI in the Bet Tracker",
       "",

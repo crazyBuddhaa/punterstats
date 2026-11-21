@@ -181,7 +181,7 @@ export default async function SubscriptionPage() {
           <p className="mt-1 text-sm text-[#1e293b]/70">
             {plan === "pro"
               ? "Unlock the full Betting Report Card (CLV, calibration curve, and structural leak detection), Calibration Trainer, and priority support."
-              : "Unlock Match Breakdown Analyzer, Simulation History, Spot The Value, and the full Betting Report Card. Pay via Paystack (cards, OPay/PalmPay, bank transfer, USSD) or Remita."}
+              : "Unlock Match Breakdown Analyzer, Simulation History, Daily Match Screener, and the full Betting Report Card. Pay via Paystack (cards, OPay/PalmPay, bank transfer, USSD) or Remita."}
           </p>
           <Link
             href={plan === "pro" ? "/checkout?plan=premium" : "/pricing"}

@@ -98,11 +98,11 @@ export default async function LeagueDetailPage({ params }: Props) {
                 Historical Results
               </Link>
               <Link
-                href="/spot-the-value"
+                href="/bet-analysis/screener"
                 className="inline-flex items-center gap-1.5 rounded-lg bg-[#3D2DFF] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#3D2DFF]/90"
               >
                 <Zap className="h-3.5 w-3.5" />
-                Spot The Value
+                Match Screener
               </Link>
             </div>
           </div>
@@ -154,10 +154,10 @@ export default async function LeagueDetailPage({ params }: Props) {
                     <BarChart2 className="h-3.5 w-3.5" /> Historical Results →
                   </Link>
                   <Link
-                    href="/spot-the-value"
+                    href="/bet-analysis/screener"
                     className="inline-flex items-center gap-1 text-xs font-medium text-teal-400 hover:text-teal-300 transition"
                   >
-                    <Zap className="h-3.5 w-3.5" /> Live Odds →
+                    <Zap className="h-3.5 w-3.5" /> Match Screener →
                   </Link>
                 </div>
               </div>

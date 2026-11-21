@@ -18,7 +18,7 @@ const FAQ = [
   },
   {
     q: "What does the Free plan include?",
-    a: "Free accounts include full access to Sports University & Betting Academy lessons, lesson bookmarks and progress tracking, the Bet Slip Checker, Betting Calculators, Bet Tracker / Journal with basic ROI summary, and Historical Football Stats & H2H Explorer. Pro (₦700/mo) unlocks the Match Breakdown Analyzer, Simulation Engine history and Spot The Value; Premium (₦1,500/mo) adds the full Betting Report Card (CLV, calibration & leak diagnostics) and Calibration Trainer.",
+    a: "Free accounts include full access to Sports University & Betting Academy lessons, lesson bookmarks and progress tracking, the Bet Slip Checker & Cash-Out Evaluator, Bet Tracker / Journal with basic ROI summary, and Historical Football Stats & H2H Explorer. Pro (₦700/mo) unlocks the Match Breakdown Analyzer, Simulation Engine history and Daily Match Screener; Premium (₦1,500/mo) adds the full Betting Report Card (CLV, calibration & leak diagnostics) and Calibration Trainer.",
   },
   {
     q: "Which payment methods do you accept?",

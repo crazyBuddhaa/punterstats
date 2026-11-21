@@ -66,7 +66,7 @@ const faqSections = [
       },
       {
         q: "What do Pro (₦700/mo) and Premium (₦1,500/mo) include?",
-        a: "Free accounts include all Sports University & Betting Academy lessons, Bet Slip Checker, Betting Calculators, Stats Explorer, and the Bet Tracker. Pro (₦700/month) unlocks the Match Breakdown Analyzer, saved analysis history, Simulation History, and Spot The Value. Premium (₦1,500/month) adds the full Betting Report Card (CLV, probability calibration, and automated leak detection), Calibration Trainer, and priority support. Pay via Paystack (cards, bank transfer, OPay/PalmPay, USSD), Remita, or Stripe.",
+        a: "Free accounts include all Sports University & Betting Academy lessons, Bet Slip Checker & Cash-Out Evaluator, Stats Explorer, and the Bet Tracker. Pro (₦700/month) unlocks the Match Breakdown Analyzer, saved analysis history, Simulation History, and Daily Match Screener. Premium (₦1,500/month) adds the full Betting Report Card (CLV, probability calibration, and automated leak detection), Calibration Trainer, and priority support. Pay via Paystack (cards, bank transfer, OPay/PalmPay, USSD), Remita, or Stripe.",
       },
       {
         q: "Can I cancel my subscription?",

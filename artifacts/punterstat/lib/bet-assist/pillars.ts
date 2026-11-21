@@ -38,11 +38,6 @@ export const PILLARS: Pillar[] = [
         description: "Quick 1-Page & 6-Step model probabilities with odds comparison",
       },
       {
-        href: "/spot-the-value",
-        label: "Spot The Value",
-        description: "Compare your probabilities against live or manual bookmaker odds",
-      },
-      {
         href: "/simulation-engine",
         label: "Simulation Engine",
         description: "1,000-trial Monte Carlo bankroll & Poisson match simulators",

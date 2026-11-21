@@ -135,15 +135,15 @@ export async function getRecommendation(userId: string): Promise<Recommendation 
     };
   }
 
-  // ── Rule 4: Never checked live value, covered enough curriculum ───────────
+  // ── Rule 4: Never checked match screener, covered enough curriculum ───────
   if (valueViewedCount === 0 && completedCount >= 8) {
     return {
       type: "tool",
-      title: "Spot The Value",
-      description: "De-vig live odds and compare them against model-implied probabilities.",
-      href: "/spot-the-value",
+      title: "Daily Match Screener",
+      description: "Scan today's upcoming fixtures for high-probability favorites, goals, and acca anchors.",
+      href: "/bet-analysis/screener",
       reason:
-        "You're far enough into the curriculum to start evaluating live market prices against the model.",
+        "You're far enough into the curriculum to start screening upcoming matches with model probabilities.",
     };
   }
 

@@ -4,8 +4,8 @@ import { Separator } from "@/components/ui/separator";
 
 const footerLinks = {
   "Bet Analysis": [
+    { href: "/bet-analysis/screener", label: "Daily Match Screener" },
     { href: "/match-breakdown", label: "Match Breakdown" },
-    { href: "/spot-the-value", label: "Spot The Value" },
     { href: "/simulation-engine", label: "Simulation Engine" },
     { href: "/stats", label: "Historical Stats" },
     { href: "/stats/head-to-head", label: "Head-to-Head" },

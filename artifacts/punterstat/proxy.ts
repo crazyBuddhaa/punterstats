@@ -23,8 +23,6 @@ const RATE_LIMITED_API_ROUTES: Array<{
 }> = [
   // Odds API: 500 credits/month — tightest limit.
   { prefix: "/api/odds",           limit: 10, windowMs: 60_000, label: "odds"        },
-  // Spot The Value calls odds + fixtures.
-  { prefix: "/api/spot-the-value", limit: 10, windowMs: 60_000, label: "stv"         },
   // Fixture search: soft 33 req/day quota on footballdata.io.
   { prefix: "/api/fixtures",       limit: 20, windowMs: 60_000, label: "fixtures"    },
   // Calibration reads only from Supabase.
@@ -251,12 +249,6 @@ export default async function proxy(request: NextRequest) {
       dashboardUrl.pathname = "/dashboard";
       dashboardUrl.search = "";
       return NextResponse.redirect(dashboardUrl);
-    }
-
-    if (pathname === "/spot-the-value" || pathname.startsWith("/spot-the-value/")) {
-      const stvUrl = request.nextUrl.clone();
-      stvUrl.pathname = "/dashboard/spot-the-value";
-      return NextResponse.redirect(stvUrl);
     }
 
     if (pathname === "/bet-assist") {

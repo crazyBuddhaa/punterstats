@@ -33,7 +33,7 @@ export default async function SimulationHistoryPage() {
         highlights={[
           "Persistent log of all Bet Simulator & Probability Simulator sessions",
           "Track virtual P/L, ROI, and variance runs across strategies",
-          "Includes Match Breakdown Analyzer and Spot The Value access",
+          "Includes Match Breakdown Analyzer and Daily Match Screener access",
         ]}
       />
     );
@@ -69,17 +69,17 @@ export default async function SimulationHistoryPage() {
         </Link>
       </div>
 
-      {/* Spot The Value CTA */}
+      {/* Daily Match Screener CTA */}
       <Link
-        href="/spot-the-value"
+        href="/bet-analysis/screener"
         className="flex items-center justify-between rounded-xl border border-[#3D2DFF]/20 bg-[#3D2DFF]/5 px-5 py-3.5 text-sm text-[#3D2DFF] transition hover:bg-[#3D2DFF]/10"
       >
         <span className="flex items-center gap-2.5">
           <Zap className="h-4 w-4 shrink-0" />
           <span>
-            <span className="font-semibold">Spot The Value</span>
+            <span className="font-semibold">Daily Match Screener</span>
             <span className="ml-1.5 text-[#3D2DFF]/70">
-              — compare your model probabilities against market odds to find value gaps.
+              — scan today&apos;s fixtures for high-probability favorites, goals, and acca anchors.
             </span>
           </span>
         </span>

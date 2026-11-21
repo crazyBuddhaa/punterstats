@@ -78,10 +78,10 @@ const ANALYSIS_TOOLS = [
     description: "Top 5 European league benchmarks plus club-vs-club H2H lookups for BTTS, Over 1.5/2.5 and corners.",
   },
   {
-    href: "/spot-the-value",
+    href: "/bet-analysis/screener",
     icon: Zap,
-    title: "Spot The Value",
-    description: "Compare your probabilities against live odds (EPL, UCL, Europa League, Championship & NBA) or use Manual Odds Checker.",
+    title: "Daily Match Screener",
+    description: "Filter upcoming matches by highest-probability favorites, Over 2.5, BTTS, Acca Anchors, or Draw Hunters.",
   },
   {
     href: "/simulation-engine",

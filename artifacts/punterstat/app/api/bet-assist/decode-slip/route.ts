@@ -8,7 +8,21 @@ import {
   type CbcRetrieveResponse,
 } from "@/lib/bet-assist/booking-code";
 
+export const maxDuration = 60;
+
 const CBC_BASE_URL = "https://convertbetcodes.com/api";
+
+function pickConversionTarget(originBookie: string): string {
+  if (originBookie === "sportybet:ng") return "sportybet:gh";
+  if (originBookie.startsWith("sportybet:")) return "sportybet:ng";
+  if (originBookie === "1xbet:ng") return "1xbet:gh";
+  if (originBookie.startsWith("1xbet:")) return "1xbet:ng";
+  if (originBookie === "betway:ng") return "betway:za";
+  if (originBookie.startsWith("betway:")) return "betway:ng";
+  if (originBookie === "betika:ng") return "betika:ke";
+  if (originBookie.startsWith("betika:")) return "betika:ng";
+  return originBookie === "sportybet:ng" ? "sportybet:gh" : "sportybet:ng";
+}
 
 /** Map a decoded market + selection onto our Dixon-Coles v2.0 derived probability if supported. */
 function lookupModelProb(
@@ -107,14 +121,14 @@ export async function GET(req: NextRequest) {
 
   const bookieMeta = getBookmakerMeta(originBookie);
 
-  const fetchCbc = async (url: string) => {
+  const fetchCbc = async (url: string, timeoutMs: number) => {
     const res = await fetch(url, {
       headers: {
         Accept: "application/json",
         "User-Agent": "PunterStat/1.0 (+https://punterstat.com)",
       },
       cache: "no-store",
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     const rawText = await res.text();
     let parsed: CbcRetrieveResponse | null = null;
@@ -135,16 +149,14 @@ export async function GET(req: NextRequest) {
       `&booking_code=${encodeURIComponent(rawCode)}` +
       `&api_key=${encodeURIComponent(apiKey)}`;
 
-    let attempt = await fetchCbc(retrieveUrl);
-    let parsedLegs =
-      attempt.res.ok && attempt.parsed && !attempt.bodyFailed
-        ? parseConvertBetCodesResponse(attempt.parsed)
-        : [];
+    let attempt = await fetchCbc(retrieveUrl, 10_000);
+    let parsedLegs = attempt.parsed ? parseConvertBetCodesResponse(attempt.parsed) : [];
 
-    // ConvertBetCodes' retrieve_bet_code occasionally returns status 500 on some bookies/plans;
-    // automatically fall back to conversion_v2 which also returns the full origin slip in dump.lists[].home.
+    // ConvertBetCodes' retrieve_bet_code frequently returns status 500 on some bookies (e.g. sportybet:ng).
+    // Fall back to conversion_v2 with a same-brand target and parse dump.lists[].home EVEN IF
+    // bodyStatus is 500 (destination mapping errors still include the full decoded origin slip).
     if (parsedLegs.length === 0) {
-      const fallbackTo = originBookie === "bet9ja" ? "sportybet:ng" : "bet9ja";
+      const fallbackTo = pickConversionTarget(originBookie);
       const convUrl =
         `${CBC_BASE_URL}/conversion_v2` +
         `?from=${encodeURIComponent(originBookie)}` +
@@ -152,11 +164,8 @@ export async function GET(req: NextRequest) {
         `&booking_code=${encodeURIComponent(rawCode)}` +
         `&api_key=${encodeURIComponent(apiKey)}`;
 
-      const convAttempt = await fetchCbc(convUrl);
-      const convLegs =
-        convAttempt.res.ok && convAttempt.parsed && !convAttempt.bodyFailed
-          ? parseConvertBetCodesResponse(convAttempt.parsed)
-          : [];
+      const convAttempt = await fetchCbc(convUrl, 25_000);
+      const convLegs = convAttempt.parsed ? parseConvertBetCodesResponse(convAttempt.parsed) : [];
 
       if (convLegs.length > 0) {
         attempt = convAttempt;
@@ -164,6 +173,7 @@ export async function GET(req: NextRequest) {
       } else {
         console.error("[decode-slip] ConvertBetCodes both endpoints failed:", {
           originBookie,
+          fallbackTo,
           codeLength: rawCode.length,
           retrieve: {
             httpStatus: attempt.res.status,
@@ -176,7 +186,6 @@ export async function GET(req: NextRequest) {
             snippet: convAttempt.rawText.slice(0, 220),
           },
         });
-        // Prefer conversion_v2 error payload if retrieve_bet_code had an empty message
         if (convAttempt.parsed?.message || convAttempt.parsed?.error || convAttempt.parsed?.data?.errors) {
           attempt = convAttempt;
         }
@@ -185,7 +194,7 @@ export async function GET(req: NextRequest) {
 
     const { res: upstream, parsed: data, bodyStatus, bodyFailed } = attempt;
 
-    if (!upstream.ok || !data || bodyFailed) {
+    if (parsedLegs.length === 0 && (!upstream.ok || !data || bodyFailed)) {
       const nestedErrors = data?.data?.errors ?? data?.errors;
       const firstNestedErr =
         Array.isArray(nestedErrors) && nestedErrors.length > 0
@@ -236,7 +245,7 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    const homeMeta = data.data?.home ?? data.data?.conversion?.dump?.home;
+    const homeMeta = data?.data?.home ?? data?.data?.conversion?.dump?.home;
 
     return NextResponse.json({
       code: rawCode,

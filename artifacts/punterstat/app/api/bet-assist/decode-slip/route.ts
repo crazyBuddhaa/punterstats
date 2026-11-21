@@ -115,20 +115,54 @@ export async function GET(req: NextRequest) {
       `&api_key=${encodeURIComponent(apiKey)}`;
 
     const upstream = await fetch(url, {
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "PunterStat/1.0 (+https://punterstat.com)",
+      },
       cache: "no-store",
       signal: AbortSignal.timeout(15_000),
     });
 
-    const data = (await upstream.json().catch(() => null)) as CbcRetrieveResponse | null;
+    const rawText = await upstream.text();
+    type CbcRetrieveWithErrors = CbcRetrieveResponse & {
+      errors?: unknown;
+      data?: NonNullable<CbcRetrieveResponse["data"]> & { errors?: unknown };
+    };
+    let data: CbcRetrieveWithErrors | null = null;
+    try {
+      data = rawText ? (JSON.parse(rawText) as CbcRetrieveWithErrors) : null;
+    } catch {
+      data = null;
+    }
+
     const upstreamStatus = typeof data?.status === "number" ? data.status : Number(data?.status);
     const bodyFailed = Number.isFinite(upstreamStatus) && upstreamStatus >= 400;
 
     if (!upstream.ok || !data || bodyFailed) {
+      const nestedErrors = data?.data?.errors ?? data?.errors;
+      const firstNestedErr =
+        Array.isArray(nestedErrors) && nestedErrors.length > 0
+          ? typeof nestedErrors[0] === "string"
+            ? nestedErrors[0]
+            : (nestedErrors[0] as { message?: string })?.message
+          : typeof nestedErrors === "string"
+            ? nestedErrors
+            : null;
+
       const msg =
+        firstNestedErr ||
         (typeof data?.error === "string" ? data.error : data?.error?.message) ||
         (data?.message && data.message.toLowerCase() !== "success" ? data.message : null) ||
-        `Could not decode booking code (${bodyFailed ? upstreamStatus : upstream.status}).`;
+        `Could not decode booking code (${bodyFailed ? upstreamStatus : upstream.status}). Check that the code is active and matches ${bookieMeta?.label ?? originBookie}.`;
+
+      console.error("[decode-slip] ConvertBetCodes upstream failure:", {
+        httpStatus: upstream.status,
+        bodyStatus: data?.status ?? null,
+        originBookie,
+        codeLength: rawCode.length,
+        snippet: rawText.slice(0, 300),
+      });
+
       const outStatus =
         (upstream.status >= 400 && upstream.status < 500) || (bodyFailed && upstreamStatus < 500)
           ? 400

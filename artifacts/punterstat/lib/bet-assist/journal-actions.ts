@@ -715,25 +715,7 @@ export async function deleteBet(id: string): Promise<ActionResult> {
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Sign in to use the bet tracker." };
 
-  const { data: existing, error: fetchErr } = await supabase
-    .from("bet_journal")
-    .select("status")
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (fetchErr) return { success: false, error: fetchErr.message };
-  if (!existing) return { success: false, error: "Bet not found." };
-  if (existing.status !== "pending") {
-    return { success: false, error: "Settled bets are locked and cannot be deleted." };
-  }
-
-  const { error } = await supabase
-    .from("bet_journal")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .eq("status", "pending");
+  const { error } = await supabase.from("bet_journal").delete().eq("id", id).eq("user_id", user.id);
   if (error) return { success: false, error: error.message };
   revalidatePath(TRACKER_PATH);
   revalidatePath(REPORT_CARD_PATH);

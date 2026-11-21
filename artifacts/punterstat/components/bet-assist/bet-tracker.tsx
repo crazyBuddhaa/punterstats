@@ -800,7 +800,7 @@ function SettleControls({ bet, onEdit }: { bet: JournalBet; onEdit: () => void }
           </span>
         )}
         <span
-          title="Settled bets are locked and immutable"
+          title="Settled bets are locked from edits"
           className={cn(
             "inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-xs font-semibold",
             badgeTone,
@@ -809,6 +809,17 @@ function SettleControls({ bet, onEdit }: { bet: JournalBet; onEdit: () => void }
           <Lock className="h-3 w-3 opacity-75" />
           {STATUS_LABELS[bet.status]}
         </span>
+        <button
+          type="button"
+          aria-label="Delete bet"
+          disabled={pending}
+          onClick={remove}
+          className="p-1 text-[#1e293b]/35 hover:text-rose-600 disabled:opacity-50"
+          title="Delete bet"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+        {error && <p className="w-full text-right text-xs text-rose-600">{error}</p>}
       </div>
     );
   }

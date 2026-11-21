@@ -107,14 +107,8 @@ export async function GET(req: NextRequest) {
 
   const bookieMeta = getBookmakerMeta(originBookie);
 
-  try {
-    const url =
-      `${CBC_BASE_URL}/retrieve_bet_code` +
-      `?origin_bookie=${encodeURIComponent(originBookie)}` +
-      `&booking_code=${encodeURIComponent(rawCode)}` +
-      `&api_key=${encodeURIComponent(apiKey)}`;
-
-    const upstream = await fetch(url, {
+  const fetchCbc = async (url: string) => {
+    const res = await fetch(url, {
       headers: {
         Accept: "application/json",
         "User-Agent": "PunterStat/1.0 (+https://punterstat.com)",
@@ -122,21 +116,74 @@ export async function GET(req: NextRequest) {
       cache: "no-store",
       signal: AbortSignal.timeout(15_000),
     });
-
-    const rawText = await upstream.text();
-    type CbcRetrieveWithErrors = CbcRetrieveResponse & {
-      errors?: unknown;
-      data?: NonNullable<CbcRetrieveResponse["data"]> & { errors?: unknown };
-    };
-    let data: CbcRetrieveWithErrors | null = null;
+    const rawText = await res.text();
+    let parsed: CbcRetrieveResponse | null = null;
     try {
-      data = rawText ? (JSON.parse(rawText) as CbcRetrieveWithErrors) : null;
+      parsed = rawText ? (JSON.parse(rawText) as CbcRetrieveResponse) : null;
     } catch {
-      data = null;
+      parsed = null;
+    }
+    const bodyStatus = typeof parsed?.status === "number" ? parsed.status : Number(parsed?.status);
+    const bodyFailed = Number.isFinite(bodyStatus) && bodyStatus >= 400;
+    return { res, rawText, parsed, bodyStatus, bodyFailed };
+  };
+
+  try {
+    const retrieveUrl =
+      `${CBC_BASE_URL}/retrieve_bet_code` +
+      `?origin_bookie=${encodeURIComponent(originBookie)}` +
+      `&booking_code=${encodeURIComponent(rawCode)}` +
+      `&api_key=${encodeURIComponent(apiKey)}`;
+
+    let attempt = await fetchCbc(retrieveUrl);
+    let parsedLegs =
+      attempt.res.ok && attempt.parsed && !attempt.bodyFailed
+        ? parseConvertBetCodesResponse(attempt.parsed)
+        : [];
+
+    // ConvertBetCodes' retrieve_bet_code occasionally returns status 500 on some bookies/plans;
+    // automatically fall back to conversion_v2 which also returns the full origin slip in dump.lists[].home.
+    if (parsedLegs.length === 0) {
+      const fallbackTo = originBookie === "bet9ja" ? "sportybet:ng" : "bet9ja";
+      const convUrl =
+        `${CBC_BASE_URL}/conversion_v2` +
+        `?from=${encodeURIComponent(originBookie)}` +
+        `&to=${encodeURIComponent(fallbackTo)}` +
+        `&booking_code=${encodeURIComponent(rawCode)}` +
+        `&api_key=${encodeURIComponent(apiKey)}`;
+
+      const convAttempt = await fetchCbc(convUrl);
+      const convLegs =
+        convAttempt.res.ok && convAttempt.parsed && !convAttempt.bodyFailed
+          ? parseConvertBetCodesResponse(convAttempt.parsed)
+          : [];
+
+      if (convLegs.length > 0) {
+        attempt = convAttempt;
+        parsedLegs = convLegs;
+      } else {
+        console.error("[decode-slip] ConvertBetCodes both endpoints failed:", {
+          originBookie,
+          codeLength: rawCode.length,
+          retrieve: {
+            httpStatus: attempt.res.status,
+            bodyStatus: attempt.parsed?.status ?? null,
+            snippet: attempt.rawText.slice(0, 220),
+          },
+          conversionV2: {
+            httpStatus: convAttempt.res.status,
+            bodyStatus: convAttempt.parsed?.status ?? null,
+            snippet: convAttempt.rawText.slice(0, 220),
+          },
+        });
+        // Prefer conversion_v2 error payload if retrieve_bet_code had an empty message
+        if (convAttempt.parsed?.message || convAttempt.parsed?.error || convAttempt.parsed?.data?.errors) {
+          attempt = convAttempt;
+        }
+      }
     }
 
-    const upstreamStatus = typeof data?.status === "number" ? data.status : Number(data?.status);
-    const bodyFailed = Number.isFinite(upstreamStatus) && upstreamStatus >= 400;
+    const { res: upstream, parsed: data, bodyStatus, bodyFailed } = attempt;
 
     if (!upstream.ok || !data || bodyFailed) {
       const nestedErrors = data?.data?.errors ?? data?.errors;
@@ -153,24 +200,15 @@ export async function GET(req: NextRequest) {
         firstNestedErr ||
         (typeof data?.error === "string" ? data.error : data?.error?.message) ||
         (data?.message && data.message.toLowerCase() !== "success" ? data.message : null) ||
-        `Could not decode booking code (${bodyFailed ? upstreamStatus : upstream.status}). Check that the code is active and matches ${bookieMeta?.label ?? originBookie}.`;
-
-      console.error("[decode-slip] ConvertBetCodes upstream failure:", {
-        httpStatus: upstream.status,
-        bodyStatus: data?.status ?? null,
-        originBookie,
-        codeLength: rawCode.length,
-        snippet: rawText.slice(0, 300),
-      });
+        `Could not decode booking code (${bodyFailed ? bodyStatus : upstream.status}). Check that the code is active and matches ${bookieMeta?.label ?? originBookie}.`;
 
       const outStatus =
-        (upstream.status >= 400 && upstream.status < 500) || (bodyFailed && upstreamStatus < 500)
+        (upstream.status >= 400 && upstream.status < 500) || (bodyFailed && bodyStatus < 500)
           ? 400
           : 502;
       return NextResponse.json({ error: msg }, { status: outStatus });
     }
 
-    const parsedLegs = parseConvertBetCodesResponse(data);
     if (parsedLegs.length === 0) {
       return NextResponse.json(
         { error: "Booking code was found, but it contains no readable selections with odds." },
@@ -198,11 +236,13 @@ export async function GET(req: NextRequest) {
       };
     });
 
+    const homeMeta = data.data?.home ?? data.data?.conversion?.dump?.home;
+
     return NextResponse.json({
       code: rawCode,
-      bookmaker: bookieMeta?.label ?? data.data?.home?.bookie ?? originBookie,
+      bookmaker: bookieMeta?.label ?? homeMeta?.bookie ?? originBookie,
       bookmakerKey: originBookie,
-      totalOdds: data.data?.home?.odds ? Number(data.data.home.odds) : null,
+      totalOdds: homeMeta?.odds ? Number(homeMeta.odds) : null,
       status: "ok",
       legs,
     });

@@ -100,13 +100,27 @@ export interface CbcRetrieveResponse {
   status?: number | string;
   message?: string;
   error?: string | { message?: string };
+  errors?: unknown;
   data?: {
+    errors?: unknown;
     home?: {
       bookie?: string;
       odds?: number | string;
       no_of_entries?: number;
     };
     lists?: CbcListEntry[];
+    conversion?: {
+      booking_code?: string;
+      destination_code?: string;
+      dump?: {
+        home?: {
+          bookie?: string;
+          odds?: number | string;
+          no_of_entries?: number;
+        };
+        lists?: CbcListEntry[];
+      };
+    };
   };
 }
 
@@ -169,12 +183,12 @@ export function normalizeDecodedSelection(
 }
 
 /**
- * Parse a ConvertBetCodes `retrieve_bet_code` JSON response into normalized legs.
+ * Parse a ConvertBetCodes `retrieve_bet_code` or `conversion_v2` JSON response into normalized legs.
  */
 export function parseConvertBetCodesResponse(
   payload: CbcRetrieveResponse | null,
 ): NormalizedBookingLeg[] {
-  const lists = payload?.data?.lists;
+  const lists = payload?.data?.lists ?? payload?.data?.conversion?.dump?.lists;
   if (!Array.isArray(lists) || lists.length === 0) return [];
 
   const legs: NormalizedBookingLeg[] = [];

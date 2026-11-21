@@ -96,4 +96,41 @@ describe("ConvertBetCodes booking-code helpers", () => {
       odds: 1.44,
     });
   });
+
+  it("parses a ConvertBetCodes conversion_v2 fallback payload", () => {
+    const convPayload: CbcRetrieveResponse = {
+      status: 200,
+      message: "success",
+      data: {
+        errors: [],
+        conversion: {
+          booking_code: "ABC123",
+          dump: {
+            home: { bookie: "sportybet:ng", odds: 2.1, no_of_entries: 1 },
+            lists: [
+              {
+                home: {
+                  item_name: "Arsenal - Chelsea",
+                  home_team: "Arsenal",
+                  away_team: "Chelsea",
+                  sport_id: "soccer",
+                  market_name: "1X2",
+                  outcome_name: "Home",
+                  odd_value: 2.1,
+                },
+              },
+            ],
+          },
+        },
+      },
+    };
+
+    const legs = parseConvertBetCodesResponse(convPayload);
+    expect(legs).toHaveLength(1);
+    expect(legs[0]).toMatchObject({
+      event: "Arsenal vs Chelsea",
+      selection: "Home Win",
+      odds: 2.1,
+    });
+  });
 });

@@ -26,22 +26,10 @@ import {
 } from "@/lib/model/punter-model";
 import type { CompetitionStage, LineupStatus } from "@/lib/football/match-intel";
 import type { FootballLegReview } from "@/app/api/bet-assist/analyze-slip/route";
+import { BOOKING_CODE_BOOKMAKERS } from "@/lib/bet-assist/booking-code";
 import { cn } from "@/lib/utils";
 
-const CODE_BOOKMAKERS = [
-  { key: "sportybet", label: "SportyBet (NG)" },
-  { key: "bet9ja", label: "Bet9ja" },
-  { key: "football.com", label: "Football.com" },
-  { key: "betking", label: "BetKing" },
-  { key: "onexbet", label: "1xBet" },
-  { key: "msport", label: "MSport" },
-  { key: "betway", label: "Betway" },
-  { key: "22bet", label: "22Bet" },
-  { key: "sportybet_gh", label: "SportyBet (GH)" },
-  { key: "sportybet_ke", label: "SportyBet (KE)" },
-  { key: "sportybet_za", label: "SportyBet (ZA)" },
-  { key: "sportybet_tz", label: "SportyBet (TZ)" },
-];
+const CODE_BOOKMAKERS = BOOKING_CODE_BOOKMAKERS;
 
 const STAGE_OPTIONS: Array<{ value: CompetitionStage; label: string }> = [
   { value: "league", label: "League" },
@@ -134,7 +122,7 @@ export function SlipChecker({
   const [copiedVerdict, setCopiedVerdict] = useState(false);
 
   const [bookingCode, setBookingCode] = useState("");
-  const [codeBookie, setCodeBookie] = useState("sportybet");
+  const [codeBookie, setCodeBookie] = useState("sportybet:ng");
   const [decoding, setDecoding] = useState(false);
   const [decodeNotice, setDecodeNotice] = useState<string | null>(null);
 

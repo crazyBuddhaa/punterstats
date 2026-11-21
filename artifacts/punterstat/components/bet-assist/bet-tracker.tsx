@@ -43,6 +43,7 @@ import {
   updateBet,
 } from "@/lib/bet-assist/journal-actions";
 import { pct } from "@/lib/bet-assist/calculators";
+import { BOOKING_CODE_BOOKMAKERS } from "@/lib/bet-assist/booking-code";
 import { cn } from "@/lib/utils";
 
 export interface TrackerPrefill {
@@ -68,22 +69,9 @@ const MARKETS = [
   "Other",
 ];
 
-const BOOKMAKER_PRESETS = ["SportyBet", "Bet9ja", "Football.com", "BetKing", "1xBet", "MSport", "Pinnacle"];
+const BOOKMAKER_PRESETS = ["SportyBet", "Bet9ja", "BetKing", "1xBet", "MSport", "Betway", "22Bet", "Pinnacle"];
 
-const CODE_BOOKMAKERS = [
-  { key: "sportybet", label: "SportyBet (NG)", name: "SportyBet" },
-  { key: "bet9ja", label: "Bet9ja", name: "Bet9ja" },
-  { key: "football.com", label: "Football.com", name: "Football.com" },
-  { key: "betking", label: "BetKing", name: "BetKing" },
-  { key: "onexbet", label: "1xBet", name: "1xBet" },
-  { key: "msport", label: "MSport", name: "MSport" },
-  { key: "betway", label: "Betway", name: "Betway" },
-  { key: "22bet", label: "22Bet", name: "22Bet" },
-  { key: "sportybet_gh", label: "SportyBet (GH)", name: "SportyBet" },
-  { key: "sportybet_ke", label: "SportyBet (KE)", name: "SportyBet" },
-  { key: "sportybet_za", label: "SportyBet (ZA)", name: "SportyBet" },
-  { key: "sportybet_tz", label: "SportyBet (TZ)", name: "SportyBet" },
-];
+const CODE_BOOKMAKERS = BOOKING_CODE_BOOKMAKERS;
 
 const money = (n: number) =>
   `₦${Math.abs(n).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -151,7 +139,7 @@ function AddBetForm({
   });
 
   const [bookingCode, setBookingCode] = useState("");
-  const [codeBookie, setCodeBookie] = useState("sportybet");
+  const [codeBookie, setCodeBookie] = useState("sportybet:ng");
   const [decoding, setDecoding] = useState(false);
   const [decodeNotice, setDecodeNotice] = useState<string | null>(null);
 
@@ -209,7 +197,7 @@ function AddBetForm({
         const combinedOdds = rawLegs.reduce((acc, l) => acc * Number(l.odds), 1);
         setBetType("accumulator");
         setLegs(
-          rawLegs.slice(0, 25).map((l) => ({
+          rawLegs.slice(0, 50).map((l) => ({
             event: l.event ?? "",
             selection: l.selection ?? "",
             odds: Number(l.odds).toFixed(2),

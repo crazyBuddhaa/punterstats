@@ -13,31 +13,13 @@ import {
 import { createSession, recordBet } from "@/lib/simulation/actions";
 import { createRng } from "@/lib/simulation/rng";
 import { sampleScoreline } from "@/lib/simulation/poisson";
-import { evaluateSelection } from "@/lib/bet-assist/auto-settle";
+import {
+  PRESET_SIM_MARKETS,
+  validateSimulationMarket,
+} from "@/lib/simulation/market-validator";
 import type { CompetitionStage, LineupStatus, MatchIntel } from "@/lib/football/match-intel";
 import { STARTING_BALANCE, formatMoney } from "./bet-simulator-parts";
 import { cn } from "@/lib/utils";
-
-type SimMarket =
-  | "Home Win"
-  | "Draw"
-  | "Away Win"
-  | "1X"
-  | "X2"
-  | "Over 2.5"
-  | "Under 2.5"
-  | "BTTS Yes";
-
-const SIM_MARKETS: SimMarket[] = [
-  "Home Win",
-  "Draw",
-  "Away Win",
-  "1X",
-  "X2",
-  "Over 2.5",
-  "Under 2.5",
-  "BTTS Yes",
-];
 
 const STAGES: Array<{ value: CompetitionStage; label: string }> = [
   { value: "league", label: "League" },
@@ -57,7 +39,7 @@ interface SimSlipLeg {
   id: string;
   homeTeam: string;
   awayTeam: string;
-  market: SimMarket;
+  market: string;
   odds: number;
   lambdaHome: number;
   lambdaAway: number;
@@ -90,7 +72,7 @@ interface SimulatedMatchResult {
   createdAt: string;
 }
 
-function marketProbFromIntel(intel: MatchIntel, market: SimMarket): number {
+function marketProbFromIntel(intel: MatchIntel, market: string): number | null {
   const m = intel.markets;
   switch (market) {
     case "Home Win": return m.homeWin;
@@ -98,9 +80,18 @@ function marketProbFromIntel(intel: MatchIntel, market: SimMarket): number {
     case "Away Win": return m.awayWin;
     case "1X": return m.doubleChanceHD;
     case "X2": return m.doubleChanceDA;
+    case "12": return m.doubleChanceHA;
+    case "Over 1.5": return m.over15;
     case "Over 2.5": return m.over25;
     case "Under 2.5": return m.under25;
+    case "Under 3.5": return m.under35;
     case "BTTS Yes": return m.btts;
+    case "BTTS No": return m.noBtts;
+    case "Home DNB": return m.homeDnb;
+    case "Away DNB": return m.awayDnb;
+    case "Home Over 0.5": return m.homeOver05;
+    case "Away Over 0.5": return m.awayOver05;
+    default: return null;
   }
 }
 
@@ -184,7 +175,7 @@ interface PersistedSimState {
   mode?: "single" | "accumulator";
   homeTeam?: string;
   awayTeam?: string;
-  market?: SimMarket;
+  market?: string;
   odds?: string;
   stake?: string;
   accaLegs?: SimSlipLeg[];
@@ -204,9 +195,14 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
   const [stage, setStage] = useState<CompetitionStage>("league");
   const [homeLineup, setHomeLineup] = useState<LineupStatus>("full_strength");
   const [awayLineup, setAwayLineup] = useState<LineupStatus>("full_strength");
-  const [market, setMarket] = useState<SimMarket>("Home Win");
+  const [market, setMarket] = useState<string>("Home Win");
   const [odds, setOdds] = useState("1.95");
   const [stake, setStake] = useState("1000");
+
+  const marketValidation = useMemo(
+    () => validateSimulationMarket(market, homeTeam, awayTeam),
+    [market, homeTeam, awayTeam],
+  );
 
   // Loaded match intel & auto-detected upcoming fixture
   const [intel, setIntel] = useState<MatchIntel | null>(null);
@@ -386,9 +382,9 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
         return null;
       }
       setIntel(data.intel);
-      // Suggest realistic bookmaker odds (~5% margin below fair odds) for selected market
+      // Suggest realistic bookmaker odds (~5% margin below fair odds) for preset markets
       const p = marketProbFromIntel(data.intel, market);
-      if (p > 0.02 && p < 0.98) {
+      if (p !== null && p > 0.02 && p < 0.98) {
         const suggested = Math.max(1.05, Number((1 / (p * 1.05)).toFixed(2)));
         setOdds(suggested.toFixed(2));
       }
@@ -401,11 +397,11 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
     }
   }, [homeTeam, awayTeam, stage, homeLineup, awayLineup, market]);
 
-  const handleMarketChange = (nextMarket: SimMarket) => {
+  const handleMarketChange = (nextMarket: string) => {
     setMarket(nextMarket);
     if (intel) {
       const p = marketProbFromIntel(intel, nextMarket);
-      if (p > 0.02 && p < 0.98) {
+      if (p !== null && p > 0.02 && p < 0.98) {
         const suggested = Math.max(1.05, Number((1 / (p * 1.05)).toFixed(2)));
         setOdds(suggested.toFixed(2));
       }
@@ -424,6 +420,11 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
   }, [sessionId, isAuthenticated]);
 
   const addMatchToAcca = async () => {
+    const check = validateSimulationMarket(market, homeTeam, awayTeam);
+    if (check.status !== "simulatable" || !check.evaluate) {
+      setErrorMsg(check.reason);
+      return;
+    }
     const parsedOdds = parseFloat(odds);
     if (!Number.isFinite(parsedOdds) || parsedOdds <= 1.01) {
       setErrorMsg("Enter decimal odds greater than 1.01.");
@@ -443,7 +444,7 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
         id: String(++legIdRef.current),
         homeTeam: activeIntel.homeTeam,
         awayTeam: activeIntel.awayTeam,
-        market,
+        market: check.canonicalLabel || market.trim(),
         odds: parsedOdds,
         lambdaHome: activeIntel.lambdaHome,
         lambdaAway: activeIntel.lambdaAway,
@@ -470,6 +471,11 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
       const { rng } = createRng();
 
       if (mode === "single") {
+        const check = validateSimulationMarket(market, homeTeam, awayTeam);
+        if (check.status !== "simulatable" || !check.evaluate) {
+          setErrorMsg(check.reason);
+          return;
+        }
         const parsedOdds = parseFloat(odds);
         if (!Number.isFinite(parsedOdds) || parsedOdds <= 1.01) {
           setErrorMsg("Odds must be greater than 1.01.");
@@ -483,29 +489,31 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
             : await fetchIntel();
         if (!activeIntel) return;
 
+        const activeCheck = validateSimulationMarket(market, activeIntel.homeTeam, activeIntel.awayTeam);
+        const evaluator = activeCheck.evaluate ?? check.evaluate;
+        const displayMarket = activeCheck.canonicalLabel || check.canonicalLabel || market.trim();
+
         // Run DEFAULT_SIM_RUNS (1,000) scoreline simulations silently to estimate true win % & top scoreline
         let simWins = 0;
+        let simDecided = 0;
         const scoreCounts = new Map<string, number>();
         let sampleScore = { home: 0, away: 0 };
-        let sampleWon = false;
+        let sampleOutcome: "won" | "lost" | "void" = "lost";
 
         for (let r = 0; r < DEFAULT_SIM_RUNS; r++) {
           const sc = sampleScoreline(rng, activeIntel.lambdaHome, activeIntel.lambdaAway);
-          const evalRes = evaluateSelection(
-            market,
-            "1X2",
-            activeIntel.homeTeam,
-            activeIntel.awayTeam,
-            sc.home,
-            sc.away,
-          );
-          const wonRun = evalRes === "won";
-          if (wonRun) simWins += 1;
+          const evalRes = evaluator(sc.home, sc.away);
+          if (evalRes === "won") {
+            simWins += 1;
+            simDecided += 1;
+          } else if (evalRes === "lost") {
+            simDecided += 1;
+          }
           const key = `${sc.home} – ${sc.away}`;
           scoreCounts.set(key, (scoreCounts.get(key) ?? 0) + 1);
           if (r === 0) {
             sampleScore = sc;
-            sampleWon = wonRun;
+            sampleOutcome = evalRes;
           }
         }
 
@@ -518,20 +526,27 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
           }
         }
 
-        const simulatedWinPct = Math.round((simWins / DEFAULT_SIM_RUNS) * 1000) / 10;
+        const simulatedWinPct =
+          simDecided > 0 ? Math.round((simWins / simDecided) * 1000) / 10 : 0;
+        const sampleWon = sampleOutcome === "won";
         const outcome: "win" | "loss" = sampleWon ? "win" : "loss";
-        const profitLoss = sampleWon ? Number(((parsedOdds - 1) * parsedStake).toFixed(2)) : -parsedStake;
+        const profitLoss =
+          sampleOutcome === "won"
+            ? Number(((parsedOdds - 1) * parsedStake).toFixed(2))
+            : sampleOutcome === "void"
+              ? 0
+              : -parsedStake;
         const newBalance = Number((balance + profitLoss).toFixed(2));
 
         const entry: SimulatedMatchResult = {
           id: crypto.randomUUID(),
           mode: "single",
-          label: `${activeIntel.homeTeam} vs ${activeIntel.awayTeam} (${market})`,
+          label: `${activeIntel.homeTeam} vs ${activeIntel.awayTeam} (${displayMarket})`,
           scorelines: [
             {
               match: `${activeIntel.homeTeam} vs ${activeIntel.awayTeam}`,
               score: `${sampleScore.home} – ${sampleScore.away}`,
-              market,
+              market: displayMarket,
               won: sampleWon,
               legWinPct: simulatedWinPct,
             },
@@ -559,6 +574,15 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
           setErrorMsg("Add at least 2 matches to your accumulator slip first.");
           return;
         }
+        const legEvaluators = accaLegs.map((l) =>
+          validateSimulationMarket(l.market, l.homeTeam, l.awayTeam),
+        );
+        const invalidLegIdx = legEvaluators.findIndex((c) => c.status !== "simulatable" || !c.evaluate);
+        if (invalidLegIdx !== -1) {
+          setErrorMsg(`Leg ${invalidLegIdx + 1}: ${legEvaluators[invalidLegIdx].reason}`);
+          return;
+        }
+
         const combinedOdds = Number(accaLegs.reduce((acc, l) => acc * l.odds, 1).toFixed(2));
 
         let simWins = 0;
@@ -572,8 +596,8 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
           for (let li = 0; li < accaLegs.length; li++) {
             const l = accaLegs[li];
             const sc = sampleScoreline(rng, l.lambdaHome, l.lambdaAway);
-            const evalRes = evaluateSelection(l.market, "1X2", l.homeTeam, l.awayTeam, sc.home, sc.away);
-            const wonLeg = evalRes === "won";
+            const evalRes = legEvaluators[li].evaluate!(sc.home, sc.away);
+            const wonLeg = evalRes === "won" || evalRes === "void";
             if (wonLeg) legWinCounts[li] += 1;
             else runAllWon = false;
             if (r === 0) {
@@ -851,70 +875,142 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
         )}
 
         {/* Market, Odds, Stake & Action */}
-        <div className="flex flex-wrap items-end gap-3 pt-1">
-          <div className="space-y-1 min-w-[140px]">
-            <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Market</label>
-            <select
-              value={market}
-              onChange={(e) => handleMarketChange(e.target.value as SimMarket)}
-              className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-            >
-              {SIM_MARKETS.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-          </div>
+        <div className="space-y-2.5 pt-1">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1 min-w-[200px] flex-1 sm:flex-initial sm:w-64">
+              <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Market / Option
+              </label>
+              <div className="flex gap-1.5">
+                <input
+                  type="text"
+                  list="sim-market-presets"
+                  value={market}
+                  onChange={(e) => handleMarketChange(e.target.value)}
+                  placeholder="e.g. Home (2:0), 1X & Under 3.5"
+                  className={cn(
+                    "h-10 w-full rounded-lg border bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2",
+                    marketValidation.status === "simulatable"
+                      ? "border-slate-200 focus:border-[#3D2DFF] focus:ring-[#3D2DFF]/15"
+                      : marketValidation.status === "unsupported_data"
+                        ? "border-amber-300 focus:border-amber-500 focus:ring-amber-200"
+                        : "border-rose-300 focus:border-rose-500 focus:ring-rose-200",
+                  )}
+                />
+                <datalist id="sim-market-presets">
+                  {PRESET_SIM_MARKETS.map((m) => (
+                    <option key={m} value={m} />
+                  ))}
+                </datalist>
+              </div>
+            </div>
 
-          <div className="space-y-1 w-28">
-            <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Odds</label>
-            <input
-              inputMode="decimal"
-              value={odds}
-              onChange={(e) => setOdds(e.target.value)}
-              className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm tabular-nums text-slate-900"
-            />
-          </div>
-
-          <div className="space-y-1 w-32">
-            <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Stake (₦)</label>
-            <input
-              inputMode="decimal"
-              value={stake}
-              onChange={(e) => setStake(e.target.value)}
-              className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm tabular-nums text-slate-900"
-            />
-          </div>
-
-          {mode === "accumulator" ? (
-            <>
-              <button
-                type="button"
-                disabled={loadingIntel}
-                onClick={addMatchToAcca}
-                className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-800 hover:bg-slate-50"
+            <div className="space-y-1 min-w-[140px]">
+              <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Quick Preset
+              </label>
+              <select
+                aria-label="Quick market preset"
+                value={PRESET_SIM_MARKETS.includes(market) ? market : ""}
+                onChange={(e) => {
+                  if (e.target.value) handleMarketChange(e.target.value);
+                }}
+                className="h-10 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800"
               >
-                <Plus className="h-4 w-4" /> Add Match to Slip
-              </button>
+                <option value="">Custom…</option>
+                {PRESET_SIM_MARKETS.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1 w-24">
+              <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Odds</label>
+              <input
+                inputMode="decimal"
+                value={odds}
+                onChange={(e) => setOdds(e.target.value)}
+                className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm tabular-nums text-slate-900"
+              />
+            </div>
+
+            <div className="space-y-1 w-28">
+              <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Stake (₦)</label>
+              <input
+                inputMode="decimal"
+                value={stake}
+                onChange={(e) => setStake(e.target.value)}
+                className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm tabular-nums text-slate-900"
+              />
+            </div>
+
+            {mode === "accumulator" ? (
+              <>
+                <button
+                  type="button"
+                  disabled={loadingIntel || marketValidation.status !== "simulatable"}
+                  onClick={addMatchToAcca}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  <Plus className="h-4 w-4" /> Add Match to Slip
+                </button>
+                <button
+                  type="button"
+                  disabled={isPending || accaLegs.length < 2}
+                  onClick={simulateNow}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[#3D2DFF] px-5 text-sm font-semibold text-white hover:bg-[#3D2DFF]/90 disabled:opacity-50"
+                >
+                  {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                  Simulate {accaLegs.length}-Leg Slip
+                </button>
+              </>
+            ) : (
               <button
                 type="button"
-                disabled={isPending || accaLegs.length < 2}
+                disabled={isPending || loadingIntel || marketValidation.status !== "simulatable"}
                 onClick={simulateNow}
-                className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[#3D2DFF] px-5 text-sm font-semibold text-white hover:bg-[#3D2DFF]/90 disabled:opacity-50"
+                className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[#3D2DFF] px-6 text-sm font-semibold text-white hover:bg-[#3D2DFF]/90 disabled:opacity-50"
               >
                 {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                Simulate {accaLegs.length}-Leg Slip
+                Simulate Match
               </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              disabled={isPending || loadingIntel}
-              onClick={simulateNow}
-              className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[#3D2DFF] px-6 text-sm font-semibold text-white hover:bg-[#3D2DFF]/90 disabled:opacity-50"
+            )}
+          </div>
+
+          {/* Live custom-market validation feedback */}
+          {market.trim().length > 0 && (
+            <div
+              className={cn(
+                "flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-xs",
+                marketValidation.status === "simulatable"
+                  ? "border-emerald-200 bg-emerald-50/70 text-emerald-900"
+                  : marketValidation.status === "unsupported_data"
+                    ? "border-amber-200 bg-amber-50/80 text-amber-900"
+                    : "border-rose-200 bg-rose-50/80 text-rose-900",
+              )}
             >
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              Simulate Match
-            </button>
+              {marketValidation.status === "simulatable" ? (
+                <>
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                  <span>
+                    <strong>{marketValidation.canonicalLabel}</strong> ({marketValidation.category}) — ready to simulate.
+                  </span>
+                </>
+              ) : marketValidation.status === "unsupported_data" ? (
+                <>
+                  <XCircle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                  <span>
+                    <strong>{marketValidation.canonicalLabel}:</strong> {marketValidation.reason}
+                    {marketValidation.suggestion ? ` ${marketValidation.suggestion}` : ""}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-3.5 w-3.5 shrink-0 text-rose-600" />
+                  <span>{marketValidation.reason}</span>
+                </>
+              )}
+            </div>
           )}
         </div>
 

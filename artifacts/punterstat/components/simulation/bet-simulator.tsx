@@ -65,6 +65,8 @@ interface SimSlipLeg {
   strengthLabel: string;
 }
 
+const DEFAULT_SIM_RUNS = 1000;
+
 interface SimulatedMatchResult {
   id: string;
   mode: "single" | "accumulator";
@@ -80,6 +82,10 @@ interface SimulatedMatchResult {
   outcome: "win" | "loss";
   profitLoss: number;
   balanceAfter: number;
+  /** Win probability estimated silently across DEFAULT_SIM_RUNS Monte Carlo scoreline runs. */
+  simulatedWinPct: number;
+  /** Most frequent simulated scoreline (single match mode). */
+  topScoreline?: string | null;
   createdAt: string;
 }
 
@@ -101,12 +107,14 @@ function TeamInput({
   label,
   value,
   onChange,
+  onCommitTeam,
   teams,
   placeholder,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  onCommitTeam?: (v: string) => void;
   teams: string[];
   placeholder: string;
 }) {
@@ -134,7 +142,10 @@ function TeamInput({
         type="text"
         value={value}
         onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onBlur={() => {
+          setTimeout(() => setOpen(false), 150);
+          if (value.trim().length >= 3) onCommitTeam?.(value.trim());
+        }}
         onChange={(e) => {
           onChange(e.target.value);
           setOpen(true);
@@ -150,6 +161,7 @@ function TeamInput({
                 type="button"
                 onMouseDown={() => {
                   onChange(t);
+                  onCommitTeam?.(t);
                   setOpen(false);
                 }}
                 className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-800 hover:bg-slate-100"
@@ -179,9 +191,11 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
   const [odds, setOdds] = useState("1.95");
   const [stake, setStake] = useState("1000");
 
-  // Loaded match intel
+  // Loaded match intel & auto-detected upcoming fixture
   const [intel, setIntel] = useState<MatchIntel | null>(null);
   const [loadingIntel, setLoadingIntel] = useState(false);
+  const [autoFixtureNote, setAutoFixtureNote] = useState<string | null>(null);
+  const lastLookupRef = useRef<string>("");
 
   // Accumulator legs
   const [accaLegs, setAccaLegs] = useState<SimSlipLeg[]>([]);
@@ -196,15 +210,80 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
 
   useEffect(() => {
     let active = true;
-    fetch("/api/historical/teams")
-      .then((r) => r.json())
-      .then((j: { success?: boolean; teams?: string[] }) => {
-        if (active && j.success && Array.isArray(j.teams)) setTeams(j.teams);
-      })
-      .catch(() => {});
+    Promise.all([
+      fetch("/api/historical/teams")
+        .then((r) => r.json())
+        .catch(() => ({})),
+      fetch("/api/fixtures/search?league=Premier%20League")
+        .then((r) => r.json())
+        .catch(() => ({})),
+    ]).then(([hist, pl]) => {
+      if (!active) return;
+      const set = new Set<string>();
+      const histObj = hist as { success?: boolean; teams?: string[] };
+      if (histObj.success && Array.isArray(histObj.teams)) {
+        for (const t of histObj.teams) set.add(t);
+      }
+      const plObj = pl as { fixtures?: Array<{ homeTeam?: string; awayTeam?: string }> };
+      if (Array.isArray(plObj.fixtures)) {
+        for (const f of plObj.fixtures) {
+          if (f.homeTeam) set.add(f.homeTeam);
+          if (f.awayTeam) set.add(f.awayTeam);
+        }
+      }
+      setTeams(Array.from(set).sort());
+    });
     return () => {
       active = false;
     };
+  }, []);
+
+  /** Auto-load the next real scheduled opponent when a user enters/selects a team. */
+  const lookupUpcomingOpponent = useCallback(async (teamName: string) => {
+    const clean = teamName.trim();
+    if (clean.length < 3) return;
+    const key = clean.toLowerCase();
+    if (lastLookupRef.current === key) return;
+    lastLookupRef.current = key;
+
+    try {
+      const res = await fetch(`/api/fixtures/search?q=${encodeURIComponent(clean)}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        success?: boolean;
+        fixtures?: Array<{
+          homeTeam: string;
+          awayTeam: string;
+          league: string;
+          kickoff: string;
+          status: string;
+        }>;
+      };
+      if (!data.success || !Array.isArray(data.fixtures)) return;
+
+      const upcoming = data.fixtures
+        .filter((f) => f.status === "scheduled")
+        .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
+      const next =
+        upcoming.find(
+          (f) =>
+            f.homeTeam.toLowerCase().includes(key) ||
+            f.awayTeam.toLowerCase().includes(key),
+        ) ?? upcoming[0];
+
+      if (!next) return;
+
+      setHomeTeam(next.homeTeam);
+      setAwayTeam(next.awayTeam);
+      setIntel(null);
+      const dt = new Date(next.kickoff);
+      const when = Number.isNaN(dt.getTime())
+        ? ""
+        : ` · ${dt.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}`;
+      setAutoFixtureNote(`Auto-loaded next fixture: ${next.homeTeam} vs ${next.awayTeam} (${next.league}${when})`);
+    } catch {
+      // Non-blocking: user can still type any opponent manually
+    }
   }, []);
 
   const fetchIntel = useCallback(async () => {
@@ -246,15 +325,16 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
     }
   }, [homeTeam, awayTeam, stage, homeLineup, awayLineup, market]);
 
-  // Update suggested odds when switching market with intel already loaded
-  useEffect(() => {
-    if (!intel) return;
-    const p = marketProbFromIntel(intel, market);
-    if (p > 0.02 && p < 0.98) {
-      const suggested = Math.max(1.05, Number((1 / (p * 1.05)).toFixed(2)));
-      setOdds(suggested.toFixed(2));
+  const handleMarketChange = (nextMarket: SimMarket) => {
+    setMarket(nextMarket);
+    if (intel) {
+      const p = marketProbFromIntel(intel, nextMarket);
+      if (p > 0.02 && p < 0.98) {
+        const suggested = Math.max(1.05, Number((1 / (p * 1.05)).toFixed(2)));
+        setOdds(suggested.toFixed(2));
+      }
     }
-  }, [intel, market]);
+  };
 
   const ensureSession = useCallback(async (): Promise<string | null> => {
     if (sessionId) return sessionId;
@@ -327,18 +407,44 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
             : await fetchIntel();
         if (!activeIntel) return;
 
-        const score = sampleScoreline(rng, activeIntel.lambdaHome, activeIntel.lambdaAway);
-        const evalRes = evaluateSelection(
-          market,
-          "1X2",
-          activeIntel.homeTeam,
-          activeIntel.awayTeam,
-          score.home,
-          score.away,
-        );
-        const won = evalRes === "won";
-        const outcome: "win" | "loss" = won ? "win" : "loss";
-        const profitLoss = won ? Number(((parsedOdds - 1) * parsedStake).toFixed(2)) : -parsedStake;
+        // Run DEFAULT_SIM_RUNS (1,000) scoreline simulations silently to estimate true win % & top scoreline
+        let simWins = 0;
+        const scoreCounts = new Map<string, number>();
+        let sampleScore = { home: 0, away: 0 };
+        let sampleWon = false;
+
+        for (let r = 0; r < DEFAULT_SIM_RUNS; r++) {
+          const sc = sampleScoreline(rng, activeIntel.lambdaHome, activeIntel.lambdaAway);
+          const evalRes = evaluateSelection(
+            market,
+            "1X2",
+            activeIntel.homeTeam,
+            activeIntel.awayTeam,
+            sc.home,
+            sc.away,
+          );
+          const wonRun = evalRes === "won";
+          if (wonRun) simWins += 1;
+          const key = `${sc.home} – ${sc.away}`;
+          scoreCounts.set(key, (scoreCounts.get(key) ?? 0) + 1);
+          if (r === 0) {
+            sampleScore = sc;
+            sampleWon = wonRun;
+          }
+        }
+
+        let topScoreline: string | null = null;
+        let topCount = 0;
+        for (const [scKey, cnt] of scoreCounts.entries()) {
+          if (cnt > topCount) {
+            topCount = cnt;
+            topScoreline = scKey;
+          }
+        }
+
+        const simulatedWinPct = Math.round((simWins / DEFAULT_SIM_RUNS) * 1000) / 10;
+        const outcome: "win" | "loss" = sampleWon ? "win" : "loss";
+        const profitLoss = sampleWon ? Number(((parsedOdds - 1) * parsedStake).toFixed(2)) : -parsedStake;
         const newBalance = Number((balance + profitLoss).toFixed(2));
 
         const entry: SimulatedMatchResult = {
@@ -348,9 +454,9 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
           scorelines: [
             {
               match: `${activeIntel.homeTeam} vs ${activeIntel.awayTeam}`,
-              score: `${score.home} – ${score.away}`,
+              score: `${sampleScore.home} – ${sampleScore.away}`,
               market,
-              won,
+              won: sampleWon,
             },
           ],
           odds: parsedOdds,
@@ -358,6 +464,8 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
           outcome,
           profitLoss,
           balanceAfter: newBalance,
+          simulatedWinPct,
+          topScoreline,
           createdAt: new Date().toISOString(),
         };
 
@@ -375,31 +483,52 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
           return;
         }
         const combinedOdds = Number(accaLegs.reduce((acc, l) => acc * l.odds, 1).toFixed(2));
-        const scorelines = accaLegs.map((l) => {
-          const sc = sampleScoreline(rng, l.lambdaHome, l.lambdaAway);
-          const evalRes = evaluateSelection(l.market, "1X2", l.homeTeam, l.awayTeam, sc.home, sc.away);
-          return {
-            match: `${l.homeTeam} vs ${l.awayTeam}`,
-            score: `${sc.home} – ${sc.away}`,
-            market: l.market,
-            won: evalRes === "won",
-          };
-        });
-        const allWon = scorelines.every((s) => s.won);
-        const outcome: "win" | "loss" = allWon ? "win" : "loss";
-        const profitLoss = allWon ? Number(((combinedOdds - 1) * parsedStake).toFixed(2)) : -parsedStake;
+
+        let simWins = 0;
+        let sampleScorelines: SimulatedMatchResult["scorelines"] = [];
+        let sampleAllWon = false;
+
+        for (let r = 0; r < DEFAULT_SIM_RUNS; r++) {
+          let runAllWon = true;
+          const runLines: SimulatedMatchResult["scorelines"] = [];
+          for (const l of accaLegs) {
+            const sc = sampleScoreline(rng, l.lambdaHome, l.lambdaAway);
+            const evalRes = evaluateSelection(l.market, "1X2", l.homeTeam, l.awayTeam, sc.home, sc.away);
+            const wonLeg = evalRes === "won";
+            if (!wonLeg) runAllWon = false;
+            if (r === 0) {
+              runLines.push({
+                match: `${l.homeTeam} vs ${l.awayTeam}`,
+                score: `${sc.home} – ${sc.away}`,
+                market: l.market,
+                won: wonLeg,
+              });
+            }
+          }
+          if (runAllWon) simWins += 1;
+          if (r === 0) {
+            sampleScorelines = runLines;
+            sampleAllWon = runAllWon;
+          }
+        }
+
+        const simulatedWinPct = Math.round((simWins / DEFAULT_SIM_RUNS) * 1000) / 10;
+        const outcome: "win" | "loss" = sampleAllWon ? "win" : "loss";
+        const profitLoss = sampleAllWon ? Number(((combinedOdds - 1) * parsedStake).toFixed(2)) : -parsedStake;
         const newBalance = Number((balance + profitLoss).toFixed(2));
 
         const entry: SimulatedMatchResult = {
           id: crypto.randomUUID(),
           mode: "accumulator",
           label: `${accaLegs.length}-leg Match Accumulator`,
-          scorelines,
+          scorelines: sampleScorelines,
           odds: combinedOdds,
           stake: parsedStake,
           outcome,
           profitLoss,
           balanceAfter: newBalance,
+          simulatedWinPct,
+          topScoreline: null,
           createdAt: new Date().toISOString(),
         };
 
@@ -513,9 +642,11 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
             onChange={(v) => {
               setHomeTeam(v);
               setIntel(null);
+              setAutoFixtureNote(null);
             }}
+            onCommitTeam={lookupUpcomingOpponent}
             teams={teams}
-            placeholder="e.g. Arsenal"
+            placeholder="e.g. Arsenal or Sunderland"
           />
           <TeamInput
             label="Away Team"
@@ -523,9 +654,11 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
             onChange={(v) => {
               setAwayTeam(v);
               setIntel(null);
+              setAutoFixtureNote(null);
             }}
+            onCommitTeam={lookupUpcomingOpponent}
             teams={teams}
-            placeholder="e.g. Chelsea"
+            placeholder="Auto-loads next opponent"
           />
           <div className="space-y-1">
             <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Competition Stage</label>
@@ -575,6 +708,10 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
           </div>
         </div>
 
+        {autoFixtureNote && (
+          <p className="text-xs font-medium text-teal-700">{autoFixtureNote}</p>
+        )}
+
         {/* Loaded Football Intelligence Strip */}
         {intel && (
           <div className="space-y-2 border-l-4 border-teal-500 bg-slate-50/80 px-4 py-3 text-xs">
@@ -603,7 +740,7 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
             <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Market</label>
             <select
               value={market}
-              onChange={(e) => setMarket(e.target.value as SimMarket)}
+              onChange={(e) => handleMarketChange(e.target.value as SimMarket)}
               className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
             >
               {SIM_MARKETS.map((m) => (
@@ -724,6 +861,10 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
                 {lastSim.profitLoss >= 0 ? "+" : "-"}
                 {formatMoney(Math.abs(lastSim.profitLoss))})
               </h3>
+              <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums text-teal-800">
+                Win Chance: {lastSim.simulatedWinPct.toFixed(1)}%
+                {lastSim.topScoreline ? ` · Most Likely: ${lastSim.topScoreline}` : ""}
+              </span>
             </div>
             <span className="text-xs tabular-nums text-slate-500">
               Stake {formatMoney(lastSim.stake)} @ {lastSim.odds.toFixed(2)} → Bankroll {formatMoney(lastSim.balanceAfter)}

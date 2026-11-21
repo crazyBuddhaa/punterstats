@@ -414,11 +414,18 @@ export async function getMatchIntel(
     lamA = dc.lambdaAway;
     rho = dc.rho;
     if (hasHistory) {
-      // Blend 70% Dixon-Coles structural strength + 30% venue-weighted recent scoring/conceding form
+      // Dynamic L1 (Historical DC) -> L2/L3 (Current-Season & Venue Form) weighting:
+      // Historical baseline dominates early; current season takes over as sample matures.
+      const minSample = Math.min(homeSnap.sampleSize, awaySnap.sampleSize);
+      const isFreshSeason =
+        homeSnap.daysSinceLastMatch !== null && awaySnap.daysSinceLastMatch !== null;
+      const formWeight =
+        minSample >= 10 && isFreshSeason ? 0.55 : minSample >= 5 ? 0.40 : 0.25;
+      const dcWeight = 1 - formWeight;
       const formH = (effHomeGf + effAwayGa) / 2;
       const formA = (effAwayGf + effHomeGa) / 2;
-      lamH = 0.7 * lamH + 0.3 * (formH * 1.05);
-      lamA = 0.7 * lamA + 0.3 * (formA * 0.95);
+      lamH = dcWeight * lamH + formWeight * (formH * 1.05);
+      lamA = dcWeight * lamA + formWeight * (formA * 0.95);
     }
   } else if (hasHistory) {
     const formH = (effHomeGf + effAwayGa) / 2;

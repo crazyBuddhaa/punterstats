@@ -735,6 +735,31 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
                 {Math.round(intel.markets.awayWin * 100)}%
               </span>
             </div>
+            {intel.markets.topScorelines.length > 0 && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-700">
+                <span>
+                  <strong className="text-slate-900">Most Likely Scores:</strong>{" "}
+                  {intel.markets.topScorelines
+                    .slice(0, 3)
+                    .map((s) => `${s.score} (${Math.round(s.prob * 100)}%)`)
+                    .join(" · ")}
+                </span>
+                <span>
+                  <strong className="text-slate-900">Top Conservative Options:</strong>{" "}
+                  {[
+                    { label: "1X", p: intel.markets.doubleChanceHD },
+                    { label: "X2", p: intel.markets.doubleChanceDA },
+                    { label: "Over 1.5", p: intel.markets.over15 },
+                    { label: `${intel.homeTeam} O0.5`, p: intel.markets.homeOver05 },
+                    { label: `${intel.awayTeam} O0.5`, p: intel.markets.awayOver05 },
+                  ]
+                    .sort((a, b) => b.p - a.p)
+                    .slice(0, 3)
+                    .map((o) => `${o.label} (${Math.round(o.p * 100)}%)`)
+                    .join(" · ")}
+                </span>
+              </div>
+            )}
             {intel.factors.length > 0 && (
               <p className="text-slate-600">{intel.factors.join(" · ")}</p>
             )}

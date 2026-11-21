@@ -467,10 +467,38 @@ export function deriveFullMarkets(
 }
 
 /**
+ * Compute 3-way European Handicap probabilities (e.g. "Home (3:0)" -> homeStart=3, awayStart=0)
+ * directly from the Dixon-Coles joint scoreline matrix.
+ */
+export function europeanHandicapProbs(
+  lambdaHome: number,
+  lambdaAway: number,
+  rho: number = GLOBAL_DC_RHO,
+  homeStart = 0,
+  awayStart = 0,
+): { homeWin: number; draw: number; awayWin: number } {
+  const mat = buildDixonColesScoreMatrix(lambdaHome, lambdaAway, rho, MAX_GOALS);
+  let homeWin = 0;
+  let draw = 0;
+  let awayWin = 0;
+  for (let i = 0; i <= MAX_GOALS; i++) {
+    for (let j = 0; j <= MAX_GOALS; j++) {
+      const p = mat[i][j];
+      const adjH = i + homeStart;
+      const adjA = j + awayStart;
+      if (adjH > adjA) homeWin += p;
+      else if (adjH === adjA) draw += p;
+      else awayWin += p;
+    }
+  }
+  return { homeWin, draw, awayWin };
+}
+
+/**
  * Predict expected goals and calibrated markets for a match using the v2.0
  * time-decayed Dixon-Coles MLE parameters fitted on 39 leagues.
  *
- * Returns `matched: false` if either team is not present in the model registry
+ * Returns `null` if neither team is present in the model registry
  * so callers can cleanly fall back to heuristic estimation.
  */
 export function predictMatchFromModel(
@@ -521,29 +549,46 @@ export function predictMatchFromModel(
     }
   }
 
-  // Secondary fallback: if leagueCode was omitted and exactly one team uniquely exists in a league
-  // (e.g. "Arsenal vs Newly Promoted FC"), anchor the unseen opponent to that league's bottom-quartile prior
+  // Secondary fallback: if leagueCode was omitted and teams sit across divisions (e.g. Tottenham in E0
+  // vs newly promoted Ipswich in E1/E2) or one side is unseen, anchor to the top-tier matched league.
   if (!resolvedLeague && !leagueCode) {
-    let singleMatchLeague: string | null = null;
-    let singleH: TeamStrength | undefined;
-    let singleA: TeamStrength | undefined;
-    let matchCount = 0;
+    const TOP_TIER_LEAGUES = new Set([
+      "E0", "SP1", "D1", "I1", "F1", "N1", "P1", "SC0", "B1", "T1", "G1",
+      "BRA", "ARG", "USA", "MEX", "JPN", "CHN", "RUS", "AUT", "SWZ", "DNK",
+      "NOR", "SWE", "POL", "ROU", "FIN", "IRL",
+    ]);
+    const partialMatches: Array<{
+      lc: string;
+      h?: TeamStrength;
+      a?: TeamStrength;
+      isTopTier: boolean;
+    }> = [];
     for (const [lc, lMap] of idx.entries()) {
       const h = resolveTeamInLeague(lMap, normHome);
       const a = resolveTeamInLeague(lMap, normAway);
       if (h || a) {
-        matchCount += 1;
-        singleMatchLeague = lc;
-        singleH = h;
-        singleA = a;
-        if (matchCount > 1) break;
+        partialMatches.push({
+          lc,
+          h,
+          a,
+          isTopTier: TOP_TIER_LEAGUES.has(lc),
+        });
       }
     }
-    if (matchCount === 1 && singleMatchLeague) {
-      const prior = getLeaguePromotedPrior(singleMatchLeague);
-      resolvedLeague = singleMatchLeague;
-      hStrength = singleH ?? prior;
-      aStrength = singleA ?? prior;
+
+    const topTierMatches = partialMatches.filter((m) => m.isTopTier);
+    const chosen =
+      topTierMatches.length === 1
+        ? topTierMatches[0]
+        : partialMatches.length === 1
+          ? partialMatches[0]
+          : null;
+
+    if (chosen) {
+      const prior = getLeaguePromotedPrior(chosen.lc);
+      resolvedLeague = chosen.lc;
+      hStrength = chosen.h ?? prior;
+      aStrength = chosen.a ?? prior;
       usedPromotedPrior = true;
     }
   }

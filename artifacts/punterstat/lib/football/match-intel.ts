@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   deriveFullMarkets,
+  europeanHandicapProbs,
   GLOBAL_DC_RHO,
   predictMatchFromModel,
   type FullDerivedMarkets,
@@ -648,6 +649,17 @@ export function estimateSelectionProb(intel: MatchIntel, selection: string): num
   const aLower = intel.awayTeam.toLowerCase();
   const mentionsHome = s.includes(hLower) || hLower.split(" ").filter((w) => w.length >= 4).some((w) => s.includes(w));
   const mentionsAway = s.includes(aLower) || aLower.split(" ").filter((w) => w.length >= 4).some((w) => s.includes(w));
+
+  // 3-Way European Handicap (e.g. "Home (3:0)", "Away (0:2)", "Draw (1:0)", "Handicap 3:0 Home")
+  const ehMatch = s.match(/\((\d)\s*:\s*(\d)\)/) ?? (s.includes("handicap") ? s.match(/(\d)\s*:\s*(\d)/) : null);
+  if (ehMatch) {
+    const hStart = Number(ehMatch[1]);
+    const aStart = Number(ehMatch[2]);
+    const eh = europeanHandicapProbs(intel.lambdaHome, intel.lambdaAway, intel.rho, hStart, aStart);
+    if (s.includes("draw") || /\bx\b/.test(s)) return eh.draw;
+    if (s.includes("home") || /\b1\b/.test(s) || (mentionsHome && !mentionsAway)) return eh.homeWin;
+    if (s.includes("away") || /\b2\b/.test(s) || (mentionsAway && !mentionsHome)) return eh.awayWin;
+  }
 
   // Micro-markets: Corners & Cards (checked before generic Over/Under goals)
   const isCornerSel = s.includes("corner");

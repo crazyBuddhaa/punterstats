@@ -3,6 +3,7 @@ import {
   GLOBAL_DC_RHO,
   MODEL_VERSION,
   deriveFullMarkets,
+  europeanHandicapProbs,
   getLeagueReliability,
   getLeagueRho,
   predictMatchFromModel,
@@ -64,11 +65,22 @@ describe("dixon-coles-engine v2.0", () => {
     expect(ligue1!.leagueCode).toBe("F1");
   });
 
-  it("uses bottom-quartile league prior when one side is newly promoted", () => {
+  it("uses bottom-quartile league prior when one side is newly promoted or across divisions", () => {
     const promoted = predictMatchFromModel("Arsenal", "Newly Promoted Town FC", "E0");
     expect(promoted).not.toBeNull();
     expect(promoted!.usedPromotedPrior).toBe(true);
     expect(promoted!.homeWinProb).toBeGreaterThan(0.55);
+
+    const crossDiv = predictMatchFromModel("Tottenham", "Ipswich Town");
+    expect(crossDiv).not.toBeNull();
+    expect(crossDiv!.leagueCode).toBe("E0");
+    expect(crossDiv!.usedPromotedPrior).toBe(true);
+  });
+
+  it("computes 3-way European Handicap probabilities summing to 1", () => {
+    const eh = europeanHandicapProbs(1.4, 1.5, -0.056, 3, 0);
+    expect(eh.homeWin + eh.draw + eh.awayWin).toBeCloseTo(1, 5);
+    expect(eh.homeWin).toBeGreaterThan(0.85);
   });
 
   it("integrates into analyzeMatch with injury sensitivity and heuristic fallback", () => {

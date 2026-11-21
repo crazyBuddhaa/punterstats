@@ -1205,7 +1205,7 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
             <StatTile
               label="Profit / loss"
               value={signedMoney(stats.profit)}
-              sub={`${stats.settledBets} settled · ${money(stats.staked)} staked`}
+              sub={`${stats.settledBets} settled · ${money(stats.staked)} staked · ${money(stats.returned)} returned`}
               tone={stats.profit >= 0 ? "good" : "bad"}
             />
             <StatTile

@@ -3,9 +3,12 @@ import { z } from "zod";
 import {
   estimateSelectionProb,
   getMatchIntel,
+  suggestMarketAlternatives,
   type CompetitionStage,
   type LineupStatus,
+  type MarketAlternative,
 } from "@/lib/football/match-intel";
+import { checkSharpMarketOdds, type SharpMarketCheck } from "@/lib/odds/sharp-check";
 import { parseFixtureTeams } from "@/lib/bet-assist/auto-settle";
 
 const legInputSchema = z.object({
@@ -43,6 +46,10 @@ export interface FootballLegReview {
   h2hSummary: string | null;
   factors: string[];
   riskNotes: string[];
+  /** Live sharp/consensus market check from cached odds (proxy for team news & line drift). */
+  sharpCheck?: SharpMarketCheck | null;
+  /** Cleaner same-match alternatives when backing a tight heavy favourite (<= 1.38). */
+  alternatives?: MarketAlternative[];
 }
 
 export async function POST(req: NextRequest) {
@@ -77,24 +84,39 @@ export async function POST(req: NextRequest) {
               leg.competitionStage === "cup_knockout"
                 ? ["Knockout match carries elevated upset risk."]
                 : [],
+            sharpCheck: null,
+            alternatives: [],
           };
         }
 
-        const intel = await getMatchIntel(teams.homeTeam, teams.awayTeam, {
-          competitionStage: leg.competitionStage as CompetitionStage,
-          homeLineup: leg.homeLineup as LineupStatus,
-          awayLineup: leg.awayLineup as LineupStatus,
-        });
+        const [intel, sharpCheck] = await Promise.all([
+          getMatchIntel(teams.homeTeam, teams.awayTeam, {
+            competitionStage: leg.competitionStage as CompetitionStage,
+            homeLineup: leg.homeLineup as LineupStatus,
+            awayLineup: leg.awayLineup as LineupStatus,
+          }),
+          checkSharpMarketOdds(teams.homeTeam, teams.awayTeam, leg.selection, leg.decimalOdds),
+        ]);
 
         const footballProb = estimateSelectionProb(intel, leg.selection);
         const edgePct =
           footballProb !== null ? Math.round((footballProb * leg.decimalOdds - 1) * 1000) / 10 : null;
 
+        const riskNotes = [...intel.riskNotes];
+        if (sharpCheck?.isDriftWarning) {
+          riskNotes.push(
+            `${sharpCheck.sourceLabel} fair chance is ${(sharpCheck.sharpFairProb * 100).toFixed(0)}% vs your slip's ${(impliedProb * 100).toFixed(0)}% — check team news/lineups before staking.`,
+          );
+        }
+
+        const alternatives = suggestMarketAlternatives(intel, leg.selection, leg.decimalOdds);
+
         // A "trap leg" is a short-priced banker (< 1.55) where football factors say true chance is meaningfully lower than implied,
-        // OR any leg with strong negative edge (< -12%) or major lineup/knockout red flags.
+        // OR sharp consensus has drifted strongly against the pick, OR strong negative edge (< -12%) / knockout red flags.
         const isTrapLeg =
           (footballProb !== null && leg.decimalOdds <= 1.55 && footballProb < impliedProb - 0.06) ||
           (edgePct !== null && edgePct < -12) ||
+          Boolean(sharpCheck?.isDriftWarning) ||
           (leg.competitionStage === "cup_knockout" && leg.decimalOdds <= 1.45);
 
         return {
@@ -112,7 +134,9 @@ export async function POST(req: NextRequest) {
               ? `${intel.h2h.homeWins}W-${intel.h2h.draws}D-${intel.h2h.awayWins}L (${intel.h2h.avgGoals.toFixed(1)} avg goals)`
               : null,
           factors: intel.factors,
-          riskNotes: intel.riskNotes,
+          riskNotes,
+          sharpCheck,
+          alternatives,
         };
       }),
     );

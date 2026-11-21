@@ -17,7 +17,24 @@ export const EB_PRIOR_ROI = -0.05;
 /** Equivalent sample size of the prior (higher = more conservative shrinkage). */
 export const EB_PRIOR_STRENGTH = 15;
 
+/** Exponential recency half-life (in bets): a bet 60 slips ago carries half the weight of the latest slip. */
+export const EB_RECENCY_HALF_LIFE_BETS = 60;
+
 export type ModelMaturity = "cold" | "warming" | "active" | "mature";
+
+export type PunterArchetypeId =
+  | "building_history"
+  | "favorite_collector"
+  | "acca_builder"
+  | "longshot_hunter"
+  | "streak_chaser"
+  | "disciplined_selector";
+
+export interface PunterArchetype {
+  id: PunterArchetypeId;
+  label: string;
+  summary: string;
+}
 
 export interface ShrunkSegment {
   key: string;
@@ -27,7 +44,7 @@ export interface ShrunkSegment {
   staked: number;
   profit: number;
   rawRoi: number;
-  /** Empirical Bayes shrunk ROI: (n * rawRoi + k * priorRoi) / (n + k). */
+  /** Recency-weighted Empirical Bayes shrunk ROI: (effN * weightedRoi + k * priorRoi) / (effN + k). */
   shrunkRoi: number;
   rawWinRate: number;
   /** Beta-Binomial shrunk win rate anchored to the segment's implied break-even rate. */
@@ -53,10 +70,13 @@ export interface PunterBehaviorModel {
   trainedAt: string;
   settledBets: number;
   maturity: ModelMaturity;
+  profile: PunterArchetype;
   overallRawRoi: number;
   overallShrunkRoi: number;
   byOddsBand: ShrunkSegment[];
   byBetType: ShrunkSegment[];
+  /** Granular accumulator breakdown: 2–3, 4–7, 8–12, and 13+ legs. */
+  byAccaBucket: ShrunkSegment[];
   byBookmaker: ShrunkSegment[];
   byMarket: ShrunkSegment[];
   bestSegment: ShrunkSegment | null;
@@ -74,6 +94,7 @@ export interface SlipProfileInput {
 export interface PersonalSlipInsight {
   maturity: ModelMaturity;
   settledBets: number;
+  profile: PunterArchetype;
   /** Blended Empirical Bayes expected ROI for this user on this slip profile. */
   predictedRoi: number;
   riskLevel: "aligned" | "caution" | "high_leak";
@@ -99,6 +120,23 @@ export function getBetTypeKey(legCount: number, market?: string): "single" | "mu
   if (effectiveLegs <= 3) return "multi";
   return "long_acca";
 }
+
+export function getAccaBucketKey(legCount: number, market?: string): string | null {
+  const effectiveLegs =
+    legCount >= 2 ? legCount : market && market.toLowerCase().includes("accum") ? 2 : 1;
+  if (effectiveLegs < 2) return null;
+  if (effectiveLegs <= 3) return "2-3";
+  if (effectiveLegs <= 7) return "4-7";
+  if (effectiveLegs <= 12) return "8-12";
+  return "13+";
+}
+
+const ACCA_BUCKET_LABELS: Record<string, string> = {
+  "2-3": "Short Multis (2–3 legs)",
+  "4-7": "Mid Accas (4–7 legs)",
+  "8-12": "Big Accas (8–12 legs)",
+  "13+": "Mega Accas (13+ legs)",
+};
 
 const BET_TYPE_LABELS: Record<"single" | "multi" | "long_acca", string> = {
   single: "Singles (1 leg)",
@@ -136,6 +174,11 @@ function percentile(values: number[], p: number): number {
   return sorted[idx];
 }
 
+function recencyWeight(indexFromOldest: number, totalCount: number): number {
+  const ageInBets = Math.max(0, totalCount - 1 - indexFromOldest);
+  return Math.pow(0.5, ageInBets / EB_RECENCY_HALF_LIFE_BETS);
+}
+
 function buildShrunkSegments(
   bets: JournalBet[],
   keyFn: (b: JournalBet) => string | null,
@@ -145,26 +188,49 @@ function buildShrunkSegments(
 ): ShrunkSegment[] {
   const buckets = new Map<
     string,
-    { label: string; bets: number; wins: number; staked: number; profit: number; impliedSum: number; oddsSum: number }
+    {
+      label: string;
+      bets: number;
+      wins: number;
+      staked: number;
+      profit: number;
+      wSum: number;
+      wWins: number;
+      wStaked: number;
+      wProfit: number;
+      impliedSum: number;
+      oddsSum: number;
+    }
   >();
 
-  for (const b of bets) {
+  for (let i = 0; i < bets.length; i++) {
+    const b = bets[i];
     const key = keyFn(b);
     if (!key) continue;
+    const w = recencyWeight(i, bets.length);
     const entry = buckets.get(key) ?? {
       label: labelFn(key),
       bets: 0,
       wins: 0,
       staked: 0,
       profit: 0,
+      wSum: 0,
+      wWins: 0,
+      wStaked: 0,
+      wProfit: 0,
       impliedSum: 0,
       oddsSum: 0,
     };
     const profit = betProfit(b);
+    const won = b.status === "won" || b.status === "half_won";
     entry.bets += 1;
-    if (b.status === "won" || b.status === "half_won") entry.wins += 1;
+    if (won) entry.wins += 1;
     entry.staked += b.stake;
     entry.profit += profit;
+    entry.wSum += w;
+    if (won) entry.wWins += w;
+    entry.wStaked += b.stake * w;
+    entry.wProfit += profit * w;
     entry.impliedSum += b.odds > 1 ? 1 / b.odds : 0;
     entry.oddsSum += b.odds;
     buckets.set(key, entry);
@@ -173,11 +239,12 @@ function buildShrunkSegments(
   return [...buckets.entries()]
     .map(([key, g]) => {
       const rawRoi = g.staked > 0 ? g.profit / g.staked : 0;
-      const shrunkRoi = (g.bets * rawRoi + priorStrength * priorRoi) / (g.bets + priorStrength);
+      const weightedRoi = g.wStaked > 0 ? g.wProfit / g.wStaked : rawRoi;
+      const shrunkRoi = (g.wSum * weightedRoi + priorStrength * priorRoi) / (g.wSum + priorStrength);
       const rawWinRate = g.bets > 0 ? g.wins / g.bets : 0;
       const breakEvenRate = g.bets > 0 ? g.impliedSum / g.bets : 0;
       const alpha0 = priorStrength * breakEvenRate;
-      const shrunkWinRate = (g.wins + alpha0) / (g.bets + priorStrength);
+      const shrunkWinRate = (g.wWins + alpha0) / (g.wSum + priorStrength);
       const avgOdds = g.bets > 0 ? g.oddsSum / g.bets : 0;
 
       return {
@@ -205,6 +272,58 @@ function getMaturity(settledCount: number): ModelMaturity {
   return "mature";
 }
 
+function classifyArchetype(
+  settled: JournalBet[],
+  tiltRiskScore: number,
+  postLossStakeRatio: number | null,
+): PunterArchetype {
+  if (settled.length < 10) {
+    return {
+      id: "building_history",
+      label: "Building History",
+      summary: "Log 10+ settled slips to unlock your personal betting profile.",
+    };
+  }
+  if (tiltRiskScore >= 45 && postLossStakeRatio !== null && postLossStakeRatio >= 1.25) {
+    return {
+      id: "streak_chaser",
+      label: "Streak Chaser",
+      summary: "Stakes tend to climb after losses — flat staking is your highest-leverage fix.",
+    };
+  }
+  const accaShare =
+    settled.filter((b) => getBetTypeKey(b.legCount ?? 1, b.market) === "long_acca").length /
+    settled.length;
+  if (accaShare >= 0.45) {
+    return {
+      id: "acca_builder",
+      label: "Acca Builder",
+      summary: "Most tickets are 4+ leg accumulators — trimming low-reward banker legs protects your hit rate.",
+    };
+  }
+  const longshotShare = settled.filter((b) => b.odds >= 5.0).length / settled.length;
+  if (longshotShare >= 0.35) {
+    return {
+      id: "longshot_hunter",
+      label: "Longshot Hunter",
+      summary: "You target big payouts (5.0+ odds) — expect long dry spells and size stakes small.",
+    };
+  }
+  const favShare = settled.filter((b) => b.odds < 1.5).length / settled.length;
+  if (favShare >= 0.5) {
+    return {
+      id: "favorite_collector",
+      label: "Favorite Collector",
+      summary: "High hit rate on short prices (< 1.50), where one upset wipes out several wins.",
+    };
+  }
+  return {
+    id: "disciplined_selector",
+    label: "Disciplined Selector",
+    summary: "Balanced odds selection with steady staking and low tilt risk.",
+  };
+}
+
 /**
  * Train the personal Empirical Bayes behavior & leak model from a user's bet history.
  */
@@ -219,9 +338,20 @@ export function trainPunterModel(bets: JournalBet[]): PunterBehaviorModel {
   const totalStaked = settled.reduce((s, b) => s + b.stake, 0);
   const totalProfit = settled.reduce((s, b) => s + betProfit(b), 0);
   const overallRawRoi = totalStaked > 0 ? totalProfit / totalStaked : 0;
+
+  let wSum = 0;
+  let wStaked = 0;
+  let wProfit = 0;
+  for (let i = 0; i < settled.length; i++) {
+    const w = recencyWeight(i, settled.length);
+    wSum += w;
+    wStaked += settled[i].stake * w;
+    wProfit += betProfit(settled[i]) * w;
+  }
+  const overallWeightedRoi = wStaked > 0 ? wProfit / wStaked : overallRawRoi;
   const overallShrunkRoi =
-    (settled.length * overallRawRoi + EB_PRIOR_STRENGTH * EB_PRIOR_ROI) /
-    (settled.length + EB_PRIOR_STRENGTH);
+    (wSum * overallWeightedRoi + EB_PRIOR_STRENGTH * EB_PRIOR_ROI) /
+    (wSum + EB_PRIOR_STRENGTH);
 
   const byOddsBand = buildShrunkSegments(
     settled,
@@ -233,6 +363,12 @@ export function trainPunterModel(bets: JournalBet[]): PunterBehaviorModel {
     settled,
     (b) => getBetTypeKey(b.legCount ?? 1, b.market),
     (key) => BET_TYPE_LABELS[key as keyof typeof BET_TYPE_LABELS] ?? key,
+  );
+
+  const byAccaBucket = buildShrunkSegments(
+    settled,
+    (b) => getAccaBucketKey(b.legCount ?? 1, b.market),
+    (key) => ACCA_BUCKET_LABELS[key] ?? key,
   );
 
   const bookieDisplayNames = new Map<string, string>();
@@ -308,15 +444,18 @@ export function trainPunterModel(bets: JournalBet[]): PunterBehaviorModel {
 
   const tiltLevel: TiltProfile["tiltLevel"] =
     tiltRiskScore >= 55 ? "high" : tiltRiskScore >= 25 ? "elevated" : "low";
+  const profile = classifyArchetype(settled, tiltRiskScore, postLossStakeRatio);
 
   return {
     trainedAt: new Date().toISOString(),
     settledBets: settled.length,
     maturity: getMaturity(settled.length),
+    profile,
     overallRawRoi,
     overallShrunkRoi,
     byOddsBand,
     byBetType,
+    byAccaBucket,
     byBookmaker,
     byMarket,
     bestSegment,
@@ -344,10 +483,14 @@ export function scoreSlipWithPunterModel(
 ): PersonalSlipInsight {
   const oddsKey = getOddsBandKey(slip.combinedOdds);
   const typeKey = getBetTypeKey(slip.legCount);
+  const accaBucketKey = getAccaBucketKey(slip.legCount);
   const bookieKey = normalizeBookmakerKey(slip.bookmaker);
 
   const matchedOddsBand = model.byOddsBand.find((s) => s.key === oddsKey) ?? null;
-  const matchedBetType = model.byBetType.find((s) => s.key === typeKey) ?? null;
+  const matchedBetType =
+    (accaBucketKey ? model.byAccaBucket.find((s) => s.key === accaBucketKey && s.bets >= 5) : null) ??
+    model.byBetType.find((s) => s.key === typeKey) ??
+    null;
   const matchedBookmaker = bookieKey
     ? (model.byBookmaker.find((s) => s.key === bookieKey) ?? null)
     : null;
@@ -428,6 +571,7 @@ export function scoreSlipWithPunterModel(
   return {
     maturity: model.maturity,
     settledBets: model.settledBets,
+    profile: model.profile,
     predictedRoi,
     riskLevel,
     matchedOddsBand,

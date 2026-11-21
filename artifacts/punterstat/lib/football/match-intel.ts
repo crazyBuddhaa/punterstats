@@ -26,6 +26,10 @@ export interface TeamSnapshot {
   pointsLast5: number;
   avgGoalsFor: number;
   avgGoalsAgainst: number;
+  venueAvgGoalsFor: number | null;
+  venueAvgGoalsAgainst: number | null;
+  venueSampleSize: number;
+  daysSinceLastMatch: number | null;
   cleanSheetPct: number;
   elo: number | null;
   sampleSize: number;
@@ -66,6 +70,35 @@ export interface MatchIntelOptions {
   leagueCode?: string | null;
 }
 
+const CACHE_TTL_MS = 15 * 60 * 1000;
+const MAX_CACHE_ENTRIES = 500;
+
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+}
+
+const teamCache = new Map<string, CacheEntry<TeamSnapshot>>();
+const h2hCache = new Map<string, CacheEntry<H2HSnapshot>>();
+
+function getCached<T>(map: Map<string, CacheEntry<T>>, key: string): T | null {
+  const entry = map.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    map.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+function setCached<T>(map: Map<string, CacheEntry<T>>, key: string, value: T): void {
+  if (map.size >= MAX_CACHE_ENTRIES) {
+    const oldestKey = map.keys().next().value;
+    if (oldestKey !== undefined) map.delete(oldestKey);
+  }
+  map.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
 function safeLike(name: string): string {
   return name.trim().replace(/[%_\\]/g, "");
 }
@@ -74,9 +107,20 @@ function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
 }
 
+function computeDaysSince(dateStr: string | null | undefined): number | null {
+  if (!dateStr) return null;
+  const parsed = Date.parse(dateStr);
+  if (!Number.isFinite(parsed)) return null;
+  const diffDays = Math.floor((Date.now() - parsed) / (1000 * 60 * 60 * 24));
+  // Ignore stale historical seasons (> 60 days) or future-dated fixtures (< 0)
+  if (diffDays < 0 || diffDays > 60) return null;
+  return diffDays;
+}
+
 async function fetchTeamSnapshot(
   admin: ReturnType<typeof createAdminClient>,
   teamName: string,
+  venue: "home" | "away",
 ): Promise<TeamSnapshot> {
   const safe = safeLike(teamName);
   const empty: TeamSnapshot = {
@@ -85,11 +129,19 @@ async function fetchTeamSnapshot(
     pointsLast5: 0,
     avgGoalsFor: 1.35,
     avgGoalsAgainst: 1.3,
+    venueAvgGoalsFor: null,
+    venueAvgGoalsAgainst: null,
+    venueSampleSize: 0,
+    daysSinceLastMatch: null,
     cleanSheetPct: 28,
     elo: null,
     sampleSize: 0,
   };
   if (safe.length < 2) return empty;
+
+  const cacheKey = `${safe.toLowerCase()}::${venue}`;
+  const cached = getCached(teamCache, cacheKey);
+  if (cached) return cached;
 
   let { data } = await admin
     .from("historical_matches")
@@ -112,15 +164,22 @@ async function fetchTeamSnapshot(
     data = partial.data;
   }
 
-  if (!data || data.length === 0) return empty;
+  if (!data || data.length === 0) {
+    setCached(teamCache, cacheKey, empty);
+    return empty;
+  }
 
   const lower = teamName.trim().toLowerCase();
   const last5: MatchResult[] = [];
   let pts5 = 0;
   let gfSum = 0;
   let gaSum = 0;
+  let venueGfSum = 0;
+  let venueGaSum = 0;
+  let venueCount = 0;
   let cs = 0;
   let latestElo: number | null = null;
+  const daysSinceLastMatch = computeDaysSince(data[0]?.match_date as string | undefined);
 
   for (const m of data) {
     const isHome =
@@ -130,6 +189,11 @@ async function fetchTeamSnapshot(
     const ga = Number(isHome ? m.away_goals : m.home_goals);
     gfSum += gf;
     gaSum += ga;
+    if ((venue === "home" && isHome) || (venue === "away" && !isHome)) {
+      venueGfSum += gf;
+      venueGaSum += ga;
+      venueCount += 1;
+    }
     if (ga === 0) cs++;
     if (latestElo === null) {
       const e = isHome ? m.home_elo : m.away_elo;
@@ -144,16 +208,22 @@ async function fetchTeamSnapshot(
     }
   }
 
-  return {
+  const snapshot: TeamSnapshot = {
     name: teamName,
     last5,
     pointsLast5: pts5,
     avgGoalsFor: Number((gfSum / data.length).toFixed(2)),
     avgGoalsAgainst: Number((gaSum / data.length).toFixed(2)),
+    venueAvgGoalsFor: venueCount >= 3 ? Number((venueGfSum / venueCount).toFixed(2)) : null,
+    venueAvgGoalsAgainst: venueCount >= 3 ? Number((venueGaSum / venueCount).toFixed(2)) : null,
+    venueSampleSize: venueCount,
+    daysSinceLastMatch,
     cleanSheetPct: Math.round((cs / data.length) * 100),
     elo: latestElo,
     sampleSize: data.length,
   };
+  setCached(teamCache, cacheKey, snapshot);
+  return snapshot;
 }
 
 async function fetchH2HSnapshot(
@@ -173,6 +243,10 @@ async function fetchH2HSnapshot(
   };
   if (sh.length < 2 || sa.length < 2) return empty;
 
+  const cacheKey = `${sh.toLowerCase()}::vs::${sa.toLowerCase()}`;
+  const cached = getCached(h2hCache, cacheKey);
+  if (cached) return cached;
+
   const { data } = await admin
     .from("historical_matches")
     .select("home_team, away_team, home_goals, away_goals")
@@ -185,7 +259,10 @@ async function fetchH2HSnapshot(
     .order("match_date", { ascending: false })
     .limit(12);
 
-  if (!data || data.length === 0) return empty;
+  if (!data || data.length === 0) {
+    setCached(h2hCache, cacheKey, empty);
+    return empty;
+  }
 
   const homeLower = homeTeam.trim().toLowerCase();
   let homeWins = 0;
@@ -205,7 +282,7 @@ async function fetchH2HSnapshot(
     else awayWins++;
   }
 
-  return {
+  const snap: H2HSnapshot = {
     meetings: data.length,
     homeWins,
     draws,
@@ -213,6 +290,8 @@ async function fetchH2HSnapshot(
     avgGoals: Number((goalsSum / data.length).toFixed(2)),
     bttsPct: Math.round((bttsCount / data.length) * 100),
   };
+  setCached(h2hCache, cacheKey, snap);
+  return snap;
 }
 
 const LINEUP_ATTACK_MULT: Record<LineupStatus, number> = {
@@ -240,15 +319,33 @@ export async function getMatchIntel(
 
   const admin = createAdminClient();
   const [homeSnap, awaySnap, h2hSnap] = await Promise.all([
-    fetchTeamSnapshot(admin, homeTeam),
-    fetchTeamSnapshot(admin, awayTeam),
+    fetchTeamSnapshot(admin, homeTeam, "home"),
+    fetchTeamSnapshot(admin, awayTeam, "away"),
     fetchH2HSnapshot(admin, homeTeam, awayTeam),
   ]);
 
   const dc = predictMatchFromModel(homeTeam, awayTeam, options.leagueCode);
   const hasHistory = homeSnap.sampleSize >= 3 && awaySnap.sampleSize >= 3;
 
-  // 1. Baseline expected goals (combining Dixon-Coles team strength + recent form goals)
+  // Blend venue-specific home/away form (60%) with overall recent form (40%) when available
+  const effHomeGf =
+    homeSnap.venueAvgGoalsFor !== null
+      ? 0.6 * homeSnap.venueAvgGoalsFor + 0.4 * homeSnap.avgGoalsFor
+      : homeSnap.avgGoalsFor;
+  const effHomeGa =
+    homeSnap.venueAvgGoalsAgainst !== null
+      ? 0.6 * homeSnap.venueAvgGoalsAgainst + 0.4 * homeSnap.avgGoalsAgainst
+      : homeSnap.avgGoalsAgainst;
+  const effAwayGf =
+    awaySnap.venueAvgGoalsFor !== null
+      ? 0.6 * awaySnap.venueAvgGoalsFor + 0.4 * awaySnap.avgGoalsFor
+      : awaySnap.avgGoalsFor;
+  const effAwayGa =
+    awaySnap.venueAvgGoalsAgainst !== null
+      ? 0.6 * awaySnap.venueAvgGoalsAgainst + 0.4 * awaySnap.avgGoalsAgainst
+      : awaySnap.avgGoalsAgainst;
+
+  // 1. Baseline expected goals (combining Dixon-Coles team strength + venue-weighted recent form)
   let lamH = 1.48;
   let lamA = 1.15;
   let rho = GLOBAL_DC_RHO;
@@ -258,17 +355,17 @@ export async function getMatchIntel(
     lamA = dc.lambdaAway;
     rho = dc.rho;
     if (hasHistory) {
-      // Blend 70% Dixon-Coles structural strength + 30% recent scoring/conceding form
-      const formH = (homeSnap.avgGoalsFor + awaySnap.avgGoalsAgainst) / 2;
-      const formA = (awaySnap.avgGoalsFor + homeSnap.avgGoalsAgainst) / 2;
-      lamH = 0.7 * lamH + 0.3 * (formH * 1.08);
-      lamA = 0.7 * lamA + 0.3 * (formA * 0.92);
+      // Blend 70% Dixon-Coles structural strength + 30% venue-weighted recent scoring/conceding form
+      const formH = (effHomeGf + effAwayGa) / 2;
+      const formA = (effAwayGf + effHomeGa) / 2;
+      lamH = 0.7 * lamH + 0.3 * (formH * 1.05);
+      lamA = 0.7 * lamA + 0.3 * (formA * 0.95);
     }
   } else if (hasHistory) {
-    const formH = (homeSnap.avgGoalsFor + awaySnap.avgGoalsAgainst) / 2;
-    const formA = (awaySnap.avgGoalsFor + homeSnap.avgGoalsAgainst) / 2;
-    lamH = formH * 1.12;
-    lamA = formA * 0.90;
+    const formH = (effHomeGf + effAwayGa) / 2;
+    const formA = (effAwayGf + effHomeGa) / 2;
+    lamH = formH * 1.10;
+    lamA = formA * 0.92;
     // Elo strength tilt when available
     if (homeSnap.elo !== null && awaySnap.elo !== null) {
       const eloDiff = clamp((homeSnap.elo - awaySnap.elo) / 400, -0.6, 0.6);
@@ -291,7 +388,15 @@ export async function getMatchIntel(
     lamA *= 0.85 + 0.15 * h2hGoalRatio;
   }
 
-  // 4. Competition stage & lineup adjustments
+  // 4. Short-turnaround fatigue adjustment (played <= 3 days ago)
+  if (homeSnap.daysSinceLastMatch !== null && homeSnap.daysSinceLastMatch <= 3) {
+    lamH *= 0.96;
+  }
+  if (awaySnap.daysSinceLastMatch !== null && awaySnap.daysSinceLastMatch <= 3) {
+    lamA *= 0.96;
+  }
+
+  // 5. Competition stage & lineup adjustments
   if (competitionStage === "cup_knockout") {
     // Knockout ties are tighter, cagier, higher draw/upset variance
     lamH *= 0.92;
@@ -332,13 +437,21 @@ export async function getMatchIntel(
   }
 
   if (homeSnap.last5.length >= 3) {
+    const venueNote =
+      homeSnap.venueAvgGoalsFor !== null
+        ? `, home split ${homeSnap.venueAvgGoalsFor.toFixed(1)} GF / ${homeSnap.venueAvgGoalsAgainst?.toFixed(1)} GA`
+        : "";
     factors.push(
-      `${homeTeam} recent form: ${homeSnap.last5.join("-")} (${homeSnap.pointsLast5}/15 pts, ${homeSnap.avgGoalsFor.toFixed(1)} GF / ${homeSnap.avgGoalsAgainst.toFixed(1)} GA).`,
+      `${homeTeam} recent form: ${homeSnap.last5.join("-")} (${homeSnap.pointsLast5}/15 pts, ${homeSnap.avgGoalsFor.toFixed(1)} GF / ${homeSnap.avgGoalsAgainst.toFixed(1)} GA${venueNote}).`,
     );
   }
   if (awaySnap.last5.length >= 3) {
+    const venueNote =
+      awaySnap.venueAvgGoalsFor !== null
+        ? `, away split ${awaySnap.venueAvgGoalsFor.toFixed(1)} GF / ${awaySnap.venueAvgGoalsAgainst?.toFixed(1)} GA`
+        : "";
     factors.push(
-      `${awayTeam} recent form: ${awaySnap.last5.join("-")} (${awaySnap.pointsLast5}/15 pts, ${awaySnap.avgGoalsFor.toFixed(1)} GF / ${awaySnap.avgGoalsAgainst.toFixed(1)} GA).`,
+      `${awayTeam} recent form: ${awaySnap.last5.join("-")} (${awaySnap.pointsLast5}/15 pts, ${awaySnap.avgGoalsFor.toFixed(1)} GF / ${awaySnap.avgGoalsAgainst.toFixed(1)} GA${venueNote}).`,
     );
   }
   if (h2hSnap.meetings > 0) {
@@ -347,6 +460,19 @@ export async function getMatchIntel(
     );
   }
 
+  if (homeSnap.daysSinceLastMatch !== null && homeSnap.daysSinceLastMatch <= 3) {
+    riskNotes.push(
+      `${homeTeam} played ${homeSnap.daysSinceLastMatch} day${homeSnap.daysSinceLastMatch === 1 ? "" : "s"} ago — short turnaround / rotation risk.`,
+    );
+  }
+  if (awaySnap.daysSinceLastMatch !== null && awaySnap.daysSinceLastMatch <= 3) {
+    riskNotes.push(
+      `${awayTeam} played ${awaySnap.daysSinceLastMatch} day${awaySnap.daysSinceLastMatch === 1 ? "" : "s"} ago — short turnaround / travel fatigue risk.`,
+    );
+  }
+  if (dc?.usedPromotedPrior) {
+    riskNotes.push("One side is newly promoted or newly tracked — anchored to a conservative league prior.");
+  }
   if (competitionStage === "cup_knockout") {
     riskNotes.push("Cup / knockout tie: favourites rotate or play cautiously; upset & draw risk is elevated.");
   } else if (competitionStage === "derby") {
@@ -443,3 +569,66 @@ export function estimateSelectionProb(intel: MatchIntel, selection: string): num
 
   return null;
 }
+
+export interface MarketAlternative {
+  label: string;
+  modelProb: number;
+  fairOdds: number;
+}
+
+/**
+ * When a user backs a tight heavy favourite (<= 1.38 on 1X2), suggest cleaner
+ * same-match markets from the same Dixon-Coles matrix (e.g. Team Over 1.5, -1.5 AH)
+ * so they can express the same football read with better risk/reward.
+ */
+export function suggestMarketAlternatives(
+  intel: MatchIntel,
+  selection: string,
+  decimalOdds: number,
+): MarketAlternative[] {
+  if (decimalOdds > 1.38) return [];
+  const s = selection.toLowerCase().trim();
+  const hLower = intel.homeTeam.toLowerCase();
+  const aLower = intel.awayTeam.toLowerCase();
+  const m = intel.markets;
+
+  const isHomeWin =
+    s === "1" ||
+    s === "home" ||
+    s === "home win" ||
+    s === "home to win" ||
+    (s.includes(hLower) && !s.includes("over") && !s.includes("under") && !s.includes("or draw"));
+  const isAwayWin =
+    s === "2" ||
+    s === "away" ||
+    s === "away win" ||
+    s === "away to win" ||
+    (s.includes(aLower) && !s.includes("over") && !s.includes("under") && !s.includes("or draw"));
+
+  const candidates: Array<{ label: string; prob: number }> = [];
+  if (isHomeWin) {
+    candidates.push(
+      { label: `${intel.homeTeam} Over 1.5 Goals`, prob: m.homeOver15 },
+      { label: `${intel.homeTeam} -1.5 Handicap`, prob: m.ahHomeMinus15 },
+      { label: `${intel.homeTeam} Clean Sheet`, prob: m.homeCleanSheet },
+    );
+  } else if (isAwayWin) {
+    candidates.push(
+      { label: `${intel.awayTeam} Over 1.5 Goals`, prob: m.awayOver15 },
+      { label: `${intel.awayTeam} Clean Sheet`, prob: m.awayCleanSheet },
+    );
+  } else {
+    return [];
+  }
+
+  return candidates
+    .filter((c) => c.prob >= 0.42 && c.prob <= 0.78)
+    .sort((a, b) => b.prob - a.prob)
+    .slice(0, 2)
+    .map((c) => ({
+      label: c.label,
+      modelProb: Math.round(c.prob * 1000) / 1000,
+      fairOdds: Math.round((1 / c.prob) * 100) / 100,
+    }));
+}
+

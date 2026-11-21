@@ -144,4 +144,45 @@ describe("punter-model (Empirical Bayes personal behavior model)", () => {
     });
     expect(fp1).toBe(fp2);
   });
+
+  it("weights recent bets more heavily than old bets and classifies Punter Profiles + acca leg buckets", () => {
+    const bets: JournalBet[] = [];
+    // 60 old losing 10-leg accas
+    for (let i = 0; i < 60; i++) {
+      bets.push(
+        makeBet({
+          id: `old-${i}`,
+          placedAt: new Date(2025, 0, 1 + i).toISOString(),
+          odds: 12.0,
+          legCount: 10,
+          market: "Accumulator",
+          status: "lost",
+        }),
+      );
+    }
+    // 20 recent winning 5-leg accas at 4.0 odds (8 won, 12 lost -> +60% raw ROI)
+    for (let i = 0; i < 20; i++) {
+      bets.push(
+        makeBet({
+          id: `new-${i}`,
+          placedAt: new Date(2026, 9, 1 + i).toISOString(),
+          odds: 4.0,
+          legCount: 5,
+          market: "Accumulator",
+          status: i % 5 < 2 ? "won" : "lost",
+        }),
+      );
+    }
+
+    const model = trainPunterModel(bets);
+    expect(model.profile.id).toBe("acca_builder");
+    const bucket4to7 = model.byAccaBucket.find((b) => b.key === "4-7");
+    const bucket8to12 = model.byAccaBucket.find((b) => b.key === "8-12");
+    expect(bucket4to7?.bets).toBe(20);
+    expect(bucket8to12?.bets).toBe(60);
+    expect(bucket4to7!.shrunkRoi).toBeGreaterThan(0);
+    expect(bucket8to12!.shrunkRoi).toBeLessThan(-0.4);
+    // Because recent bets are positive, recency-weighted overallShrunkRoi is higher than unweighted overallRawRoi
+    expect(model.overallShrunkRoi).toBeGreaterThan(model.overallRawRoi);
+  });
 });

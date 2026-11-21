@@ -49,6 +49,28 @@ describe("dixon-coles-engine v2.0", () => {
     expect(predictMatchFromModel("Nonexistent FC", "Imaginary United")).toBeNull();
   });
 
+  it("resolves common bookmaker team aliases across top leagues", () => {
+    const epl = predictMatchFromModel("Manchester United", "Wolverhampton Wanderers", "E0");
+    expect(epl).not.toBeNull();
+    expect(epl!.matched).toBe(true);
+    expect(epl!.usedPromotedPrior).toBe(false);
+
+    const laLiga = predictMatchFromModel("Atletico Madrid", "Real Sociedad");
+    expect(laLiga).not.toBeNull();
+    expect(laLiga!.leagueCode).toBe("SP1");
+
+    const ligue1 = predictMatchFromModel("PSG", "Olympique Lyonnais");
+    expect(ligue1).not.toBeNull();
+    expect(ligue1!.leagueCode).toBe("F1");
+  });
+
+  it("uses bottom-quartile league prior when one side is newly promoted", () => {
+    const promoted = predictMatchFromModel("Arsenal", "Newly Promoted Town FC", "E0");
+    expect(promoted).not.toBeNull();
+    expect(promoted!.usedPromotedPrior).toBe(true);
+    expect(promoted!.homeWinProb).toBeGreaterThan(0.55);
+  });
+
   it("integrates into analyzeMatch with injury sensitivity and heuristic fallback", () => {
     const baseInput = {
       homeTeam: { name: "Arsenal", last5: ["W", "W", "D", "W", "L"] as ("W" | "D" | "L")[], goalsScored: 2.1, goalsConceded: 0.9 },

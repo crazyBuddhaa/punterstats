@@ -254,14 +254,23 @@ export function SlipChecker({
       : null;
 
   function buildVerdictText(r: SlipAssessment): string {
-    const chance = pct(r.yourProb ?? r.fairProb, 1);
+    const chance = pct(r.effectiveProb, 1);
+    const cut1 = r.legs.length > 1 ? ` | Cut-by-1 chance: ${pct(r.cutBreakdown.cutByOneProb, 1)}` : "";
     return [
       `PunterStat Slip Check (${r.legs.length}-leg ${r.legs.length > 1 ? "acca" : "single"})`,
       `• Risk: ${RISK_STYLE[r.risk].label} (lands ~1 in ${r.oneWinEvery})`,
       `• Combined odds: ${r.combinedOdds.toFixed(2)} | Stake: ${naira(stakeNum)} -> ${naira(bonus > 0 ? boostedReturn : r.potentialReturn)}`,
-      `• Football-adjusted chance: ${chance} | Trap legs flagged: ${trapLegs.length}`,
+      `• Football-adjusted chance: ${chance}${cut1} | Trap legs flagged: ${trapLegs.length}`,
       `• Checked on punterstat.site/bet-assist/slip-checker`,
     ].join("\n");
+  }
+
+  async function applyTrimSuggestion(droppedIndices: number[]) {
+    const dropSet = new Set(droppedIndices);
+    const remaining = legs.filter((_, idx) => !dropSet.has(idx));
+    if (remaining.length === 0) return;
+    setLegs(remaining);
+    await runFullAnalysis(remaining, Number(stake) || 1000);
   }
 
   function copyVerdict() {
@@ -558,7 +567,7 @@ export function SlipChecker({
                 Football-Adjusted Chance
               </p>
               <p className="mt-0.5 text-xl font-bold tabular-nums text-slate-900">
-                {pct(result.yourProb ?? result.fairProb, 1)}
+                {pct(result.effectiveProb, 1)}
               </p>
               <p className="text-[11px] text-slate-500">
                 ~1 win in {Number.isFinite(result.oneWinEvery) ? result.oneWinEvery : "∞"} slips
@@ -587,21 +596,87 @@ export function SlipChecker({
             </div>
           </div>
 
+          {/* Cut-1 Survival Breakdown for multi-leg slips */}
+          {result.legs.length > 1 && (
+            <div className="grid grid-cols-3 divide-x divide-slate-200 rounded-xl border border-slate-200 bg-white">
+              <div className="px-4 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                  All {result.legs.length} Legs Win
+                </p>
+                <p className="mt-0.5 text-base font-bold tabular-nums text-slate-900">
+                  {pct(result.cutBreakdown.allWinProb, 1)}
+                </p>
+              </div>
+              <div className="px-4 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                  Cut by Exactly 1 Leg
+                </p>
+                <p className="mt-0.5 text-base font-bold tabular-nums text-slate-900">
+                  {pct(result.cutBreakdown.cutByOneProb, 1)}
+                </p>
+              </div>
+              <div className="px-4 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  Cut by 2+ Legs
+                </p>
+                <p className="mt-0.5 text-base font-bold tabular-nums text-slate-900">
+                  {pct(result.cutBreakdown.cutByTwoPlusProb, 1)}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Ticket-Killer Trim Simulator */}
+          {result.trimSuggestion && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-xs text-amber-950">
+              <div className="space-y-0.5">
+                <p className="font-bold text-amber-950">
+                  Survival Boost: Drop {result.trimSuggestion.droppedIndices.length}{" "}
+                  high-drag {result.trimSuggestion.droppedIndices.length === 1 ? "leg" : "legs"} →{" "}
+                  <span className="text-emerald-700">
+                    +{result.trimSuggestion.survivalBoostPct}% higher win chance
+                  </span>{" "}
+                  ({pct(result.effectiveProb, 1)} → {pct(result.trimSuggestion.newWinProb, 1)})
+                </p>
+                <p className="text-amber-900/80">
+                  Trimming {result.trimSuggestion.droppedLabels.join(" + ")} moves odds from{" "}
+                  <strong>{result.combinedOdds.toFixed(2)}</strong> to{" "}
+                  <strong>{result.trimSuggestion.newOdds.toFixed(2)}</strong> (-{result.trimSuggestion.oddsDropPct}% payout).
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={analyzing}
+                onClick={() => applyTrimSuggestion(result.trimSuggestion!.droppedIndices)}
+                className="border-amber-300 bg-white text-amber-950 hover:bg-amber-100"
+              >
+                Trim &amp; Re-check
+              </Button>
+            </div>
+          )}
+
           {/* Personalized behavior insight if logged in with history */}
           {personalScore && (
             <div className="flex items-start gap-2.5 border-l-4 border-[#3D2DFF] bg-slate-50/70 px-4 py-3 text-xs text-slate-700">
               <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#3D2DFF]" />
               <div>
-                <p className="font-semibold text-slate-900">
-                  Personal Habit Check:{" "}
-                  {personalScore.riskLevel === "high_leak"
-                    ? "High-leak profile"
-                    : personalScore.riskLevel === "caution"
-                      ? "Caution"
-                      : "Aligned with your strengths"}{" "}
-                  (est. historical ROI {personalScore.predictedRoi >= 0 ? "+" : ""}
-                  {(personalScore.predictedRoi * 100).toFixed(1)}%)
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-slate-900">
+                    Personal Habit Check:{" "}
+                    {personalScore.riskLevel === "high_leak"
+                      ? "High-leak profile"
+                      : personalScore.riskLevel === "caution"
+                        ? "Caution"
+                        : "Aligned with your strengths"}{" "}
+                    (est. historical ROI {personalScore.predictedRoi >= 0 ? "+" : ""}
+                    {(personalScore.predictedRoi * 100).toFixed(1)}%)
+                  </p>
+                  <span className="rounded-full bg-[#3D2DFF]/10 px-2 py-0.5 text-[10px] font-bold text-[#3D2DFF]">
+                    Profile: {personalScore.profile.label}
+                  </span>
+                </div>
                 {(personalScore.warnings.length > 0 || personalScore.strengths.length > 0) && (
                   <p className="mt-0.5 text-slate-600">
                     {[...personalScore.warnings, ...personalScore.strengths].join(" · ")}
@@ -636,6 +711,26 @@ export function SlipChecker({
                           <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-slate-700">
                             @ {leg.decimalOdds.toFixed(2)}
                           </span>
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                            {leg.likelihoodLabel} · {leg.priceVerdict} price
+                          </span>
+                          {leg.marketTier === "combo" && (
+                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                              Combo · High Margin
+                            </span>
+                          )}
+                          {review?.sharpCheck && (
+                            <span
+                              className={cn(
+                                "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                                review.sharpCheck.isDriftWarning
+                                  ? "bg-rose-100 text-rose-700"
+                                  : "bg-sky-50 text-sky-700",
+                              )}
+                            >
+                              {review.sharpCheck.sourceLabel}: {(review.sharpCheck.sharpFairProb * 100).toFixed(0)}% (fair @{review.sharpCheck.sharpFairOdds.toFixed(2)})
+                            </span>
+                          )}
                           {review?.isTrapLeg && (
                             <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
                               <ShieldAlert className="h-3 w-3" /> Trap / Upset Risk
@@ -647,13 +742,28 @@ export function SlipChecker({
                             </span>
                           )}
                         </div>
-                        {leg.event && <p className="text-xs text-slate-500">{leg.event}</p>}
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500">
+                          {leg.event && <span>{leg.event}</span>}
+                          {leg.winsNeededPerLoss !== null && leg.winsNeededPerLoss >= 2 && (
+                            <span className="text-[11px] text-slate-500">
+                              1 upset wipes out {leg.winsNeededPerLoss} wins at this price
+                            </span>
+                          )}
+                        </div>
                         {review?.factors && review.factors.length > 0 && (
                           <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 text-[11px] text-slate-600">
                             {review.homeForm && <span>Home last 5: <strong>{review.homeForm}</strong></span>}
                             {review.awayForm && <span>Away last 5: <strong>{review.awayForm}</strong></span>}
                             {review.h2hSummary && <span>H2H: <strong>{review.h2hSummary}</strong></span>}
                           </div>
+                        )}
+                        {review?.alternatives && review.alternatives.length > 0 && (
+                          <p className="text-[11px] text-teal-800">
+                            Smarter same-match options:{" "}
+                            {review.alternatives
+                              .map((a) => `${a.label} (${(a.modelProb * 100).toFixed(0)}%, fair @${a.fairOdds.toFixed(2)})`)
+                              .join(" · ")}
+                          </p>
                         )}
                         {review?.riskNotes && review.riskNotes.length > 0 && (
                           <p className="text-[11px] font-medium text-amber-800">

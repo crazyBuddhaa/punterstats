@@ -89,11 +89,11 @@ const EMPTY_LEG: AccaLeg = { event: "", selection: "", odds: "" };
 
 function StatTile({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "good" | "bad" }) {
   return (
-    <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
+    <div className="min-w-0 rounded-2xl border border-border bg-white p-4 sm:p-5 shadow-sm">
       <p className="text-xs font-medium text-[#1e293b]/55">{label}</p>
       <p
         className={cn(
-          "mt-1 text-2xl font-bold tabular-nums text-[#0f172a]",
+          "mt-1 whitespace-nowrap text-lg sm:text-2xl font-bold tracking-tight tabular-nums text-[#0f172a]",
           tone === "good" && "text-emerald-600",
           tone === "bad" && "text-rose-600",
         )}

@@ -22,18 +22,13 @@ import { parseFDCsv, upsertMatchesAndOdds } from "@/lib/r2/csv-parser";
 import { isR2Configured } from "@/lib/r2/client";
 import { putFootballCsv, getManifest, putManifest, syncLogKey, putObject } from "@/lib/r2/dataset";
 import { LEAGUE_MAP } from "@/lib/historical-stats/league-map";
+import { SYNC_LEAGUES } from "@/lib/r2/sync";
 import type { R2SyncLogEntry, R2SyncResult, R2IngestResult } from "@/lib/r2/types";
 import { runWeeklyReportJob, type WeeklyReportJobResult } from "@/lib/report-card/weekly-report";
 
 const FDCO_BASE = "https://www.football-data.co.uk/mmz4281";
 
-const LEAGUES = [
-  { code: "E0",  name: "Premier League" },
-  { code: "SP1", name: "La Liga" },
-  { code: "D1",  name: "Bundesliga" },
-  { code: "I1",  name: "Serie A" },
-  { code: "F1",  name: "Ligue 1" },
-];
+const LEAGUES = SYNC_LEAGUES;
 
 function currentSeasonCodes(): Array<{ code: string; label: string }> {
   const now = new Date();

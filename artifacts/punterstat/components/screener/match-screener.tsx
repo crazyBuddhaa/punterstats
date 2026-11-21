@@ -54,7 +54,7 @@ export function MatchScreener() {
   const [matches, setMatches] = useState<ScreenedMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [preset, setPreset] = useState<ScreenerPreset>("acca_anchors");
+  const [preset, setPreset] = useState<ScreenerPreset>("all");
   const [league, setLeague] = useState("all");
   const [search, setSearch] = useState("");
   const [selectedLegs, setSelectedLegs] = useState<ScreenerSlipLeg[]>([]);

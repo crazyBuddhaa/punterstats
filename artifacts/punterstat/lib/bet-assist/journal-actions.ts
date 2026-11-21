@@ -251,6 +251,19 @@ export async function settleBet(input: z.input<typeof settleSchema>): Promise<Ac
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Sign in to use the bet tracker." };
 
+  const { data: existing, error: fetchErr } = await supabase
+    .from("bet_journal")
+    .select("status")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (fetchErr) return { success: false, error: fetchErr.message };
+  if (!existing) return { success: false, error: "Bet not found." };
+  if (existing.status !== "pending") {
+    return { success: false, error: "Settled bets are locked and cannot be modified." };
+  }
+
   const update: Record<string, unknown> = {
     status,
     settled_at: status === "pending" ? null : new Date().toISOString(),
@@ -258,7 +271,12 @@ export async function settleBet(input: z.input<typeof settleSchema>): Promise<Ac
   };
   if (closingOdds !== null && closingOdds > 1) update.closing_odds = closingOdds;
 
-  const { error } = await supabase.from("bet_journal").update(update).eq("id", id).eq("user_id", user.id);
+  const { error } = await supabase
+    .from("bet_journal")
+    .update(update)
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .eq("status", "pending");
   if (error) return { success: false, error: error.message };
   revalidatePath(TRACKER_PATH);
   revalidatePath(REPORT_CARD_PATH);
@@ -284,6 +302,31 @@ export async function settleLeg(input: z.input<typeof settleLegSchema>): Promise
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Sign in to use the bet tracker." };
+
+  const { data: existingLeg, error: existingLegErr } = await supabase
+    .from("bet_journal_legs")
+    .select("bet_id")
+    .eq("id", legId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (existingLegErr || !existingLeg) {
+    return { success: false, error: existingLegErr?.message ?? "Leg not found" };
+  }
+
+  const { data: parentBet, error: parentErr } = await supabase
+    .from("bet_journal")
+    .select("status")
+    .eq("id", existingLeg.bet_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (parentErr || !parentBet) {
+    return { success: false, error: parentErr?.message ?? "Parent bet not found" };
+  }
+  if (parentBet.status !== "pending") {
+    return { success: false, error: "Settled bets are locked and cannot be modified." };
+  }
 
   const { data: leg, error: legErr } = await supabase
     .from("bet_journal_legs")
@@ -628,6 +671,19 @@ export async function updateBet(input: UpdateBetInput): Promise<ActionResult> {
   const b = parsed.data;
   const legCount = b.legCount ?? (b.market.toLowerCase() === "accumulator" ? 2 : 1);
 
+  const { data: existing, error: fetchErr } = await supabase
+    .from("bet_journal")
+    .select("status")
+    .eq("id", b.id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (fetchErr) return { success: false, error: fetchErr.message };
+  if (!existing) return { success: false, error: "Bet not found." };
+  if (existing.status !== "pending") {
+    return { success: false, error: "Settled bets are locked and cannot be edited." };
+  }
+
   const { error } = await supabase
     .from("bet_journal")
     .update({
@@ -642,7 +698,8 @@ export async function updateBet(input: UpdateBetInput): Promise<ActionResult> {
       notes: b.notes || null,
     })
     .eq("id", b.id)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .eq("status", "pending");
 
   if (error) return { success: false, error: error.message };
   revalidatePath(TRACKER_PATH);
@@ -658,7 +715,25 @@ export async function deleteBet(id: string): Promise<ActionResult> {
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Sign in to use the bet tracker." };
 
-  const { error } = await supabase.from("bet_journal").delete().eq("id", id).eq("user_id", user.id);
+  const { data: existing, error: fetchErr } = await supabase
+    .from("bet_journal")
+    .select("status")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (fetchErr) return { success: false, error: fetchErr.message };
+  if (!existing) return { success: false, error: "Bet not found." };
+  if (existing.status !== "pending") {
+    return { success: false, error: "Settled bets are locked and cannot be deleted." };
+  }
+
+  const { error } = await supabase
+    .from("bet_journal")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .eq("status", "pending");
   if (error) return { success: false, error: error.message };
   revalidatePath(TRACKER_PATH);
   revalidatePath(REPORT_CARD_PATH);

@@ -9,6 +9,7 @@ import {
   ChevronUp,
   Download,
   Loader2,
+  Lock,
   Pencil,
   Plus,
   RefreshCw,
@@ -777,30 +778,63 @@ function SettleControls({ bet, onEdit }: { bet: JournalBet; onEdit: () => void }
       else setError(res.error ?? "Delete failed");
     });
 
+  const isSettled = bet.status !== "pending";
+  if (isSettled) {
+    const badgeTone =
+      bet.status === "won"
+        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+        : bet.status === "lost"
+          ? "border-rose-200 bg-rose-50 text-rose-700"
+          : bet.status === "cashed_out"
+            ? "border-sky-200 bg-sky-50 text-sky-700"
+            : "border-amber-200 bg-amber-50 text-amber-700";
+
+    return (
+      <div className="flex flex-wrap items-center justify-end gap-1.5">
+        {bet.closingOdds !== null && (
+          <span
+            title="Captured closing odds"
+            className="inline-flex h-7 items-center rounded-md border border-slate-200 bg-slate-50 px-2 text-[11px] font-medium tabular-nums text-slate-600"
+          >
+            Close {bet.closingOdds.toFixed(2)}
+          </span>
+        )}
+        <span
+          title="Settled bets are locked and immutable"
+          className={cn(
+            "inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-xs font-semibold",
+            badgeTone,
+          )}
+        >
+          <Lock className="h-3 w-3 opacity-75" />
+          {STATUS_LABELS[bet.status]}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-wrap items-center justify-end gap-1.5">
-      {bet.status === "pending" && (
-        <>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => quickSettle("won")}
-            title="Mark Won"
-            className="inline-flex h-8 items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
-          >
-            <Check className="h-3.5 w-3.5" /> Won
-          </button>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => quickSettle("lost")}
-            title="Mark Lost"
-            className="inline-flex h-8 items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
-          >
-            <X className="h-3.5 w-3.5" /> Lost
-          </button>
-        </>
-      )}
+      <>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => quickSettle("won")}
+          title="Mark Won"
+          className="inline-flex h-8 items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
+        >
+          <Check className="h-3.5 w-3.5" /> Won
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => quickSettle("lost")}
+          title="Mark Lost"
+          className="inline-flex h-8 items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+        >
+          <X className="h-3.5 w-3.5" /> Lost
+        </button>
+      </>
 
       <select
         aria-label="Result"
@@ -915,12 +949,13 @@ const LEG_BADGE_STYLE: Record<LegStatus, string> = {
   void: "bg-amber-50 text-amber-700 border-amber-200",
 };
 
-function AccumulatorLegsPanel({ legs }: { legs: JournalBetLeg[] }) {
+function AccumulatorLegsPanel({ legs, locked = false }: { legs: JournalBetLeg[]; locked?: boolean }) {
   const router = useRouter();
   const [busyLegId, setBusyLegId] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   const handleSettleLeg = async (legId: string, status: LegStatus) => {
+    if (locked) return;
     setBusyLegId(legId);
     setErr(null);
     const res = await settleLeg({ legId, status });
@@ -936,7 +971,7 @@ function AccumulatorLegsPanel({ legs }: { legs: JournalBetLeg[] }) {
     <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-3">
       <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-slate-400">
         <span>Individual Selections ({legs.length})</span>
-        <span>1+ lost leg marks slip lost</span>
+        <span>{locked ? "Locked (settled)" : "1+ lost leg marks slip lost"}</span>
       </div>
       <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200/80 bg-slate-50/50">
         {legs.map((leg) => (
@@ -956,29 +991,40 @@ function AccumulatorLegsPanel({ legs }: { legs: JournalBetLeg[] }) {
               </div>
               <p className="truncate text-[11px] text-slate-500">{leg.eventName}</p>
             </div>
-            <div className="flex items-center gap-1">
-              {(["won", "lost", "void", "pending"] as const).map((st) => {
-                const active = leg.status === st;
-                const label = st === "won" ? "W" : st === "lost" ? "L" : st === "void" ? "V" : "P";
-                return (
-                  <button
-                    key={st}
-                    type="button"
-                    disabled={busyLegId === leg.id}
-                    title={`Mark leg ${st}`}
-                    onClick={() => handleSettleLeg(leg.id, st)}
-                    className={cn(
-                      "h-6 w-6 rounded border text-[10px] font-bold transition",
-                      active
-                        ? LEG_BADGE_STYLE[st]
-                        : "border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:text-slate-700",
-                    )}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
+            {locked ? (
+              <span
+                className={cn(
+                  "rounded border px-2 py-0.5 text-[10px] font-bold capitalize",
+                  LEG_BADGE_STYLE[leg.status],
+                )}
+              >
+                {leg.status}
+              </span>
+            ) : (
+              <div className="flex items-center gap-1">
+                {(["won", "lost", "void", "pending"] as const).map((st) => {
+                  const active = leg.status === st;
+                  const label = st === "won" ? "W" : st === "lost" ? "L" : st === "void" ? "V" : "P";
+                  return (
+                    <button
+                      key={st}
+                      type="button"
+                      disabled={busyLegId === leg.id}
+                      title={`Mark leg ${st}`}
+                      onClick={() => handleSettleLeg(leg.id, st)}
+                      className={cn(
+                        "h-6 w-6 rounded border text-[10px] font-bold transition",
+                        active
+                          ? LEG_BADGE_STYLE[st]
+                          : "border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:text-slate-700",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </li>
         ))}
       </ul>
@@ -1293,7 +1339,7 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
 
             <ul className="divide-y divide-border">
               {filtered.map((b) => {
-                if (editingId === b.id) {
+                if (editingId === b.id && b.status === "pending") {
                   return (
                     <li key={b.id}>
                       <EditBetRow bet={b} onDone={() => setEditingId(null)} />
@@ -1356,7 +1402,9 @@ export function BetTracker({ bets, prefill }: { bets: JournalBet[]; prefill: Tra
                         onEdit={() => setEditingId(b.id)}
                       />
                     </div>
-                    {hasLegs && legsOpen && <AccumulatorLegsPanel legs={b.legs!} />}
+                    {hasLegs && legsOpen && (
+                      <AccumulatorLegsPanel legs={b.legs!} locked={b.status !== "pending"} />
+                    )}
                   </li>
                 );
               })}

@@ -19,7 +19,6 @@ const footerLinks = {
   ],
   "Bet Assist": [
     { href: "/bet-assist/slip-checker", label: "Bet Slip Checker" },
-    { href: "/bet-assist/calculators", label: "Betting Calculators" },
     { href: "/dashboard/bet-tracker", label: "Bet Tracker" },
     { href: "/dashboard/report-card", label: "Betting Report Card" },
     { href: "/dashboard/calibration", label: "Calibration Trainer" },

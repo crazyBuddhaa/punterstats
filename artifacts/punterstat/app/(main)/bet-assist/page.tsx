@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import {
   Activity,
-  Calculator,
   ClipboardCheck,
   FileBarChart2,
   LifeBuoy,
@@ -13,25 +12,18 @@ import { ResponsibleGamblingNote, ResponsibleGamblingStrip } from "@/components/
 import { PillarGrid } from "@/components/bet-assist/pillar-grid";
 
 export const metadata: Metadata = {
-  title: "Bet Assist — Slip Checker, Calculators, Tracker & Report Card — PunterStat",
+  title: "Bet Assist — Slip Checker, Cash-Out Evaluator, Tracker & Report Card — PunterStat",
   description:
-    "Check your slips with Quick Paste, run Cash-Out, Acca Bonus and Kelly calculators, log singles & accumulators in ₦, and audit your edge with the Betting Report Card.",
+    "Check your slips, evaluate bookmaker cash-out offers, log singles & accumulators in ₦, and audit your results with the Betting Report Card.",
 };
 
 const TOOLS = [
   {
     href: "/bet-assist/slip-checker",
-    title: "Bet Slip Checker",
+    title: "Bet Slip Checker & Cash-Out Evaluator",
     description:
-      "Quick-paste your single or accumulator odds to see true fair probability, bookmaker margin, acca bonus reality and red flags.",
+      "Decode booking codes or enter legs to check true win probability, find better picks, and evaluate live bookmaker cash-out offers.",
     icon: ClipboardCheck,
-  },
-  {
-    href: "/bet-assist/calculators",
-    title: "Betting Calculators",
-    description:
-      "Cash-Out Evaluator, Acca Bonus vs Margin, illustrative Kelly & EV, accumulator returns, bookmaker margin, fair odds and arbitrage.",
-    icon: Calculator,
   },
   {
     href: "/dashboard/bet-tracker",

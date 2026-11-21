@@ -135,12 +135,6 @@ export function GlossaryEntry({ entry, defaultOpen = false }: GlossaryEntryProps
             </button>
             <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
               <Link
-                href="/bet-assist/calculators"
-                className="inline-flex items-center gap-1 text-[#3D2DFF] hover:underline"
-              >
-                Try in Calculators <ArrowRight className="h-3 w-3" />
-              </Link>
-              <Link
                 href="/bet-assist/slip-checker"
                 className="inline-flex items-center gap-1 text-teal-700 hover:underline"
               >

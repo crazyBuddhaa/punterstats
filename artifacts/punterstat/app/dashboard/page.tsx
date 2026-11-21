@@ -10,7 +10,6 @@ import {
   Target,
   Zap,
   NotebookPen,
-  Calculator,
   ClipboardCheck,
 } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
@@ -84,12 +83,6 @@ export default async function DashboardPage() {
             className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-semibold text-[#0f172a] shadow-sm transition hover:bg-slate-50"
           >
             <ClipboardCheck className="h-3.5 w-3.5 text-[#3D2DFF]" /> Check a Slip
-          </Link>
-          <Link
-            href="/bet-assist/calculators"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-semibold text-[#0f172a] shadow-sm transition hover:bg-slate-50"
-          >
-            <Calculator className="h-3.5 w-3.5 text-emerald-600" /> Calculators
           </Link>
         </div>
       </div>

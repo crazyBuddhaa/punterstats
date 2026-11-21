@@ -268,7 +268,7 @@ export default async function BlogPostPage({ params }: Props) {
               <Link href="/bet-assist/slip-checker">Check a Bet Slip</Link>
             </Button>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/bet-assist/calculators">Open Calculators</Link>
+              <Link href="/bet-assist/slip-checker?tab=cashout">Cash-Out Evaluator</Link>
             </Button>
             <Button variant="outline" size="sm" asChild>
               <Link href="/betting-academy">Betting Academy</Link>

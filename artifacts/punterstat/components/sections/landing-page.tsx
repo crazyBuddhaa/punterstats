@@ -57,10 +57,10 @@ const ASSIST_TOOLS = [
     description: "Track Closing-Line Value (CLV), probability calibration and automatic leak diagnostics across your bet history.",
   },
   {
-    href: "/bet-assist/calculators",
+    href: "/bet-assist/slip-checker?tab=cashout",
     icon: Calculator,
-    title: "Betting Calculators",
-    description: "Cash-Out Evaluator, Acca Bonus vs Margin, illustrative Kelly staking, fair odds and bookmaker margin tools.",
+    title: "Cash-Out Evaluator",
+    description: "Check whether a live SportyBet or Bet9ja cash-out offer is fair or if the bookmaker is taking a heavy cut.",
   },
 ];
 

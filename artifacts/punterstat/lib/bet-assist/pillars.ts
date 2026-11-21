@@ -91,17 +91,12 @@ export const PILLARS: Pillar[] = [
     key: "assist",
     label: "Bet Assist",
     href: "/bet-assist",
-    tagline: "Pre-bet reality checks, calculators, bet tracking and performance diagnostics.",
+    tagline: "Pre-bet reality checks, cash-out evaluation, bet tracking and performance diagnostics.",
     links: [
       {
         href: "/bet-assist/slip-checker",
-        label: "Bet Slip Checker",
-        description: "Quick-paste odds to see fair probability, margin and acca bonus reality",
-      },
-      {
-        href: "/bet-assist/calculators",
-        label: "Betting Calculators",
-        description: "Cash-Out Evaluator, Acca Bonus vs Margin, Kelly, EV and margin",
+        label: "Bet Slip Checker & Cash-Out",
+        description: "Audit booking codes, check win chances, and evaluate live cash-out offers",
       },
       {
         href: "/dashboard/bet-tracker",

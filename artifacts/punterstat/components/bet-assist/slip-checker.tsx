@@ -27,6 +27,7 @@ import {
 import type { CompetitionStage, LineupStatus } from "@/lib/football/match-intel";
 import type { FootballLegReview } from "@/app/api/bet-assist/analyze-slip/route";
 import { BOOKING_CODE_BOOKMAKERS } from "@/lib/bet-assist/booking-code";
+import { CashOutEvaluator } from "./cash-out-evaluator";
 import { cn } from "@/lib/utils";
 
 const CODE_BOOKMAKERS = BOOKING_CODE_BOOKMAKERS;
@@ -112,6 +113,10 @@ export function SlipChecker({
   isAuthenticated?: boolean;
   punterModel?: PunterBehaviorModel | null;
 }) {
+  const [activeTab, setActiveTab] = useState<"slip" | "cashout">(() => {
+    if (typeof window === "undefined") return "slip";
+    return new URLSearchParams(window.location.search).get("tab") === "cashout" ? "cashout" : "slip";
+  });
   const [legs, setLegs] = useState<LegDraft[]>(getInitialLegsFromQuery);
   const [stake, setStake] = useState("1000");
   const [bonusPct, setBonusPct] = useState("0");
@@ -332,6 +337,49 @@ export function SlipChecker({
 
   return (
     <div className="space-y-8">
+      {/* Mode switcher: Check Slip | Cash-Out Evaluator */}
+      <div className="inline-flex rounded-xl bg-slate-100 p-1">
+        <button
+          type="button"
+          onClick={() => setActiveTab("slip")}
+          className={cn(
+            "rounded-lg px-4 py-2 text-xs sm:text-sm font-semibold transition",
+            activeTab === "slip"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-600 hover:text-slate-900",
+          )}
+        >
+          Check Slip
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("cashout")}
+          className={cn(
+            "rounded-lg px-4 py-2 text-xs sm:text-sm font-semibold transition",
+            activeTab === "cashout"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-600 hover:text-slate-900",
+          )}
+        >
+          Cash-Out Evaluator
+        </button>
+      </div>
+
+      {activeTab === "cashout" ? (
+        <CashOutEvaluator
+          key={result ? `${stakeNum}-${result.combinedOdds.toFixed(2)}` : "standalone"}
+          prefill={
+            result
+              ? {
+                  stake: stakeNum,
+                  combinedOdds: result.combinedOdds,
+                  winProbPct: result.effectiveProb * 100,
+                }
+              : undefined
+          }
+        />
+      ) : (
+        <>
       {/* 1. Booking Code Import (Flat section, no box-in-box) */}
       <section className="space-y-3 border-b border-slate-200 pb-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -871,6 +919,8 @@ export function SlipChecker({
             </div>
           )}
         </section>
+      )}
+        </>
       )}
     </div>
   );

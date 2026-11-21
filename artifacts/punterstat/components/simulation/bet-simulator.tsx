@@ -177,6 +177,22 @@ function TeamInput({
   );
 }
 
+const SIM_STORAGE_KEY = "punterstat_bet_simulator_v1";
+
+interface PersistedSimState {
+  balance?: number;
+  mode?: "single" | "accumulator";
+  homeTeam?: string;
+  awayTeam?: string;
+  market?: SimMarket;
+  odds?: string;
+  stake?: string;
+  accaLegs?: SimSlipLeg[];
+  history?: SimulatedMatchResult[];
+  lastSim?: SimulatedMatchResult | null;
+  sessionId?: string | null;
+}
+
 export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [balance, setBalance] = useState(STARTING_BALANCE);
   const [mode, setMode] = useState<"single" | "accumulator">("single");
@@ -208,6 +224,65 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const hydratedRef = useRef(false);
+
+  // Restore saved simulation session from localStorage after mount (prevents wipe on refresh/reload)
+  useEffect(() => {
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      try {
+        const raw = window.localStorage.getItem(SIM_STORAGE_KEY);
+        if (raw) {
+          const saved = JSON.parse(raw) as PersistedSimState;
+          if (typeof saved.balance === "number" && Number.isFinite(saved.balance)) setBalance(saved.balance);
+          if (saved.mode === "single" || saved.mode === "accumulator") setMode(saved.mode);
+          if (typeof saved.homeTeam === "string" && saved.homeTeam.trim()) setHomeTeam(saved.homeTeam);
+          if (typeof saved.awayTeam === "string" && saved.awayTeam.trim()) setAwayTeam(saved.awayTeam);
+          if (typeof saved.market === "string") setMarket(saved.market);
+          if (typeof saved.odds === "string" && saved.odds.trim()) setOdds(saved.odds);
+          if (typeof saved.stake === "string" && saved.stake.trim()) setStake(saved.stake);
+          if (Array.isArray(saved.accaLegs)) {
+            setAccaLegs(saved.accaLegs);
+            legIdRef.current = saved.accaLegs.length;
+          }
+          if (Array.isArray(saved.history)) setHistory(saved.history);
+          if (saved.lastSim !== undefined) setLastSim(saved.lastSim);
+          if (typeof saved.sessionId === "string" || saved.sessionId === null) setSessionId(saved.sessionId);
+        }
+      } catch {
+        // Ignore corrupted localStorage payloads
+      } finally {
+        hydratedRef.current = true;
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Save simulation session to localStorage whenever state updates
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    try {
+      const payload: PersistedSimState = {
+        balance,
+        mode,
+        homeTeam,
+        awayTeam,
+        market,
+        odds,
+        stake,
+        accaLegs,
+        history: history.slice(0, 100),
+        lastSim,
+        sessionId,
+      };
+      window.localStorage.setItem(SIM_STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [balance, mode, homeTeam, awayTeam, market, odds, stake, accaLegs, history, lastSim, sessionId]);
 
   useEffect(() => {
     let active = true;
@@ -558,8 +633,14 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
     setBalance(STARTING_BALANCE);
     setHistory([]);
     setLastSim(null);
+    setAccaLegs([]);
     setSessionId(null);
     setErrorMsg(null);
+    try {
+      window.localStorage.removeItem(SIM_STORAGE_KEY);
+    } catch {
+      // Ignore storage errors
+    }
   };
 
   const totalStaked = history.reduce((s, h) => s + h.stake, 0);

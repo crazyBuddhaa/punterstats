@@ -780,8 +780,8 @@ export function SlipChecker({
                       review?.isTrapLeg && "bg-rose-50/40 px-3 -mx-3 rounded-lg",
                     )}
                   >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 flex-1 space-y-1.5">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-bold text-slate-900">{leg.selection}</span>
                           <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-slate-700">
@@ -836,14 +836,14 @@ export function SlipChecker({
                         )}
                         {review?.alternatives && review.alternatives.length > 0 && (
                           <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
-                            <span className="font-medium text-teal-800">Better options for this match:</span>
+                            <span className="font-medium text-teal-800">Better options:</span>
                             {review.alternatives.map((a) => (
                               <button
                                 key={a.label}
                                 type="button"
                                 disabled={analyzing}
                                 onClick={() => swapLegOption(idx, a.label, a.fairOdds)}
-                                className="rounded-md border border-teal-200 bg-teal-50/70 px-2 py-0.5 font-semibold text-teal-800 transition-colors hover:bg-teal-100"
+                                className="whitespace-nowrap rounded-md border border-teal-200 bg-teal-50/70 px-2 py-1 font-semibold text-teal-800 transition-colors hover:bg-teal-100"
                                 title="Click to swap this leg and re-check the slip"
                               >
                                 {a.label} ({(a.modelProb * 100).toFixed(0)}%)
@@ -858,13 +858,13 @@ export function SlipChecker({
                         )}
                       </div>
 
-                      <div className="flex shrink-0 items-center gap-4 text-right text-xs tabular-nums">
+                      <div className="flex shrink-0 items-center justify-between gap-4 rounded-lg bg-slate-50 px-3 py-2 text-left text-xs tabular-nums sm:justify-end sm:bg-transparent sm:p-0 sm:text-right">
                         <div>
                           <p className="text-[10px] uppercase text-slate-400">Book Implied</p>
                           <p className="font-semibold text-slate-700">{impliedPct}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] uppercase text-slate-400">Football Model</p>
+                          <p className="text-[10px] uppercase text-slate-400">Model Chance</p>
                           <p className="font-bold text-slate-900">{modelPct}</p>
                         </div>
                         {review?.edgePct != null && (

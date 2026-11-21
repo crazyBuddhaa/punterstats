@@ -27,13 +27,15 @@ export function ResultsFilters({
   const [isPending, startTransition] = useTransition();
 
   const [teamInput, setTeamInput] = useState(selectedTeam);
+  const [prevSelectedTeam, setPrevSelectedTeam] = useState(selectedTeam);
   const [teams, setTeams] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
 
   // Keep input synced when URL changes (e.g. clicking Clear)
-  useEffect(() => {
+  if (prevSelectedTeam !== selectedTeam) {
+    setPrevSelectedTeam(selectedTeam);
     setTeamInput(selectedTeam);
-  }, [selectedTeam]);
+  }
 
   // Load distinct teams for autocomplete (scoped to active league/season)
   useEffect(() => {

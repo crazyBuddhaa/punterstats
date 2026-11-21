@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   GLOBAL_DC_RHO,
   MODEL_VERSION,
+  asianTotalOverProb,
   deriveFullMarkets,
   europeanHandicapProbs,
   getLeagueReliability,
   getLeagueRho,
+  outcomeOrOver25Prob,
   predictMatchFromModel,
 } from "../dixon-coles-engine";
 import { analyzeMatch } from "@/lib/match-breakdown/analyzer";
@@ -77,10 +79,18 @@ describe("dixon-coles-engine v2.0", () => {
     expect(crossDiv!.usedPromotedPrior).toBe(true);
   });
 
-  it("computes 3-way European Handicap probabilities summing to 1", () => {
+  it("computes 3-way European Handicap, Asian Total Over 2, and Away-or-Over-2.5 probabilities", () => {
     const eh = europeanHandicapProbs(1.4, 1.5, -0.056, 3, 0);
     expect(eh.homeWin + eh.draw + eh.awayWin).toBeCloseTo(1, 5);
     expect(eh.homeWin).toBeGreaterThan(0.85);
+
+    const asian = asianTotalOverProb(1.6, 1.2, -0.056, 2);
+    expect(asian.nonLossProb).toBeGreaterThan(asian.winProb);
+    expect(asian.conditionalWinProb).toBeGreaterThan(asian.winProb);
+
+    const combo = outcomeOrOver25Prob(1.1, 1.6, -0.056, "away");
+    expect(combo).toBeGreaterThan(0.65);
+    expect(combo).toBeLessThan(1);
   });
 
   it("integrates into analyzeMatch with injury sensitivity and heuristic fallback", () => {

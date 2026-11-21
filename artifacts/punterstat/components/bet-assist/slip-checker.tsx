@@ -104,7 +104,7 @@ function getInitialLegsFromQuery(): LegDraft[] {
     if (!Array.isArray(parsed) || parsed.length === 0) {
       return [{ ...EMPTY_LEG }, { ...EMPTY_LEG }, { ...EMPTY_LEG }];
     }
-    return parsed.slice(0, 25).map((l) => ({
+    return parsed.slice(0, 50).map((l) => ({
       event: String(l.event ?? ""),
       selection: String(l.selection ?? ""),
       odds: l.odds != null ? String(l.odds) : "",
@@ -297,6 +297,14 @@ export function SlipChecker({
     await runFullAnalysis(remaining, Number(stake) || 1000);
   }
 
+  async function swapLegOption(legIndex: number, newSelection: string, fairOdds: number) {
+    const updated = legs.map((l, idx) =>
+      idx === legIndex ? { ...l, selection: newSelection, odds: fairOdds.toFixed(2) } : l,
+    );
+    setLegs(updated);
+    await runFullAnalysis(updated, Number(stake) || 1000);
+  }
+
   function copyVerdict() {
     if (!result) return;
     navigator.clipboard
@@ -480,7 +488,7 @@ export function SlipChecker({
 
         <div className="flex flex-wrap items-end justify-between gap-4 pt-1">
           <div className="flex flex-wrap items-end gap-3">
-            {legs.length < 25 && (
+            {legs.length < 50 && (
               <Button
                 type="button"
                 variant="outline"
@@ -612,11 +620,19 @@ export function SlipChecker({
               </p>
             </div>
             <div className="px-4 py-3.5">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Margin Drag</p>
-              <p className="mt-0.5 text-xl font-bold tabular-nums text-slate-900">
-                {pct(result.compoundedMargin, 0)}
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                {result.legs.length > 1 ? "Cut-by-1 Risk" : "Price Margin"}
               </p>
-              <p className="text-[11px] text-slate-500">Bookmaker cut across {result.legs.length} legs</p>
+              <p className="mt-0.5 text-xl font-bold tabular-nums text-slate-900">
+                {result.legs.length > 1
+                  ? pct(result.cutBreakdown.cutByOneProb, 1)
+                  : pct(result.compoundedMargin, 0)}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                {result.legs.length > 1
+                  ? `Bookie margin est. ${pct(result.compoundedMargin, 0)}`
+                  : "Single-leg bookmaker cut"}
+              </p>
             </div>
           </div>
 
@@ -783,12 +799,21 @@ export function SlipChecker({
                           </div>
                         )}
                         {review?.alternatives && review.alternatives.length > 0 && (
-                          <p className="text-[11px] text-teal-800">
-                            Smarter same-match options:{" "}
-                            {review.alternatives
-                              .map((a) => `${a.label} (${(a.modelProb * 100).toFixed(0)}%, fair @${a.fairOdds.toFixed(2)})`)
-                              .join(" · ")}
-                          </p>
+                          <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
+                            <span className="font-medium text-teal-800">Better options for this match:</span>
+                            {review.alternatives.map((a) => (
+                              <button
+                                key={a.label}
+                                type="button"
+                                disabled={analyzing}
+                                onClick={() => swapLegOption(idx, a.label, a.fairOdds)}
+                                className="rounded-md border border-teal-200 bg-teal-50/70 px-2 py-0.5 font-semibold text-teal-800 transition-colors hover:bg-teal-100"
+                                title="Click to swap this leg and re-check the slip"
+                              >
+                                {a.label} ({(a.modelProb * 100).toFixed(0)}%)
+                              </button>
+                            ))}
+                          </div>
                         )}
                         {review?.riskNotes && review.riskNotes.length > 0 && (
                           <p className="text-[11px] font-medium text-amber-800">

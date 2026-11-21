@@ -30,6 +30,7 @@ const PRESETS: Array<{ id: ScreenerPreset; label: string; hint: string }> = [
   { id: "clean_favorites", label: "Clean Favorites", hint: "Strong favorites (>= 56%)" },
   { id: "over25", label: "Over 2.5 Goals", hint: "High-scoring fixtures (>= 54%)" },
   { id: "btts", label: "BTTS Yes", hint: "Both teams to score (>= 52%)" },
+  { id: "draw_hunters", label: "Draw Hunters", hint: "Evenly matched, low-xG fixtures with highest draw %" },
   { id: "under25", label: "Under 2.5 Goals", hint: "Tight defensive games (>= 54%)" },
 ];
 
@@ -324,6 +325,7 @@ export function MatchScreener() {
                   <div className="flex flex-wrap items-center gap-1.5">
                     {[
                       { label: `${m.favoriteTeam} (${pct(m.favoriteProb)})`, selection: favSel, fair: favFair },
+                      { label: `Draw (${pct(m.drawProb)})`, selection: "Draw", fair: Math.round((1 / Math.max(0.05, m.drawProb)) * 100) / 100 },
                       { label: `O2.5 (${pct(m.over25Prob)})`, selection: "Over 2.5 goals", fair: o25Fair },
                       { label: `BTTS (${pct(m.bttsProb)})`, selection: "BTTS Yes", fair: bttsFair },
                     ].map((opt) => {

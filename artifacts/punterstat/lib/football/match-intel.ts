@@ -1,8 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  asianTotalOverProb,
   deriveFullMarkets,
   europeanHandicapProbs,
   GLOBAL_DC_RHO,
+  outcomeOrOver25Prob,
   predictMatchFromModel,
   type FullDerivedMarkets,
 } from "@/lib/model/dixon-coles-engine";
@@ -698,6 +700,32 @@ export function estimateSelectionProb(intel: MatchIntel, selection: string): num
     return null;
   }
 
+  // Home/Away or Over 2.5 combo (e.g. "Away or Over 2.5", "Home or Over 2.5")
+  if (s.includes("or over 2.5") || s.includes("or o2.5")) {
+    if (s.includes("home") || (mentionsHome && !mentionsAway)) {
+      return outcomeOrOver25Prob(intel.lambdaHome, intel.lambdaAway, intel.rho, "home");
+    }
+    if (s.includes("away") || (mentionsAway && !mentionsHome)) {
+      return outcomeOrOver25Prob(intel.lambdaHome, intel.lambdaAway, intel.rho, "away");
+    }
+  }
+
+  // Team Over 0.5 / Over 1.5 (e.g. "Atletico Madrid Over 0.5", "Home Over 1.5", "Away Over 0.5")
+  if (s.includes("home") || s.includes("away") || (mentionsHome !== mentionsAway)) {
+    const isHomeSide = s.includes("home") || (mentionsHome && !mentionsAway);
+    if (/\b(over|ov|o)\s*0\.5\b/.test(s)) return isHomeSide ? m.homeOver05 : m.awayOver05;
+    if (/\b(over|ov|o)\s*1\.5\b/.test(s)) return isHomeSide ? m.homeOver15 : m.awayOver15;
+  }
+
+  // Whole-number Asian Totals (e.g. "Over 2", "Over 3", "Under 2", "Under 3")
+  const asianMatch = s.match(/\b(over|ov|o|under|un|u)\s*(2|3)(?:\.0)?\b(?!\.\d)/);
+  if (asianMatch) {
+    const isOver = asianMatch[1].startsWith("o");
+    const line = Number(asianMatch[2]);
+    const asian = asianTotalOverProb(intel.lambdaHome, intel.lambdaAway, intel.rho, line);
+    return isOver ? asian.conditionalWinProb : 1 - asian.conditionalWinProb;
+  }
+
   if (/\b(over|ov|o)\s*0\.5\b/.test(s)) return m.over05;
   if (/\b(under|un|u)\s*0\.5\b/.test(s)) return m.under05;
   if (/\b(over|ov|o)\s*1\.5\b/.test(s)) return m.over15;
@@ -741,54 +769,61 @@ export interface MarketAlternative {
 }
 
 /**
- * When a user backs a tight heavy favourite (<= 1.38 on 1X2), suggest cleaner
- * same-match markets from the same Dixon-Coles matrix (e.g. Team Over 1.5, -1.5 AH)
- * so they can express the same football read with better risk/reward.
+ * Return the top 3 best-fitting same-match market options from the Dixon-Coles
+ * matrix for ANY matched fixture so punters can see if a cleaner or safer option
+ * fits the matchup better than their current pick.
  */
 export function suggestMarketAlternatives(
   intel: MatchIntel,
   selection: string,
   decimalOdds: number,
 ): MarketAlternative[] {
-  if (decimalOdds > 1.38) return [];
+  if (intel.dataSource === "baseline") return [];
   const s = selection.toLowerCase().trim();
-  const hLower = intel.homeTeam.toLowerCase();
-  const aLower = intel.awayTeam.toLowerCase();
   const m = intel.markets;
 
-  const isHomeWin =
-    s === "1" ||
-    s === "home" ||
-    s === "home win" ||
-    s === "home to win" ||
-    (s.includes(hLower) && !s.includes("over") && !s.includes("under") && !s.includes("or draw"));
-  const isAwayWin =
-    s === "2" ||
-    s === "away" ||
-    s === "away win" ||
-    s === "away to win" ||
-    (s.includes(aLower) && !s.includes("over") && !s.includes("under") && !s.includes("or draw"));
+  const pool: Array<{ label: string; key: string; prob: number }> = [
+    { label: `${intel.homeTeam} to win`, key: "home_win", prob: m.homeWin },
+    { label: `${intel.awayTeam} to win`, key: "away_win", prob: m.awayWin },
+    { label: "1X (Home or Draw)", key: "1x", prob: m.doubleChanceHD },
+    { label: "X2 (Draw or Away)", key: "x2", prob: m.doubleChanceDA },
+    { label: `${intel.homeTeam} DNB`, key: "home_dnb", prob: m.homeDnb },
+    { label: `${intel.awayTeam} DNB`, key: "away_dnb", prob: m.awayDnb },
+    { label: "Over 1.5 goals", key: "o15", prob: m.over15 },
+    { label: "Over 2.5 goals", key: "o25", prob: m.over25 },
+    { label: "Under 2.5 goals", key: "u25", prob: m.under25 },
+    { label: "BTTS Yes", key: "btts", prob: m.btts },
+    { label: `${intel.homeTeam} Over 0.5 Goals`, key: "ho05", prob: m.homeOver05 },
+    { label: `${intel.awayTeam} Over 0.5 Goals`, key: "ao05", prob: m.awayOver05 },
+    { label: `${intel.homeTeam} Over 1.5 Goals`, key: "ho15", prob: m.homeOver15 },
+    { label: `${intel.awayTeam} Over 1.5 Goals`, key: "ao15", prob: m.awayOver15 },
+    { label: `${intel.homeTeam} -1.5 Handicap`, key: "ah_h_15", prob: m.ahHomeMinus15 },
+  ];
 
-  const candidates: Array<{ label: string; prob: number }> = [];
-  if (isHomeWin) {
-    candidates.push(
-      { label: `${intel.homeTeam} Over 1.5 Goals`, prob: m.homeOver15 },
-      { label: `${intel.homeTeam} -1.5 Handicap`, prob: m.ahHomeMinus15 },
-      { label: `${intel.homeTeam} Clean Sheet`, prob: m.homeCleanSheet },
-    );
-  } else if (isAwayWin) {
-    candidates.push(
-      { label: `${intel.awayTeam} Over 1.5 Goals`, prob: m.awayOver15 },
-      { label: `${intel.awayTeam} Clean Sheet`, prob: m.awayCleanSheet },
-    );
-  } else {
-    return [];
-  }
+  // Filter out the exact option the user already picked
+  const filtered = pool.filter((c) => {
+    const lbl = c.label.toLowerCase();
+    if (s === lbl || lbl.includes(s) || (s.length >= 4 && s.includes(lbl))) return false;
+    if ((s === "1" || s === "home" || s === "home win") && c.key === "home_win") return false;
+    if ((s === "2" || s === "away" || s === "away win") && c.key === "away_win") return false;
+    if ((s === "1x" || s.includes("home or draw")) && c.key === "1x") return false;
+    if ((s === "x2" || s.includes("away or draw") || s.includes("draw or away")) && c.key === "x2") return false;
+    if (s.includes("over 1.5") && c.key === "o15") return false;
+    if (s.includes("over 2.5") && c.key === "o25") return false;
+    if (s.includes("under 2.5") && c.key === "u25") return false;
+    if ((s === "gg" || s.includes("btts")) && c.key === "btts") return false;
+    return true;
+  });
 
-  return candidates
-    .filter((c) => c.prob >= 0.42 && c.prob <= 0.78)
+  // For tight heavy favorites (<= 1.38), surface stronger-paying 45–78% markets;
+  // otherwise surface the highest-probability clean options (55–88%) that fit the match.
+  const minP = decimalOdds <= 1.38 ? 0.45 : 0.56;
+  const maxP = decimalOdds <= 1.38 ? 0.78 : 0.88;
+
+  return filtered
+    .filter((c) => c.prob >= minP && c.prob <= maxP)
     .sort((a, b) => b.prob - a.prob)
-    .slice(0, 2)
+    .slice(0, 3)
     .map((c) => ({
       label: c.label,
       modelProb: Math.round(c.prob * 1000) / 1000,

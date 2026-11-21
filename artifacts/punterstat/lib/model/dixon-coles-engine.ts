@@ -495,6 +495,58 @@ export function europeanHandicapProbs(
 }
 
 /**
+ * Compute whole-number Asian Total probabilities (e.g. Over 2.0 / Over 3.0)
+ * from the Dixon-Coles scoreline matrix.
+ */
+export function asianTotalOverProb(
+  lambdaHome: number,
+  lambdaAway: number,
+  rho: number = GLOBAL_DC_RHO,
+  line = 2,
+): { winProb: number; pushProb: number; nonLossProb: number; conditionalWinProb: number } {
+  const mat = buildDixonColesScoreMatrix(lambdaHome, lambdaAway, rho, MAX_GOALS);
+  let winProb = 0;
+  let pushProb = 0;
+  for (let i = 0; i <= MAX_GOALS; i++) {
+    for (let j = 0; j <= MAX_GOALS; j++) {
+      const tot = i + j;
+      if (tot > line) winProb += mat[i][j];
+      else if (tot === line) pushProb += mat[i][j];
+    }
+  }
+  const nonPush = Math.max(1e-6, 1 - pushProb);
+  return {
+    winProb,
+    pushProb,
+    nonLossProb: winProb + pushProb,
+    conditionalWinProb: winProb / nonPush,
+  };
+}
+
+/**
+ * Compute exact joint probability of "Home or Over 2.5" / "Away or Over 2.5"
+ * directly from the Dixon-Coles scoreline matrix (no independence approximation).
+ */
+export function outcomeOrOver25Prob(
+  lambdaHome: number,
+  lambdaAway: number,
+  rho: number = GLOBAL_DC_RHO,
+  side: "home" | "away",
+): number {
+  const mat = buildDixonColesScoreMatrix(lambdaHome, lambdaAway, rho, MAX_GOALS);
+  let prob = 0;
+  for (let i = 0; i <= MAX_GOALS; i++) {
+    for (let j = 0; j <= MAX_GOALS; j++) {
+      const sideWins = side === "home" ? i > j : j > i;
+      if (sideWins || i + j >= 3) {
+        prob += mat[i][j];
+      }
+    }
+  }
+  return prob;
+}
+
+/**
  * Predict expected goals and calibrated markets for a match using the v2.0
  * time-decayed Dixon-Coles MLE parameters fitted on 39 leagues.
  *

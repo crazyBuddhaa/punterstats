@@ -30,7 +30,7 @@ const legInputSchema = z.object({
 });
 
 const bodySchema = z.object({
-  legs: z.array(legInputSchema).min(1).max(30),
+  legs: z.array(legInputSchema).min(1).max(50),
 });
 
 export interface FootballLegReview {

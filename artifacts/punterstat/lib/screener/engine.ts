@@ -7,6 +7,7 @@ export type ScreenerPreset =
   | "over25"
   | "btts"
   | "acca_anchors"
+  | "draw_hunters"
   | "under25";
 
 export interface ScreenerPickOption {
@@ -171,6 +172,11 @@ export function filterScreenedMatches(
       filtered = filtered
         .filter((m) => m.anchorPick !== null && m.anchorPick.modelProb >= minProb)
         .sort((a, b) => (b.anchorPick?.modelProb ?? 0) - (a.anchorPick?.modelProb ?? 0));
+      break;
+    case "draw_hunters":
+      filtered = filtered
+        .filter((m) => m.drawProb >= Math.max(0.27, minProb))
+        .sort((a, b) => b.drawProb - a.drawProb);
       break;
     case "under25":
       filtered = filtered

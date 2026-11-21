@@ -5,6 +5,14 @@ import {
   predictMatchFromModel,
   type FullDerivedMarkets,
 } from "@/lib/model/dixon-coles-engine";
+import {
+  CARDS_DISPERSION_R,
+  CORNERS_DISPERSION_R,
+  deriveCardMarkets,
+  deriveCornerMarkets,
+  probOverLine,
+  type MicroMarkets,
+} from "@/lib/model/micro-markets";
 import type { MatchResult } from "@/lib/match-breakdown/types";
 
 export type CompetitionStage =
@@ -29,6 +37,12 @@ export interface TeamSnapshot {
   venueAvgGoalsFor: number | null;
   venueAvgGoalsAgainst: number | null;
   venueSampleSize: number;
+  avgCornersFor: number | null;
+  avgCornersAgainst: number | null;
+  cornersSampleSize: number;
+  avgCardsFor: number | null;
+  avgCardsAgainst: number | null;
+  cardsSampleSize: number;
   daysSinceLastMatch: number | null;
   cleanSheetPct: number;
   elo: number | null;
@@ -57,6 +71,7 @@ export interface MatchIntel {
   lambdaAway: number;
   rho: number;
   markets: FullDerivedMarkets;
+  microMarkets: MicroMarkets;
   strengthEdgeLabel: string;
   dataSource: "dixon_coles+history" | "history_only" | "dixon_coles_only" | "baseline";
   factors: string[];
@@ -117,6 +132,9 @@ function computeDaysSince(dateStr: string | null | undefined): number | null {
   return diffDays;
 }
 
+const TEAM_HISTORY_SELECT =
+  "match_date, home_team, away_team, home_goals, away_goals, home_elo, away_elo, home_corners, away_corners, home_yellow_cards, away_yellow_cards, home_red_cards, away_red_cards";
+
 async function fetchTeamSnapshot(
   admin: ReturnType<typeof createAdminClient>,
   teamName: string,
@@ -132,6 +150,12 @@ async function fetchTeamSnapshot(
     venueAvgGoalsFor: null,
     venueAvgGoalsAgainst: null,
     venueSampleSize: 0,
+    avgCornersFor: null,
+    avgCornersAgainst: null,
+    cornersSampleSize: 0,
+    avgCardsFor: null,
+    avgCardsAgainst: null,
+    cardsSampleSize: 0,
     daysSinceLastMatch: null,
     cleanSheetPct: 28,
     elo: null,
@@ -145,7 +169,7 @@ async function fetchTeamSnapshot(
 
   let { data } = await admin
     .from("historical_matches")
-    .select("match_date, home_team, away_team, home_goals, away_goals, home_elo, away_elo")
+    .select(TEAM_HISTORY_SELECT)
     .or(`home_team.ilike.${safe},away_team.ilike.${safe}`)
     .not("home_goals", "is", null)
     .not("away_goals", "is", null)
@@ -155,7 +179,7 @@ async function fetchTeamSnapshot(
   if (!data || data.length === 0) {
     const partial = await admin
       .from("historical_matches")
-      .select("match_date, home_team, away_team, home_goals, away_goals, home_elo, away_elo")
+      .select(TEAM_HISTORY_SELECT)
       .or(`home_team.ilike.%${safe}%,away_team.ilike.%${safe}%`)
       .not("home_goals", "is", null)
       .not("away_goals", "is", null)
@@ -177,6 +201,12 @@ async function fetchTeamSnapshot(
   let venueGfSum = 0;
   let venueGaSum = 0;
   let venueCount = 0;
+  let cornersForSum = 0;
+  let cornersAgSum = 0;
+  let cornersCount = 0;
+  let cardsForSum = 0;
+  let cardsAgSum = 0;
+  let cardsCount = 0;
   let cs = 0;
   let latestElo: number | null = null;
   const daysSinceLastMatch = computeDaysSince(data[0]?.match_date as string | undefined);
@@ -193,6 +223,26 @@ async function fetchTeamSnapshot(
       venueGfSum += gf;
       venueGaSum += ga;
       venueCount += 1;
+    }
+    if (m.home_corners !== null && m.away_corners !== null) {
+      const cf = Number(isHome ? m.home_corners : m.away_corners);
+      const ca = Number(isHome ? m.away_corners : m.home_corners);
+      if (Number.isFinite(cf) && Number.isFinite(ca)) {
+        cornersForSum += cf;
+        cornersAgSum += ca;
+        cornersCount += 1;
+      }
+    }
+    if (m.home_yellow_cards !== null && m.away_yellow_cards !== null) {
+      const hCards = Number(m.home_yellow_cards) + Number(m.home_red_cards ?? 0);
+      const aCards = Number(m.away_yellow_cards) + Number(m.away_red_cards ?? 0);
+      const cardF = isHome ? hCards : aCards;
+      const cardA = isHome ? aCards : hCards;
+      if (Number.isFinite(cardF) && Number.isFinite(cardA)) {
+        cardsForSum += cardF;
+        cardsAgSum += cardA;
+        cardsCount += 1;
+      }
     }
     if (ga === 0) cs++;
     if (latestElo === null) {
@@ -217,6 +267,12 @@ async function fetchTeamSnapshot(
     venueAvgGoalsFor: venueCount >= 3 ? Number((venueGfSum / venueCount).toFixed(2)) : null,
     venueAvgGoalsAgainst: venueCount >= 3 ? Number((venueGaSum / venueCount).toFixed(2)) : null,
     venueSampleSize: venueCount,
+    avgCornersFor: cornersCount >= 3 ? Number((cornersForSum / cornersCount).toFixed(2)) : null,
+    avgCornersAgainst: cornersCount >= 3 ? Number((cornersAgSum / cornersCount).toFixed(2)) : null,
+    cornersSampleSize: cornersCount,
+    avgCardsFor: cardsCount >= 3 ? Number((cardsForSum / cardsCount).toFixed(2)) : null,
+    avgCardsAgainst: cardsCount >= 3 ? Number((cardsAgSum / cardsCount).toFixed(2)) : null,
+    cardsSampleSize: cardsCount,
     daysSinceLastMatch,
     cleanSheetPct: Math.round((cs / data.length) * 100),
     elo: latestElo,
@@ -418,6 +474,59 @@ export async function getMatchIntel(
 
   const markets = deriveFullMarkets(lamH, lamA, rho);
 
+  // 6. Micro-markets (Corners & Cards) from historical team averages when >= 3 games exist
+  let cornerMarkets = null;
+  if (
+    homeSnap.avgCornersFor !== null &&
+    homeSnap.avgCornersAgainst !== null &&
+    awaySnap.avgCornersFor !== null &&
+    awaySnap.avgCornersAgainst !== null
+  ) {
+    let expHomeCorners = ((homeSnap.avgCornersFor + awaySnap.avgCornersAgainst) / 2) * 1.04;
+    let expAwayCorners = ((awaySnap.avgCornersFor + homeSnap.avgCornersAgainst) / 2) * 0.96;
+    if (competitionStage === "derby") {
+      expHomeCorners *= 1.06;
+      expAwayCorners *= 1.06;
+    } else if (competitionStage === "cup_knockout") {
+      expHomeCorners *= 0.96;
+      expAwayCorners *= 0.96;
+    }
+    cornerMarkets = deriveCornerMarkets(
+      clamp(expHomeCorners, 2.2, 9.0),
+      clamp(expAwayCorners, 1.8, 8.0),
+    );
+  }
+
+  let cardMarkets = null;
+  if (
+    homeSnap.avgCardsFor !== null &&
+    homeSnap.avgCardsAgainst !== null &&
+    awaySnap.avgCardsFor !== null &&
+    awaySnap.avgCardsAgainst !== null
+  ) {
+    let expHomeCards = (homeSnap.avgCardsFor + awaySnap.avgCardsAgainst) / 2;
+    let expAwayCards = (awaySnap.avgCardsFor + homeSnap.avgCardsAgainst) / 2;
+    const stageCardMult =
+      competitionStage === "derby"
+        ? 1.22
+        : competitionStage === "relegation_or_title"
+          ? 1.12
+          : competitionStage === "cup_knockout"
+            ? 1.1
+            : 1.0;
+    expHomeCards *= stageCardMult;
+    expAwayCards *= stageCardMult;
+    cardMarkets = deriveCardMarkets(
+      clamp(expHomeCards, 0.7, 4.2),
+      clamp(expAwayCards, 0.7, 4.4),
+    );
+  }
+
+  const microMarkets: MicroMarkets = {
+    corners: cornerMarkets,
+    cards: cardMarkets,
+  };
+
   // Build plain-English Football Factors & Risk Notes
   const factors: string[] = [];
   const riskNotes: string[] = [];
@@ -458,6 +567,12 @@ export async function getMatchIntel(
     factors.push(
       `H2H (${h2hSnap.meetings} meetings): ${homeTeam} ${h2hSnap.homeWins}W, ${h2hSnap.draws}D, ${awayTeam} ${h2hSnap.awayWins}W · Avg ${h2hSnap.avgGoals.toFixed(1)} goals · BTTS ${h2hSnap.bttsPct}%.`,
     );
+  }
+  if (cornerMarkets || cardMarkets) {
+    const parts: string[] = [];
+    if (cornerMarkets) parts.push(`Exp. corners: ${cornerMarkets.expectedTotal.toFixed(1)}`);
+    if (cardMarkets) parts.push(`Exp. cards: ${cardMarkets.expectedTotal.toFixed(1)}`);
+    factors.push(parts.join(" · "));
   }
 
   if (homeSnap.daysSinceLastMatch !== null && homeSnap.daysSinceLastMatch <= 3) {
@@ -513,6 +628,7 @@ export async function getMatchIntel(
     lambdaAway: lamA,
     rho,
     markets,
+    microMarkets,
     strengthEdgeLabel,
     dataSource,
     factors,
@@ -521,13 +637,54 @@ export async function getMatchIntel(
 }
 
 /**
- * Map a user's selection text (e.g. "Arsenal to win", "Over 2.5", "BTTS Yes", "1X")
- * to the football-model probability from MatchIntel.
+ * Map a user's selection text (e.g. "Arsenal to win", "Over 2.5", "BTTS Yes",
+ * "1X", "Over 9.5 corners", "Over 3.5 cards") to the football-model probability.
  */
 export function estimateSelectionProb(intel: MatchIntel, selection: string): number | null {
   const s = selection.toLowerCase().trim();
   if (!s) return null;
   const m = intel.markets;
+  const hLower = intel.homeTeam.toLowerCase();
+  const aLower = intel.awayTeam.toLowerCase();
+  const mentionsHome = s.includes(hLower) || hLower.split(" ").filter((w) => w.length >= 4).some((w) => s.includes(w));
+  const mentionsAway = s.includes(aLower) || aLower.split(" ").filter((w) => w.length >= 4).some((w) => s.includes(w));
+
+  // Micro-markets: Corners & Cards (checked before generic Over/Under goals)
+  const isCornerSel = s.includes("corner");
+  const isCardSel = s.includes("card") || s.includes("booking");
+  if (isCornerSel || isCardSel) {
+    const lineMatch = s.match(/(over|ov|o|under|un|u)\s*(\d+(?:\.\d+)?)/);
+    if (!lineMatch) return null;
+    const isOver = lineMatch[1].startsWith("o");
+    const line = Number(lineMatch[2]);
+    if (!Number.isFinite(line) || line < 0) return null;
+
+    if (isCornerSel && intel.microMarkets?.corners) {
+      const cm = intel.microMarkets.corners;
+      const mu =
+        s.includes("home") || (mentionsHome && !mentionsAway)
+          ? cm.expectedHome
+          : s.includes("away") || (mentionsAway && !mentionsHome)
+            ? cm.expectedAway
+            : cm.expectedTotal;
+      const pOver = probOverLine(mu, line, CORNERS_DISPERSION_R);
+      return isOver ? pOver : 1 - pOver;
+    }
+
+    if (isCardSel && intel.microMarkets?.cards) {
+      const dm = intel.microMarkets.cards;
+      const mu =
+        s.includes("home") || (mentionsHome && !mentionsAway)
+          ? dm.expectedHome
+          : s.includes("away") || (mentionsAway && !mentionsHome)
+            ? dm.expectedAway
+            : dm.expectedTotal;
+      const pOver = probOverLine(mu, line, CARDS_DISPERSION_R);
+      return isOver ? pOver : 1 - pOver;
+    }
+
+    return null;
+  }
 
   if (/\b(over|ov|o)\s*0\.5\b/.test(s)) return m.over05;
   if (/\b(under|un|u)\s*0\.5\b/.test(s)) return m.under05;
@@ -550,11 +707,6 @@ export function estimateSelectionProb(intel: MatchIntel, selection: string): num
   if (s === "draw" || s === "x") return m.draw;
   if (s === "1" || s === "home" || s === "home win" || s === "home to win") return m.homeWin;
   if (s === "2" || s === "away" || s === "away win" || s === "away to win") return m.awayWin;
-
-  const hLower = intel.homeTeam.toLowerCase();
-  const aLower = intel.awayTeam.toLowerCase();
-  const mentionsHome = s.includes(hLower) || hLower.split(" ").filter((w) => w.length >= 4).some((w) => s.includes(w));
-  const mentionsAway = s.includes(aLower) || aLower.split(" ").filter((w) => w.length >= 4).some((w) => s.includes(w));
 
   if (s.includes("or draw")) {
     if (mentionsHome && !mentionsAway) return m.doubleChanceHD;

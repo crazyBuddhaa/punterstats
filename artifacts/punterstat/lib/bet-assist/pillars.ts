@@ -28,6 +28,11 @@ export const PILLARS: Pillar[] = [
     tagline: "Match probabilities, historical stats, value scanning and Monte Carlo simulations.",
     links: [
       {
+        href: "/bet-analysis/screener",
+        label: "Daily Match Screener",
+        description: "Filter upcoming matches by calibrated favorites, Over 2.5, BTTS & Acca Anchors",
+      },
+      {
         href: "/match-breakdown",
         label: "Match Breakdown",
         description: "Quick 1-Page & 6-Step model probabilities with odds comparison",

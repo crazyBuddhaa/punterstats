@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BarChart3, FlaskConical, History, LineChart, Search, Swords, Zap } from "lucide-react";
+import { BarChart3, FlaskConical, History, LineChart, Search, SlidersHorizontal, Swords, Zap } from "lucide-react";
 import { ToolHero } from "@/components/bet-assist/tool-hero";
 import { ResponsibleGamblingStrip } from "@/components/bet-assist/responsible-gambling";
 import { PillarGrid, type PillarItem } from "@/components/bet-assist/pillar-grid";
@@ -7,10 +7,17 @@ import { PillarGrid, type PillarItem } from "@/components/bet-assist/pillar-grid
 export const metadata: Metadata = {
   title: "Bet Analysis — Match Breakdown, Value, Stats & Simulations — PunterStat",
   description:
-    "Analyse football matches and betting markets with data: Quick 1-Page & 6-Step model probabilities, Spot The Value, 1,000-trial Monte Carlo simulations, historical league benchmarks and H2H records.",
+    "Analyse football matches and betting markets with data: Daily Match Screener, Quick 1-Page & 6-Step model probabilities, Spot The Value, 1,000-trial Monte Carlo simulations, historical league benchmarks and H2H records.",
 };
 
 const ITEMS: PillarItem[] = [
+  {
+    href: "/bet-analysis/screener",
+    title: "Daily Match Screener",
+    description:
+      "Filter upcoming fixtures by calibrated Dixon-Coles probabilities — Clean Favorites, Over 2.5, BTTS, and Acca Anchors — and send straight to the Slip Checker.",
+    icon: SlidersHorizontal,
+  },
   {
     href: "/match-breakdown",
     title: "Match Breakdown",

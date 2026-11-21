@@ -50,6 +50,8 @@ export interface FootballLegReview {
   sharpCheck?: SharpMarketCheck | null;
   /** Cleaner same-match alternatives when backing a tight heavy favourite (<= 1.38). */
   alternatives?: MarketAlternative[];
+  /** Expected corners & cards summary when historical micro-market stats exist. */
+  microSummary?: string | null;
 }
 
 export async function POST(req: NextRequest) {
@@ -86,6 +88,7 @@ export async function POST(req: NextRequest) {
                 : [],
             sharpCheck: null,
             alternatives: [],
+            microSummary: null,
           };
         }
 
@@ -110,6 +113,14 @@ export async function POST(req: NextRequest) {
         }
 
         const alternatives = suggestMarketAlternatives(intel, leg.selection, leg.decimalOdds);
+        const microParts: string[] = [];
+        if (intel.microMarkets?.corners) {
+          microParts.push(`${intel.microMarkets.corners.expectedTotal.toFixed(1)} corners`);
+        }
+        if (intel.microMarkets?.cards) {
+          microParts.push(`${intel.microMarkets.cards.expectedTotal.toFixed(1)} cards`);
+        }
+        const microSummary = microParts.length > 0 ? `Exp. ${microParts.join(" · ")}` : null;
 
         // A "trap leg" is a short-priced banker (< 1.55) where football factors say true chance is meaningfully lower than implied,
         // OR sharp consensus has drifted strongly against the pick, OR strong negative edge (< -12%) / knockout red flags.
@@ -137,6 +148,7 @@ export async function POST(req: NextRequest) {
           riskNotes,
           sharpCheck,
           alternatives,
+          microSummary,
         };
       }),
     );

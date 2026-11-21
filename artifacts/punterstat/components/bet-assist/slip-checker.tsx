@@ -93,6 +93,30 @@ const RISK_STYLE: Record<SlipRisk, { label: string; className: string; blurb: st
 const naira = (n: number) =>
   `${n < 0 ? "-" : ""}₦${Math.abs(n).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
+function getInitialLegsFromQuery(): LegDraft[] {
+  if (typeof window === "undefined") {
+    return [{ ...EMPTY_LEG }, { ...EMPTY_LEG }, { ...EMPTY_LEG }];
+  }
+  try {
+    const raw = new URLSearchParams(window.location.search).get("legs");
+    if (!raw) return [{ ...EMPTY_LEG }, { ...EMPTY_LEG }, { ...EMPTY_LEG }];
+    const parsed = JSON.parse(raw) as Array<{ event?: string; selection?: string; odds?: string | number }>;
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return [{ ...EMPTY_LEG }, { ...EMPTY_LEG }, { ...EMPTY_LEG }];
+    }
+    return parsed.slice(0, 25).map((l) => ({
+      event: String(l.event ?? ""),
+      selection: String(l.selection ?? ""),
+      odds: l.odds != null ? String(l.odds) : "",
+      competitionStage: "league",
+      homeLineup: "full_strength",
+      awayLineup: "full_strength",
+    }));
+  } catch {
+    return [{ ...EMPTY_LEG }, { ...EMPTY_LEG }, { ...EMPTY_LEG }];
+  }
+}
+
 export function SlipChecker({
   isAuthenticated = false,
   punterModel = null,
@@ -100,7 +124,7 @@ export function SlipChecker({
   isAuthenticated?: boolean;
   punterModel?: PunterBehaviorModel | null;
 }) {
-  const [legs, setLegs] = useState<LegDraft[]>([{ ...EMPTY_LEG }, { ...EMPTY_LEG }, { ...EMPTY_LEG }]);
+  const [legs, setLegs] = useState<LegDraft[]>(getInitialLegsFromQuery);
   const [stake, setStake] = useState("1000");
   const [bonusPct, setBonusPct] = useState("0");
   const [result, setResult] = useState<SlipAssessment | null>(null);
@@ -755,6 +779,7 @@ export function SlipChecker({
                             {review.homeForm && <span>Home last 5: <strong>{review.homeForm}</strong></span>}
                             {review.awayForm && <span>Away last 5: <strong>{review.awayForm}</strong></span>}
                             {review.h2hSummary && <span>H2H: <strong>{review.h2hSummary}</strong></span>}
+                            {review.microSummary && <span><strong>{review.microSummary}</strong></span>}
                           </div>
                         )}
                         {review?.alternatives && review.alternatives.length > 0 && (

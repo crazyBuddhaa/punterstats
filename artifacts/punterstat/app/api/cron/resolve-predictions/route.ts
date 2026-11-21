@@ -16,6 +16,10 @@
 import { NextResponse } from "next/server";
 import { verifyCronRequest } from "@/lib/cron-auth";
 import { resolveUnresolved } from "@/lib/predictions/resolver";
+import { capturePendingClosingOdds } from "@/lib/bet-assist/closing-odds";
+import { autoSettlePendingBets } from "@/lib/bet-assist/journal-actions";
+
+export const maxDuration = 60;
 
 export async function GET(req: Request) {
   if (!verifyCronRequest(req)) {
@@ -24,18 +28,30 @@ export async function GET(req: Request) {
 
   const startedAt = new Date().toISOString();
 
-  try {
-    const result = await resolveUnresolved({ limit: 200 });
+  // Run daily jobs with isolated error boundaries so one failure never blocks the others
+  const [predictions, closingOdds, betSettlement] = await Promise.all([
+    resolveUnresolved({ limit: 200 }).catch((err) => ({
+      error: err instanceof Error ? err.message : "Prediction resolution failed",
+    })),
+    capturePendingClosingOdds(100).catch((err) => ({
+      success: false,
+      checked: 0,
+      updated: 0,
+      skipped: 0,
+      error: err instanceof Error ? err.message : "Closing odds capture failed",
+    })),
+    autoSettlePendingBets(true).catch((err) => ({
+      success: false,
+      error: err instanceof Error ? err.message : "Auto-settlement failed",
+    })),
+  ]);
 
-    return NextResponse.json({
-      ok: true,
-      startedAt,
-      completedAt: new Date().toISOString(),
-      ...result,
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[cron/resolve-predictions]", message);
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
-  }
+  return NextResponse.json({
+    ok: true,
+    startedAt,
+    completedAt: new Date().toISOString(),
+    predictions,
+    closingOdds,
+    betSettlement,
+  });
 }

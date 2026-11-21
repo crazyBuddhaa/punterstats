@@ -26,18 +26,19 @@ import { SYNC_LEAGUES } from "@/lib/r2/sync";
 import type { R2SyncLogEntry, R2SyncResult, R2IngestResult } from "@/lib/r2/types";
 import { runWeeklyReportJob, type WeeklyReportJobResult } from "@/lib/report-card/weekly-report";
 
+export const maxDuration = 60;
+
 const FDCO_BASE = "https://www.football-data.co.uk/mmz4281";
 
 const LEAGUES = SYNC_LEAGUES;
+const BATCH_SIZE = 4;
 
-function currentSeasonCodes(): Array<{ code: string; label: string }> {
+function currentSeasonOnly(): Array<{ code: string; label: string }> {
   const now = new Date();
   const startYear = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
-  return [startYear - 1, startYear].map((y) => {
-    const yy1 = String(y).slice(2).padStart(2, "0");
-    const yy2 = String(y + 1).slice(2).padStart(2, "0");
-    return { code: `${yy1}${yy2}`, label: `${y}/${String(y + 1).slice(2)}` };
-  });
+  const yy1 = String(startYear).slice(2).padStart(2, "0");
+  const yy2 = String(startYear + 1).slice(2).padStart(2, "0");
+  return [{ code: `${yy1}${yy2}`, label: `${startYear}/${String(startYear + 1).slice(2)}` }];
 }
 
 export async function GET(req: Request) {
@@ -49,88 +50,93 @@ export async function GET(req: Request) {
   const runId     = `cron_${Date.now()}`;
   const r2Enabled = isR2Configured();
   const supabase  = createAdminClient();
-  const seasons   = currentSeasonCodes();
+  const seasons   = currentSeasonOnly();
 
   const syncResults:   R2SyncResult[]   = [];
   const ingestResults: R2IngestResult[] = [];
 
   for (const season of seasons) {
-    for (const league of LEAGUES) {
-      const url = `${FDCO_BASE}/${season.code}/${league.code}.csv`;
+    for (let i = 0; i < LEAGUES.length; i += BATCH_SIZE) {
+      const batch = LEAGUES.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map(async (league) => {
+          const url = `${FDCO_BASE}/${season.code}/${league.code}.csv`;
 
-      let csv: string;
-      try {
-        const res = await fetch(url, {
-          headers: { "User-Agent": "PunterStat-Cron/1.0" },
-          cache: "no-store",
-        });
-        if (!res.ok) {
+          let csv: string;
+          try {
+            const res = await fetch(url, {
+              headers: { "User-Agent": "PunterStat-Cron/1.0" },
+              cache: "no-store",
+            });
+            if (!res.ok) {
+              syncResults.push({
+                leagueCode: league.code, seasonCode: season.code,
+                seasonLabel: season.label, r2Key: null,
+                rowCount: 0, fileSizeBytes: 0, success: false,
+                error: `HTTP ${res.status}`,
+              });
+              return;
+            }
+            csv = await res.text();
+          } catch (err) {
+            syncResults.push({
+              leagueCode: league.code, seasonCode: season.code,
+              seasonLabel: season.label, r2Key: null,
+              rowCount: 0, fileSizeBytes: 0, success: false,
+              error: err instanceof Error ? err.message : String(err),
+            });
+            return;
+          }
+
+          const rows = parseFDCsv(csv);
+
+          // ── Archive to R2 ──────────────────────────────────────────────────
+          let r2Key: string | null = null;
+          if (r2Enabled && rows.length > 0) {
+            try {
+              r2Key = await putFootballCsv(league.code, season.code, csv);
+            } catch {
+              // R2 archive failure is non-fatal — continue to Supabase ingest
+            }
+          }
+
           syncResults.push({
             leagueCode: league.code, seasonCode: season.code,
-            seasonLabel: season.label, r2Key: null,
-            rowCount: 0, fileSizeBytes: 0, success: false,
-            error: `HTTP ${res.status}`,
+            seasonLabel: season.label, r2Key,
+            rowCount: rows.length,
+            fileSizeBytes: Buffer.byteLength(csv, "utf8"),
+            success: true,
           });
-          continue;
-        }
-        csv = await res.text();
-      } catch (err) {
-        syncResults.push({
-          leagueCode: league.code, seasonCode: season.code,
-          seasonLabel: season.label, r2Key: null,
-          rowCount: 0, fileSizeBytes: 0, success: false,
-          error: err instanceof Error ? err.message : String(err),
-        });
-        continue;
-      }
 
-      const rows = parseFDCsv(csv);
+          // ── Ingest to Supabase ─────────────────────────────────────────────
+          if (rows.length === 0) return;
 
-      // ── Archive to R2 ──────────────────────────────────────────────────────
-      let r2Key: string | null = null;
-      if (r2Enabled && rows.length > 0) {
-        try {
-          r2Key = await putFootballCsv(league.code, season.code, csv);
-        } catch {
-          // R2 archive failure is non-fatal — continue to Supabase ingest
-        }
-      }
-
-      syncResults.push({
-        leagueCode: league.code, seasonCode: season.code,
-        seasonLabel: season.label, r2Key,
-        rowCount: rows.length,
-        fileSizeBytes: Buffer.byteLength(csv, "utf8"),
-        success: true,
-      });
-
-      // ── Ingest to Supabase ─────────────────────────────────────────────────
-      if (rows.length === 0) continue;
-
-      try {
-        const leagueInfo = LEAGUE_MAP[league.code];
-        const stats = await upsertMatchesAndOdds(
-          rows,
-          league.code,
-          leagueInfo?.name ?? league.name,
-          season.label,
-          supabase
-        );
-        ingestResults.push({
-          leagueCode: league.code, seasonCode: season.code,
-          seasonLabel: season.label,
-          matchesUpserted: stats.matchesUpserted,
-          oddsUpserted: stats.oddsUpserted,
-          success: true,
-        });
-      } catch (err) {
-        ingestResults.push({
-          leagueCode: league.code, seasonCode: season.code,
-          seasonLabel: season.label,
-          matchesUpserted: 0, oddsUpserted: 0, success: false,
-          error: err instanceof Error ? err.message : String(err),
-        });
-      }
+          try {
+            const leagueInfo = LEAGUE_MAP[league.code];
+            const stats = await upsertMatchesAndOdds(
+              rows,
+              league.code,
+              leagueInfo?.name ?? league.name,
+              season.label,
+              supabase
+            );
+            ingestResults.push({
+              leagueCode: league.code, seasonCode: season.code,
+              seasonLabel: season.label,
+              matchesUpserted: stats.matchesUpserted,
+              oddsUpserted: stats.oddsUpserted,
+              success: true,
+            });
+          } catch (err) {
+            ingestResults.push({
+              leagueCode: league.code, seasonCode: season.code,
+              seasonLabel: season.label,
+              matchesUpserted: 0, oddsUpserted: 0, success: false,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
+        })
+      );
     }
   }
 

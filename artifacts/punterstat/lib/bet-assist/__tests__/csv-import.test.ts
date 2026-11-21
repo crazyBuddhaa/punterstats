@@ -89,4 +89,42 @@ describe("bet-assist csv-import", () => {
       legCount: 1,
     });
   });
+
+  it("parses Football.com CSV exports (snake_case currency headers, FlexiBet, and 1:1 refunds)", () => {
+    const csv = [
+      "date,bet_type,flexi_rule,status,stake_ngn,return_ngn,total_matches,matches_shown,tier_points",
+      "2026-11-12,FlexiBet,9+ of 13,Lost,100.00,0.00,13,Sur Club v Dhofar Club | Al-Ahly Amman v Amman FC,42.853",
+      "2026-11-12,Multiple,,Won,300.00,300.00,11,Congo DR v Sierra Leone | Armenia v Cyprus,",
+      "2026-11-07,Multiple,,Won,200.00,760.52,4,Stuttgart v Werder Bremen | Osasuna v Athletic Bilbao,27.858",
+    ].join("\n");
+
+    const res = parseBetsCsv(csv, { defaultBookmaker: "Football.com", overrideBookmaker: true });
+    expect(res.skipped).toHaveLength(0);
+    expect(res.rows).toHaveLength(3);
+
+    expect(res.rows[0]).toMatchObject({
+      bookmaker: "Football.com",
+      market: "Accumulator",
+      status: "lost",
+      stake: 100,
+      legCount: 13,
+      notes: "9+ of 13",
+    });
+
+    // Exact 1:1 refund -> void (0 profit)
+    expect(res.rows[1]).toMatchObject({
+      status: "void",
+      stake: 300,
+      legCount: 11,
+      cashoutAmount: null,
+    });
+
+    // Profit win -> derived odds 760.52 / 200 = 3.80
+    expect(res.rows[2]).toMatchObject({
+      status: "won",
+      stake: 200,
+      odds: 3.8,
+      legCount: 4,
+    });
+  });
 });

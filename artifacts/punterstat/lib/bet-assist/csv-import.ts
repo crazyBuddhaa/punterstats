@@ -50,6 +50,7 @@ const HEADER_ALIASES: Record<string, string[]> = {
     "event name",
     "match",
     "matches",
+    "matches shown",
     "fixture",
     "fixtures",
     "game",
@@ -59,7 +60,7 @@ const HEADER_ALIASES: Record<string, string[]> = {
     "events",
   ],
   market: ["market", "market type", "bet type", "type"],
-  selection: ["selection", "pick", "outcome", "tip", "bet", "selections", "visible selections"],
+  selection: ["selection", "pick", "outcome", "tip", "bet", "selections", "visible selections", "matches shown"],
   bookmaker: ["bookmaker", "bookie", "site", "platform", "sportsbook"],
   odds: ["odds", "price", "decimal odds", "total odds", "combined odds"],
   stake: ["stake", "amount", "wager", "bet amount", "staked", "total stake"],
@@ -78,6 +79,8 @@ const HEADER_ALIASES: Record<string, string[]> = {
   legCount: [
     "legs",
     "leg count",
+    "total matches",
+    "match count",
     "visible selection count",
     "selection count",
     "number of legs",
@@ -91,6 +94,7 @@ const HEADER_ALIASES: Record<string, string[]> = {
     "note",
     "comment",
     "comments",
+    "flexi rule",
     "ticket reference",
     "ticket ref",
     "ticket id",
@@ -175,6 +179,7 @@ function normalizeHeader(header: string): string {
     .toLowerCase()
     .replace(/\([^)]*\)/g, " ")
     .replace(/[_-]+/g, " ")
+    .replace(/\b(ngn|usd|gbp|eur|ghs|kes|zar|tzs|ugx|zmw)\b$/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -221,6 +226,9 @@ function normalizeMarketLabel(rawMarket: string, legCount: number): string {
   if (
     lower === "multiple" ||
     lower === "multiples" ||
+    lower === "flexibet" ||
+    lower === "flexi bet" ||
+    lower === "flexi" ||
     lower === "combo" ||
     lower === "parlay" ||
     lower === "acca" ||
@@ -364,10 +372,19 @@ export function parseBetsCsv(
       } else if (
         (status === "won" || status === "cashed_out") &&
         rawReturn !== null &&
-        rawReturn > 0 &&
-        rawReturn <= stake
+        Math.abs(rawReturn - stake) < 0.01
       ) {
-        // Partial return / Flexi-cut / Cash-out where return <= stake: record exact return
+        // Exact 1:1 stake refund (void / break-even cash-out)
+        status = "void";
+        cashoutAmount = null;
+        odds = 1.5;
+      } else if (
+        (status === "won" || status === "cashed_out") &&
+        rawReturn !== null &&
+        rawReturn > 0 &&
+        rawReturn < stake
+      ) {
+        // Partial return / Flexi-cut / Cash-out where return < stake: record exact return
         status = "cashed_out";
         cashoutAmount = rawReturn;
         odds = 1.5;

@@ -122,7 +122,7 @@ export function SlipChecker({
   const [copiedVerdict, setCopiedVerdict] = useState(false);
 
   const [bookingCode, setBookingCode] = useState("");
-  const [codeBookie, setCodeBookie] = useState("sportybet:ng");
+  const [codeBookie, setCodeBookie] = useState("sportybet");
   const [decoding, setDecoding] = useState(false);
   const [decodeNotice, setDecodeNotice] = useState<string | null>(null);
 

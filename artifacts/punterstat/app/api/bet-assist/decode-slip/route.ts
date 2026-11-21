@@ -1,47 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { predictMatchFromModel } from "@/lib/model/dixon-coles-engine";
-import {
-  getBookmakerMeta,
-  parseConvertBetCodesResponse,
-  resolveBookmakerKey,
-  type CbcRetrieveResponse,
-} from "@/lib/bet-assist/booking-code";
+import { getBookmakerMeta, resolveBookmakerKey } from "@/lib/bet-assist/booking-code";
 
 export const maxDuration = 60;
 
-const CBC_BASE_URL = "https://convertbetcodes.com/api";
+const MBC_BASE_URL = "https://api.managebetcodes.app/v1";
 
-function pickConversionTarget(originBookie: string): string {
-  if (originBookie === "sportybet:ng") return "sportybet:gh";
-  if (originBookie.startsWith("sportybet:")) return "sportybet:ng";
-  if (originBookie === "1xbet:ng") return "1xbet:gh";
-  if (originBookie.startsWith("1xbet:")) return "1xbet:ng";
-  if (originBookie === "betway:ng") return "betway:za";
-  if (originBookie.startsWith("betway:")) return "betway:ng";
-  if (originBookie === "betika:ng") return "betika:ke";
-  if (originBookie.startsWith("betika:")) return "betika:ng";
-  return originBookie === "sportybet:ng" ? "sportybet:gh" : "sportybet:ng";
+interface MbcSelection {
+  match?: string;
+  market?: string;
+  selection?: string;
+  odds?: string | number;
+  score?: string;
+  status?: string;
+  sport?: string;
+  start_time?: string;
+  match_time?: string;
+}
+
+interface MbcViewResponse {
+  bookmaker?: { key?: string; name?: string };
+  bookmaker_key?: string;
+  code?: string;
+  status?: string;
+  selections?: MbcSelection[];
+  error?: string | { message?: string };
+  message?: string;
 }
 
 /** Map a decoded market + selection onto our Dixon-Coles v2.0 derived probability if supported. */
 function lookupModelProb(
-  homeTeam: string | null,
-  awayTeam: string | null,
   match: string,
   marketRaw: string,
   selectionRaw: string,
 ): { prob: number; leagueCode: string | null } | null {
-  let home = homeTeam;
-  let away = awayTeam;
-  if (!home || !away) {
-    const parts = match.split(/\s+vs\.?\s+|\s+v\s+|\s+-\s+/i).map((s) => s.trim());
-    if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
-    home = parts[0];
-    away = parts[1];
-  }
+  const parts = match.split(/\s+vs\.?\s+|\s+v\s+/i).map((s) => s.trim());
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
 
-  const pred = predictMatchFromModel(home, away);
+  const pred = predictMatchFromModel(parts[0], parts[1]);
   if (!pred) return null;
 
   const market = marketRaw.toLowerCase();
@@ -49,24 +46,20 @@ function lookupModelProb(
   const m = pred.markets;
 
   let prob: number | null = null;
-  if (market.includes("1x2") || market === "match result" || market === "regular time") {
-    if (sel === "home" || sel === "1" || sel === "w1" || sel === "home win" || sel.includes(home.toLowerCase())) {
-      prob = pred.homeWinProb;
-    } else if (sel === "draw" || sel === "x") {
-      prob = pred.drawProb;
-    } else if (sel === "away" || sel === "2" || sel === "w2" || sel === "away win" || sel.includes(away.toLowerCase())) {
-      prob = pred.awayWinProb;
-    }
+  if (market.includes("1x2") || market === "match result") {
+    if (sel === "home" || sel === "1" || sel.includes(parts[0].toLowerCase())) prob = pred.homeWinProb;
+    else if (sel === "draw" || sel === "x") prob = pred.drawProb;
+    else if (sel === "away" || sel === "2" || sel.includes(parts[1].toLowerCase())) prob = pred.awayWinProb;
   } else if (market.includes("double chance")) {
     if (sel === "1x" || sel.includes("home or draw")) prob = m.doubleChanceHD;
-    else if (sel === "x2" || sel === "2x" || sel.includes("draw or away")) prob = m.doubleChanceDA;
+    else if (sel === "x2" || sel.includes("draw or away")) prob = m.doubleChanceDA;
     else if (sel === "12" || sel.includes("home or away")) prob = m.doubleChanceHA;
   } else if (market.includes("draw no bet") || market === "dnb") {
-    if (sel === "home" || sel === "1" || sel === "w1") prob = m.homeDnb;
-    else if (sel === "away" || sel === "2" || sel === "w2") prob = m.awayDnb;
-  } else if (market.includes("btts") || market.includes("both teams") || market.includes("gg/ng")) {
-    if (sel === "yes" || sel === "gg" || sel === "btts yes") prob = m.btts;
-    else if (sel === "no" || sel === "ng" || sel === "btts no") prob = m.noBtts;
+    if (sel === "home" || sel === "1") prob = m.homeDnb;
+    else if (sel === "away" || sel === "2") prob = m.awayDnb;
+  } else if (market.includes("btts") || market.includes("both teams")) {
+    if (sel === "yes" || sel === "gg") prob = m.btts;
+    else if (sel === "no" || sel === "ng") prob = m.noBtts;
   } else if (market.includes("over/under") || market.includes("total")) {
     if (sel.includes("over 0.5")) prob = m.over05;
     else if (sel.includes("under 0.5")) prob = m.under05;
@@ -84,10 +77,10 @@ function lookupModelProb(
 }
 
 export async function GET(req: NextRequest) {
-  const apiKey = process.env.CONVERTBETCODES_API_KEY?.trim();
+  const apiKey = process.env.MANAGEBETCODES_API_KEY?.trim();
   if (!apiKey) {
     return NextResponse.json(
-      { error: "Booking code lookup is not configured yet (missing CONVERTBETCODES_API_KEY)." },
+      { error: "Booking code lookup is not configured yet (missing MANAGEBETCODES_API_KEY)." },
       { status: 503 },
     );
   }
@@ -105,7 +98,7 @@ export async function GET(req: NextRequest) {
   }
 
   const rawCode = (req.nextUrl.searchParams.get("code") ?? "").trim().toUpperCase();
-  const rawBookmaker = (req.nextUrl.searchParams.get("bookmaker") ?? "sportybet:ng").trim().toLowerCase();
+  const rawBookmaker = (req.nextUrl.searchParams.get("bookmaker") ?? "sportybet").trim().toLowerCase();
 
   if (!/^[A-Z0-9-]{4,24}$/.test(rawCode)) {
     return NextResponse.json(
@@ -114,149 +107,78 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const originBookie = resolveBookmakerKey(rawBookmaker);
-  if (!originBookie) {
+  const bookmaker = resolveBookmakerKey(rawBookmaker);
+  if (!bookmaker) {
     return NextResponse.json({ error: "Unsupported bookmaker selected." }, { status: 400 });
   }
 
-  const bookieMeta = getBookmakerMeta(originBookie);
-
-  const fetchCbc = async (url: string, timeoutMs: number) => {
-    const res = await fetch(url, {
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "PunterStat/1.0 (+https://punterstat.com)",
-      },
-      cache: "no-store",
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    const rawText = await res.text();
-    let parsed: CbcRetrieveResponse | null = null;
-    try {
-      parsed = rawText ? (JSON.parse(rawText) as CbcRetrieveResponse) : null;
-    } catch {
-      parsed = null;
-    }
-    const bodyStatus = typeof parsed?.status === "number" ? parsed.status : Number(parsed?.status);
-    const bodyFailed = Number.isFinite(bodyStatus) && bodyStatus >= 400;
-    return { res, rawText, parsed, bodyStatus, bodyFailed };
-  };
+  const bookieMeta = getBookmakerMeta(bookmaker);
 
   try {
-    const retrieveUrl =
-      `${CBC_BASE_URL}/retrieve_bet_code` +
-      `?origin_bookie=${encodeURIComponent(originBookie)}` +
-      `&booking_code=${encodeURIComponent(rawCode)}` +
-      `&api_key=${encodeURIComponent(apiKey)}`;
+    const url = `${MBC_BASE_URL}/view?code=${encodeURIComponent(rawCode)}&bookmaker=${encodeURIComponent(bookmaker)}`;
+    const upstream = await fetch(url, {
+      headers: {
+        "X-API-Key": apiKey,
+        Accept: "application/json",
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(20_000),
+    });
 
-    let attempt = await fetchCbc(retrieveUrl, 10_000);
-    let parsedLegs = attempt.parsed ? parseConvertBetCodesResponse(attempt.parsed) : [];
-
-    // ConvertBetCodes' retrieve_bet_code frequently returns status 500 on some bookies (e.g. sportybet:ng).
-    // Fall back to conversion_v2 with a same-brand target and parse dump.lists[].home EVEN IF
-    // bodyStatus is 500 (destination mapping errors still include the full decoded origin slip).
-    if (parsedLegs.length === 0) {
-      const fallbackTo = pickConversionTarget(originBookie);
-      const convUrl =
-        `${CBC_BASE_URL}/conversion_v2` +
-        `?from=${encodeURIComponent(originBookie)}` +
-        `&to=${encodeURIComponent(fallbackTo)}` +
-        `&booking_code=${encodeURIComponent(rawCode)}` +
-        `&api_key=${encodeURIComponent(apiKey)}`;
-
-      const convAttempt = await fetchCbc(convUrl, 25_000);
-      const convLegs = convAttempt.parsed ? parseConvertBetCodesResponse(convAttempt.parsed) : [];
-
-      if (convLegs.length > 0) {
-        attempt = convAttempt;
-        parsedLegs = convLegs;
-      } else {
-        console.error("[decode-slip] ConvertBetCodes both endpoints failed:", {
-          originBookie,
-          fallbackTo,
-          codeLength: rawCode.length,
-          retrieve: {
-            httpStatus: attempt.res.status,
-            bodyStatus: attempt.parsed?.status ?? null,
-            snippet: attempt.rawText.slice(0, 220),
-          },
-          conversionV2: {
-            httpStatus: convAttempt.res.status,
-            bodyStatus: convAttempt.parsed?.status ?? null,
-            snippet: convAttempt.rawText.slice(0, 220),
-          },
-        });
-        if (convAttempt.parsed?.message || convAttempt.parsed?.error || convAttempt.parsed?.data?.errors) {
-          attempt = convAttempt;
-        }
-      }
-    }
-
-    const { res: upstream, parsed: data, bodyStatus, bodyFailed } = attempt;
-
-    if (parsedLegs.length === 0 && (!upstream.ok || !data || bodyFailed)) {
-      const nestedErrors = data?.data?.errors ?? data?.errors;
-      const firstNestedErr =
-        Array.isArray(nestedErrors) && nestedErrors.length > 0
-          ? typeof nestedErrors[0] === "string"
-            ? nestedErrors[0]
-            : (nestedErrors[0] as { message?: string })?.message
-          : typeof nestedErrors === "string"
-            ? nestedErrors
-            : null;
-
+    const data = (await upstream.json().catch(() => null)) as MbcViewResponse | null;
+    if (!upstream.ok || !data) {
       const msg =
-        firstNestedErr ||
         (typeof data?.error === "string" ? data.error : data?.error?.message) ||
-        (data?.message && data.message.toLowerCase() !== "success" ? data.message : null) ||
-        `Could not decode booking code (${bodyFailed ? bodyStatus : upstream.status}). Check that the code is active and matches ${bookieMeta?.label ?? originBookie}.`;
-
-      const outStatus =
-        (upstream.status >= 400 && upstream.status < 500) || (bodyFailed && bodyStatus < 500)
-          ? 400
-          : 502;
-      return NextResponse.json({ error: msg }, { status: outStatus });
+        data?.message ||
+        `Could not decode booking code (${upstream.status}).`;
+      return NextResponse.json(
+        { error: msg },
+        { status: upstream.status >= 400 && upstream.status < 500 ? 400 : 502 },
+      );
     }
 
-    if (parsedLegs.length === 0) {
+    const rawSelections = data.selections ?? [];
+    if (rawSelections.length === 0) {
       return NextResponse.json(
-        { error: "Booking code was found, but it contains no readable selections with odds." },
+        { error: "Booking code was found, but it contains no readable selections." },
         { status: 404 },
       );
     }
 
-    const legs = parsedLegs.map((leg) => {
-      const modelHit = leg.isFootball
-        ? lookupModelProb(leg.homeTeam, leg.awayTeam, leg.event, leg.market, leg.rawSelection)
-        : null;
+    const legs = rawSelections
+      .map((s) => {
+        const match = (s.match ?? "").trim();
+        const market = (s.market ?? "1X2").trim();
+        const selection = (s.selection ?? "").trim();
+        const oddsNum = Number(s.odds);
+        const isFootball =
+          !s.sport || s.sport.toLowerCase().includes("foot") || s.sport.toLowerCase().includes("socc");
+        const modelHit = isFootball && match ? lookupModelProb(match, market, selection) : null;
 
-      return {
-        event: leg.event,
-        market: leg.market,
-        selection: leg.selection,
-        rawSelection: leg.rawSelection,
-        odds: leg.odds,
-        tournament: leg.tournament,
-        startTime: leg.startTime,
-        score: null,
-        status: null,
-        modelProb: modelHit?.prob ?? null,
-        modelLeague: modelHit?.leagueCode ?? null,
-      };
-    });
-
-    const homeMeta = data?.data?.home ?? data?.data?.conversion?.dump?.home;
+        return {
+          event: match || "Match",
+          market,
+          selection: selection ? `${market}: ${selection}` : market,
+          rawSelection: selection,
+          odds: Number.isFinite(oddsNum) && oddsNum > 1 ? oddsNum : null,
+          score: s.score || null,
+          status: s.status || null,
+          startTime: s.start_time || null,
+          modelProb: modelHit?.prob ?? null,
+          modelLeague: modelHit?.leagueCode ?? null,
+        };
+      })
+      .filter((l) => l.odds !== null);
 
     return NextResponse.json({
-      code: rawCode,
-      bookmaker: bookieMeta?.label ?? homeMeta?.bookie ?? originBookie,
-      bookmakerKey: originBookie,
-      totalOdds: homeMeta?.odds ? Number(homeMeta.odds) : null,
-      status: "ok",
+      code: data.code ?? rawCode,
+      bookmaker: data.bookmaker?.name ?? bookieMeta?.label ?? bookmaker,
+      bookmakerKey: data.bookmaker_key ?? bookmaker,
+      status: data.status ?? null,
       legs,
     });
   } catch (err) {
-    console.error("[decode-slip] ConvertBetCodes error:", err);
+    console.error("[decode-slip] ManageBetCodes upstream error:", err);
     return NextResponse.json(
       { error: "Booking code service timed out. Please try again." },
       { status: 504 },

@@ -76,6 +76,7 @@ interface SimulatedMatchResult {
     score: string;
     market: string;
     won: boolean;
+    legWinPct?: number;
   }>;
   odds: number;
   stake: number;
@@ -457,6 +458,7 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
               score: `${sampleScore.home} – ${sampleScore.away}`,
               market,
               won: sampleWon,
+              legWinPct: simulatedWinPct,
             },
           ],
           odds: parsedOdds,
@@ -485,17 +487,20 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
         const combinedOdds = Number(accaLegs.reduce((acc, l) => acc * l.odds, 1).toFixed(2));
 
         let simWins = 0;
+        const legWinCounts = new Array<number>(accaLegs.length).fill(0);
         let sampleScorelines: SimulatedMatchResult["scorelines"] = [];
         let sampleAllWon = false;
 
         for (let r = 0; r < DEFAULT_SIM_RUNS; r++) {
           let runAllWon = true;
           const runLines: SimulatedMatchResult["scorelines"] = [];
-          for (const l of accaLegs) {
+          for (let li = 0; li < accaLegs.length; li++) {
+            const l = accaLegs[li];
             const sc = sampleScoreline(rng, l.lambdaHome, l.lambdaAway);
             const evalRes = evaluateSelection(l.market, "1X2", l.homeTeam, l.awayTeam, sc.home, sc.away);
             const wonLeg = evalRes === "won";
-            if (!wonLeg) runAllWon = false;
+            if (wonLeg) legWinCounts[li] += 1;
+            else runAllWon = false;
             if (r === 0) {
               runLines.push({
                 match: `${l.homeTeam} vs ${l.awayTeam}`,
@@ -511,6 +516,11 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
             sampleAllWon = runAllWon;
           }
         }
+
+        sampleScorelines = sampleScorelines.map((line, li) => ({
+          ...line,
+          legWinPct: Math.round((legWinCounts[li] / DEFAULT_SIM_RUNS) * 1000) / 10,
+        }));
 
         const simulatedWinPct = Math.round((simWins / DEFAULT_SIM_RUNS) * 1000) / 10;
         const outcome: "win" | "loss" = sampleAllWon ? "win" : "loss";
@@ -873,16 +883,19 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
 
           <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-slate-50/60">
             {lastSim.scorelines.map((s, idx) => (
-              <li key={idx} className="flex items-center justify-between px-4 py-2.5 text-xs">
-                <div>
+              <li key={idx} className="flex items-center justify-between gap-3 px-4 py-2.5 text-xs">
+                <div className="min-w-0 flex-1">
                   <span className="font-semibold text-slate-900">{s.match}</span>
-                  <span className="ml-2 text-slate-500">Pick: {s.market}</span>
+                  <span className="ml-2 inline-block text-slate-500">
+                    Pick: {s.market}
+                    {s.legWinPct != null ? ` (${Math.round(s.legWinPct)}%)` : ""}
+                  </span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="rounded bg-white px-2 py-0.5 font-bold tabular-nums text-slate-900 border border-slate-200">
+                <div className="flex shrink-0 items-center gap-2.5">
+                  <span className="whitespace-nowrap rounded border border-slate-200 bg-white px-2 py-0.5 font-bold tabular-nums text-slate-900">
                     FT {s.score}
                   </span>
-                  <span className={cn("font-bold", s.won ? "text-emerald-600" : "text-rose-600")}>
+                  <span className={cn("w-10 text-right font-bold", s.won ? "text-emerald-600" : "text-rose-600")}>
                     {s.won ? "WON" : "LOST"}
                   </span>
                 </div>
@@ -899,31 +912,40 @@ export function BetSimulator({ isAuthenticated }: { isAuthenticated: boolean }) 
             Simulation History ({history.length})
           </h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full min-w-[560px] text-xs">
               <thead className="border-b border-slate-200 text-left text-slate-400">
                 <tr>
-                  <th className="pb-2 font-medium">Match / Slip</th>
-                  <th className="pb-2 font-medium">Score(s)</th>
-                  <th className="pb-2 text-right font-medium">Odds</th>
-                  <th className="pb-2 text-right font-medium">Stake</th>
-                  <th className="pb-2 text-right font-medium">P&amp;L</th>
+                  <th className="pb-2 pr-3 font-medium">Match / Slip</th>
+                  <th className="pb-2 pr-3 font-medium">Score(s)</th>
+                  <th className="pb-2 pr-3 text-right font-medium">Odds</th>
+                  <th className="pb-2 pr-3 text-right font-medium">Stake</th>
+                  <th className="pb-2 pr-3 text-right font-medium">P&amp;L</th>
                   <th className="pb-2 text-right font-medium">Bankroll</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 tabular-nums">
                 {history.slice(0, 20).map((h) => (
                   <tr key={h.id}>
-                    <td className="py-2.5 font-medium text-slate-900">{h.label}</td>
-                    <td className="py-2.5 text-slate-600">
+                    <td className="py-2.5 pr-3 font-medium text-slate-900">{h.label}</td>
+                    <td className="py-2.5 pr-3 text-slate-600">
                       {h.scorelines.map((s) => s.score).join(", ")}
                     </td>
-                    <td className="py-2.5 text-right text-slate-700">{h.odds.toFixed(2)}</td>
-                    <td className="py-2.5 text-right text-slate-700">{formatMoney(h.stake)}</td>
-                    <td className={cn("py-2.5 text-right font-bold", h.profitLoss >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                    <td className="whitespace-nowrap py-2.5 pr-3 text-right text-slate-700">
+                      {h.odds.toFixed(2)}
+                    </td>
+                    <td className="whitespace-nowrap py-2.5 pr-3 text-right text-slate-700">
+                      {formatMoney(h.stake)}
+                    </td>
+                    <td
+                      className={cn(
+                        "whitespace-nowrap py-2.5 pr-3 text-right font-bold",
+                        h.profitLoss >= 0 ? "text-emerald-600" : "text-rose-600",
+                      )}
+                    >
                       {h.profitLoss >= 0 ? "+" : "-"}
                       {formatMoney(Math.abs(h.profitLoss))}
                     </td>
-                    <td className="py-2.5 text-right font-semibold text-slate-900">
+                    <td className="whitespace-nowrap py-2.5 text-right font-semibold text-slate-900">
                       {formatMoney(h.balanceAfter)}
                     </td>
                   </tr>
